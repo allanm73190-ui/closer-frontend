@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_BASE = 'https://closer-backend-production.up.railway.app/api';
 
-// ─── API CLIENT ───────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('closer_token'); }
 function setToken(t) { localStorage.setItem('closer_token', t); }
 function clearToken() { localStorage.removeItem('closer_token'); }
@@ -17,11 +15,7 @@ async function apiFetch(path, options = {}) {
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const data = await res.json();
-  if (res.status === 401) {
-    clearToken();
-    if (_onSessionExpired) _onSessionExpired();
-    throw new Error(data.error || 'Session expirée');
-  }
+  if (res.status === 401) { clearToken(); if (_onSessionExpired) _onSessionExpired(); throw new Error(data.error || 'Session expirée'); }
   if (!res.ok) throw new Error(data.error || 'Erreur serveur');
   return data;
 }
@@ -44,43 +38,46 @@ function computeScore(sections) {
   count(r.reformulation,['oui','partiel'],1); count(r.prospect_reconnu,['oui','moyen'],1);
   count(r.couches_reformulation,['physique','quotidien','identitaire'],3);
   const p = sections.projection || {};
-  count(p.projection_posee,'oui',1); count(p.qualite_reponse,['forte','moyenne'],1);
-  count(p.deadline_levier,'oui',1);
+  count(p.projection_posee,'oui',1); count(p.qualite_reponse,['forte','moyenne'],1); count(p.deadline_levier,'oui',1);
   const o = sections.offre || {};
-  count(o.colle_douleurs,['oui','partiel'],1); count(o.exemples_transformation,['oui','moyen'],1);
-  count(o.duree_justifiee,['oui','partiel'],1);
+  count(o.colle_douleurs,['oui','partiel'],1); count(o.exemples_transformation,['oui','moyen'],1); count(o.duree_justifiee,['oui','partiel'],1);
   const c = sections.closing || {};
-  count(c.annonce_prix,'directe',1); count(c.silence_prix,'oui',1);
-  count(c.douleur_reancree,'oui',1); count(c.objection_isolee,'oui',1);
+  count(c.annonce_prix,'directe',1); count(c.silence_prix,'oui',1); count(c.douleur_reancree,'oui',1); count(c.objection_isolee,'oui',1);
   count(c.resultat_closing,['close','retrograde','relance'],1);
   return { total: points, max, percentage: max > 0 ? Math.round((points / max) * 100) : 0 };
 }
 
-function computeSectionScoresLocal(sections) {
+// ─── SCORES PAR SECTION (5 sections uniquement) ───────────────────────────────
+function computeSectionScores(sections) {
   const s = sections || {};
-  const score = (pts, max) => Math.round((pts / max) * 5);
+  const score = (pts, max) => max > 0 ? Math.round((pts / max) * 5) : 0;
+
   const d = s.decouverte || {};
   let dPts = 0;
   if (d.douleur_surface === 'oui') dPts++;
   if (['oui','partiel'].includes(d.douleur_profonde)) dPts++;
-  if (Array.isArray(d.couches_douleur)) dPts += Math.min(d.couches_douleur.length,3);
+  if (Array.isArray(d.couches_douleur)) dPts += Math.min(d.couches_douleur.length, 3);
   if (d.temporalite === 'oui') dPts++;
   if (['oui','artificielle'].includes(d.urgence)) dPts++;
+
   const r = s.reformulation || {};
   let rPts = 0;
   if (['oui','partiel'].includes(r.reformulation)) rPts++;
   if (['oui','moyen'].includes(r.prospect_reconnu)) rPts++;
-  if (Array.isArray(r.couches_reformulation)) rPts += Math.min(r.couches_reformulation.length,3);
+  if (Array.isArray(r.couches_reformulation)) rPts += Math.min(r.couches_reformulation.length, 3);
+
   const p = s.projection || {};
   let pPts = 0;
   if (p.projection_posee === 'oui') pPts++;
   if (['forte','moyenne'].includes(p.qualite_reponse)) pPts++;
   if (p.deadline_levier === 'oui') pPts++;
+
   const o = s.offre || {};
   let oPts = 0;
   if (['oui','partiel'].includes(o.colle_douleurs)) oPts++;
   if (['oui','moyen'].includes(o.exemples_transformation)) oPts++;
   if (['oui','partiel'].includes(o.duree_justifiee)) oPts++;
+
   const c = s.closing || {};
   let cPts = 0;
   if (c.annonce_prix === 'directe') cPts++;
@@ -88,20 +85,22 @@ function computeSectionScoresLocal(sections) {
   if (c.douleur_reancree === 'oui') cPts++;
   if (c.objection_isolee === 'oui') cPts++;
   if (['close','retrograde','relance'].includes(c.resultat_closing)) cPts++;
+
   return {
-    decouverte: score(dPts,7), reformulation: score(rPts,5),
-    projection: score(pPts,3), presentation_offre: score(oPts,3),
-    closing: score(cPts,5), accroche: 0, douleur: score(dPts,7),
-    traitement_objections: score(cPts,5), energie_ton: 0, ecoute_active: score(rPts,5),
+    decouverte:         score(dPts, 7),
+    reformulation:      score(rPts, 5),
+    projection:         score(pPts, 3),
+    presentation_offre: score(oPts, 3),
+    closing:            score(cPts, 5),
   };
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
-function formatDate(s) { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch { return s; } }
-function formatDateShort(s) { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); } catch { return s; } }
+function formatDate(s) { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch { return s||''; } }
+function formatDateShort(s) { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); } catch { return s||''; } }
 function copyToClipboard(t) { navigator.clipboard.writeText(t).catch(()=>{}); }
 
-// ─── TOAST SYSTEM ─────────────────────────────────────────────────────────────
+// ─── TOAST ────────────────────────────────────────────────────────────────────
 function useToast() {
   const [toasts, setToasts] = useState([]);
   const add = useCallback((msg, type='success', duration=3500) => {
@@ -111,26 +110,16 @@ function useToast() {
   }, []);
   return { toasts, toast: add };
 }
-
 function ToastContainer({ toasts }) {
   return <div style={{position:'fixed',bottom:24,right:24,zIndex:9999,display:'flex',flexDirection:'column',gap:10}}>
-    {toasts.map(t => (
-      <div key={t.id} style={{
-        padding:'12px 18px', borderRadius:10, fontSize:14, fontWeight:500,
-        background: t.type==='success'?'#1e293b':t.type==='error'?'#dc2626':'#6366f1',
-        color:'white', boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
-        animation:'slideIn 0.3s ease',
-        display:'flex', alignItems:'center', gap:8
-      }}>
-        <span>{t.type==='success'?'✓':t.type==='error'?'✕':'ℹ'}</span>
-        {t.msg}
-      </div>
-    ))}
+    {toasts.map(t => <div key={t.id} style={{padding:'12px 18px',borderRadius:10,fontSize:14,fontWeight:500,background:t.type==='success'?'#1e293b':t.type==='error'?'#dc2626':'#6366f1',color:'white',boxShadow:'0 4px 20px rgba(0,0,0,0.15)',display:'flex',alignItems:'center',gap:8,animation:'slideIn 0.3s ease'}}>
+      <span>{t.type==='success'?'✓':t.type==='error'?'✕':'ℹ'}</span>{t.msg}
+    </div>)}
     <style>{`@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}`}</style>
   </div>;
 }
 
-// ─── POINTS ANIMATION ─────────────────────────────────────────────────────────
+// ─── POINTS BURST ─────────────────────────────────────────────────────────────
 function PointsBurst({ points, levelUp, newLevel }) {
   const [visible, setVisible] = useState(true);
   useEffect(() => { const t = setTimeout(() => setVisible(false), 3000); return () => clearTimeout(t); }, []);
@@ -155,13 +144,7 @@ function Textarea({placeholder,value,onChange,rows=3}) {
 }
 function Btn({children,onClick,type='button',variant='primary',disabled,style={}}) {
   const base={display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,padding:'10px 20px',borderRadius:10,fontSize:14,fontWeight:600,cursor:disabled?'not-allowed':'pointer',border:'none',transition:'all 0.2s',opacity:disabled?0.6:1,fontFamily:'inherit'};
-  const variants={
-    primary:{background:'#6366f1',color:'white',boxShadow:'0 4px 12px rgba(99,102,241,0.3)'},
-    secondary:{background:'white',color:'#374151',border:'1px solid #e2e8f0'},
-    danger:{background:'#fee2e2',color:'#dc2626',border:'1px solid #fca5a5'},
-    ghost:{background:'transparent',color:'#64748b',border:'none'},
-    green:{background:'#d1fae5',color:'#065f46',border:'1px solid #6ee7b7'},
-  };
+  const variants={primary:{background:'#6366f1',color:'white',boxShadow:'0 4px 12px rgba(99,102,241,0.3)'},secondary:{background:'white',color:'#374151',border:'1px solid #e2e8f0'},danger:{background:'#fee2e2',color:'#dc2626',border:'1px solid #fca5a5'},ghost:{background:'transparent',color:'#64748b',border:'none'},green:{background:'#d1fae5',color:'#065f46',border:'1px solid #6ee7b7'}};
   return <button type={type} onClick={onClick} disabled={disabled} style={{...base,...variants[variant],...style}}>{children}</button>;
 }
 function Alert({type,message}) {
@@ -170,8 +153,8 @@ function Alert({type,message}) {
   return <div style={{...s[type],padding:'10px 14px',borderRadius:8,fontSize:13,marginBottom:16}}>{message}</div>;
 }
 function Spinner({full=false}) {
-  const el = <div style={{width:32,height:32,border:'4px solid #e2e8f0',borderTopColor:'#6366f1',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>;
-  return full ? <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'50vh'}}>{el}<style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div> : el;
+  const el=<div style={{width:32,height:32,border:'4px solid #e2e8f0',borderTopColor:'#6366f1',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>;
+  return full?<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'50vh'}}>{el}<style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>:el;
 }
 function EmptyState({icon,title,subtitle,action}) {
   return <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:48,textAlign:'center'}}>
@@ -184,16 +167,14 @@ function EmptyState({icon,title,subtitle,action}) {
 
 // ─── SCORE GAUGE ──────────────────────────────────────────────────────────────
 function ScoreGauge({percentage,size='lg'}) {
-  const r=size==='lg'?54:36, st=size==='lg'?8:6;
-  const circ=2*Math.PI*r, off=circ-(percentage/100)*circ;
-  const vb=size==='lg'?130:90, c=vb/2;
+  const r=size==='lg'?54:36,st=size==='lg'?8:6;
+  const circ=2*Math.PI*r,off=circ-(percentage/100)*circ;
+  const vb=size==='lg'?130:90,c=vb/2;
   const color=percentage>=80?'#059669':percentage>=60?'#d97706':percentage>=40?'#6366f1':'#ef4444';
   return <div style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
     <svg width={vb} height={vb} viewBox={`0 0 ${vb} ${vb}`}>
       <circle cx={c} cy={c} r={r} fill="none" stroke="#e2e8f0" strokeWidth={st}/>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={st}
-        strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round"
-        transform={`rotate(-90 ${c} ${c})`} style={{transition:'stroke-dashoffset 1s ease-in-out'}}/>
+      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={st} strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} style={{transition:'stroke-dashoffset 1s ease-in-out'}}/>
     </svg>
     <div style={{position:'absolute',display:'flex',alignItems:'center',justifyContent:'center'}}>
       <span style={{fontWeight:700,fontSize:size==='lg'?28:16,color}}>{Math.round(percentage)}%</span>
@@ -209,7 +190,31 @@ function ClosedBadge({isClosed}) {
   return <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 10px',borderRadius:8,fontSize:12,fontWeight:600,background:isClosed?'#d1fae5':'#fee2e2',color:isClosed?'#065f46':'#991b1b'}}>{isClosed?'✓ Closer':'✗ Non Closer'}</span>;
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
+// ─── RADAR CHART — 5 SECTIONS UNIQUEMENT ─────────────────────────────────────
+function RadarScore({scores}) {
+  if(!scores) return null;
+  // Uniquement les 5 sections mesurées
+  const SECTIONS=[
+    {key:'decouverte',label:'Découverte'},
+    {key:'reformulation',label:'Reformulation'},
+    {key:'projection',label:'Projection'},
+    {key:'presentation_offre',label:'Offre'},
+    {key:'closing',label:'Closing'},
+  ];
+  const n=SECTIONS.length,cx=110,cy=110,R=80;
+  const angle=i=>(i/n)*2*Math.PI-Math.PI/2;
+  const pts=SECTIONS.map((s,i)=>{const v=(scores[s.key]||0)/5,a=angle(i);return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];});
+  const allZero=SECTIONS.every(s=>(scores[s.key]||0)===0);
+  return <svg width="220" height="220" viewBox="0 0 220 220" style={{overflow:'visible'}}>
+    {[1,2,3,4,5].map(l=>{const r=(l/5)*R,ps=SECTIONS.map((_,i)=>{const a=angle(i);return`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');return<polygon key={l} points={ps} fill="none" stroke="#e2e8f0" strokeWidth="1"/>;} )}
+    {SECTIONS.map((_,i)=>{const a=angle(i);return<line key={i} x1={cx} y1={cy} x2={cx+R*Math.cos(a)} y2={cy+R*Math.sin(a)} stroke="#e2e8f0" strokeWidth="1"/>;})}
+    {!allZero&&<polygon points={pts.map(p=>p.join(',')).join(' ')} fill="rgba(99,102,241,0.15)" stroke="#6366f1" strokeWidth="2"/>}
+    {!allZero&&pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={3} fill="#6366f1"/>)}
+    {SECTIONS.map((s,i)=>{const a=angle(i);return<text key={i} x={cx+(R+22)*Math.cos(a)} y={cy+(R+22)*Math.sin(a)} textAnchor="middle" dominantBaseline="central" fontSize="9" fill="#64748b" fontWeight="500">{s.label}</text>;})}
+  </svg>;
+}
+
+// ─── STATS OVERVIEW ───────────────────────────────────────────────────────────
 function StatsOverview({debriefs}) {
   const total=debriefs.length;
   const avg=total>0?Math.round(debriefs.reduce((s,d)=>s+(d.percentage||0),0)/total):0;
@@ -239,7 +244,7 @@ function StatsOverview({debriefs}) {
 function ProgressChart({debriefs}) {
   const [hov,setHov]=useState(null);
   const data=[...debriefs].sort((a,b)=>new Date(a.call_date)-new Date(b.call_date))
-    .map(d=>({date:formatDateShort(d.call_date),score:Math.round(d.percentage||0),prospect:d.prospect_name}));
+    .map(d=>({date:formatDateShort(d.call_date),score:Math.round(d.percentage||0),prospect:d.prospect_name||d.prospect||''}));
   if(data.length===0) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:260,color:'#94a3b8',fontSize:14}}>Aucune donnée — créez votre premier debrief !</div>;
   const W=560,H=220,pL=40,pR=20,pT=20,pB=30,iW=W-pL-pR,iH=H-pT-pB;
   const xs=data.map((_,i)=>pL+(i/Math.max(data.length-1,1))*iW);
@@ -254,7 +259,7 @@ function ProgressChart({debriefs}) {
       {data.map((d,i)=>(
         <g key={i} onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)} style={{cursor:'pointer'}}>
           <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:5} fill="#6366f1" stroke="white" strokeWidth="2"/>
-          {hov===i&&<g><rect x={xs[i]-55} y={ys[i]-50} width={110} height={42} rx="6" fill="white" stroke="#e2e8f0" strokeWidth="1"/><text x={xs[i]} y={ys[i]-32} textAnchor="middle" fontSize="11" fontWeight="600" fill="#1e293b">{d.prospect}</text><text x={xs[i]} y={ys[i]-18} textAnchor="middle" fontSize="10" fill="#64748b">{d.date} — {d.score}%</text></g>}
+          {hov===i&&<g><rect x={Math.min(xs[i]-55,W-pR-110)} y={ys[i]-50} width={110} height={42} rx="6" fill="white" stroke="#e2e8f0" strokeWidth="1"/><text x={Math.min(xs[i],W-pR-55)} y={ys[i]-32} textAnchor="middle" fontSize="11" fontWeight="600" fill="#1e293b">{d.prospect}</text><text x={Math.min(xs[i],W-pR-55)} y={ys[i]-18} textAnchor="middle" fontSize="10" fill="#64748b">{d.date} — {d.score}%</text></g>}
           <text x={xs[i]} y={pT+iH+18} textAnchor="middle" fontSize="10" fill="#94a3b8">{d.date}</text>
         </g>
       ))}
@@ -262,53 +267,21 @@ function ProgressChart({debriefs}) {
   </div>;
 }
 
-// ─── RADAR CHART ──────────────────────────────────────────────────────────────
-function RadarScore({scores}) {
-  if(!scores||!Object.values(scores).some(v=>v>0)) return null;
-  const keys=['accroche','decouverte','douleur','presentation_offre','traitement_objections','closing','energie_ton','ecoute_active'];
-  const labels=['Accroche','Découverte','Douleur','Offre','Objections','Closing','Énergie','Écoute'];
-  const n=keys.length,cx=110,cy=110,R=80;
-  const angle=i=>(i/n)*2*Math.PI-Math.PI/2;
-  const pts=keys.map((k,i)=>{const v=(scores[k]||0)/5,a=angle(i);return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];});
-  return <svg width="220" height="220" viewBox="0 0 220 220" style={{overflow:'visible'}}>
-    {[1,2,3,4,5].map(l=>{const r=(l/5)*R,ps=keys.map((_,i)=>{const a=angle(i);return`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');return<polygon key={l} points={ps} fill="none" stroke="#e2e8f0" strokeWidth="1"/>;} )}
-    {keys.map((_,i)=>{const a=angle(i);return<line key={i} x1={cx} y1={cy} x2={cx+R*Math.cos(a)} y2={cy+R*Math.sin(a)} stroke="#e2e8f0" strokeWidth="1"/>;})}
-    <polygon points={pts.map(p=>p.join(',')).join(' ')} fill="rgba(99,102,241,0.15)" stroke="#6366f1" strokeWidth="2"/>
-    {pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={3} fill="#6366f1"/>)}
-    {keys.map((_,i)=>{const a=angle(i);return<text key={i} x={cx+(R+20)*Math.cos(a)} y={cy+(R+20)*Math.sin(a)} textAnchor="middle" dominantBaseline="central" fontSize="9" fill="#64748b" fontWeight="500">{labels[i]}</text>;})}
-  </svg>;
-}
-
 // ─── GAMIFICATION CARD ────────────────────────────────────────────────────────
 function GamificationCard({gamification}) {
   if(!gamification) return null;
   const {points,level,badges}=gamification;
-  const pct=level.next?Math.round(((points-level.min)/(level.next-level.min))*100):100;
+  const pct=level.next?Math.min(Math.round(((points-level.min)/(level.next-level.min))*100),100):100;
   return <div style={{background:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)',borderRadius:16,padding:24,color:'white'}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-      <div>
-        <p style={{fontSize:12,opacity:0.8,margin:0,textTransform:'uppercase',letterSpacing:'0.05em'}}>Niveau actuel</p>
-        <h2 style={{fontSize:22,fontWeight:700,margin:'4px 0 0'}}>{level.icon} {level.name}</h2>
-      </div>
-      <div style={{textAlign:'right'}}>
-        <p style={{fontSize:12,opacity:0.8,margin:0}}>Points totaux</p>
-        <p style={{fontSize:28,fontWeight:700,margin:0}}>{points}</p>
-      </div>
+      <div><p style={{fontSize:12,opacity:0.8,margin:0,textTransform:'uppercase',letterSpacing:'0.05em'}}>Niveau actuel</p><h2 style={{fontSize:22,fontWeight:700,margin:'4px 0 0'}}>{level.icon} {level.name}</h2></div>
+      <div style={{textAlign:'right'}}><p style={{fontSize:12,opacity:0.8,margin:0}}>Points totaux</p><p style={{fontSize:28,fontWeight:700,margin:0}}>{points}</p></div>
     </div>
     {level.next&&<div style={{marginBottom:badges.length>0?16:0}}>
-      <div style={{display:'flex',justifyContent:'space-between',fontSize:11,opacity:0.8,marginBottom:6}}>
-        <span>{points} pts</span><span>{level.next} pts pour le prochain niveau</span>
-      </div>
-      <div style={{height:8,background:'rgba(255,255,255,0.2)',borderRadius:4}}>
-        <div style={{height:'100%',width:`${Math.min(pct,100)}%`,background:'white',borderRadius:4,transition:'width 0.7s ease'}}/>
-      </div>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:11,opacity:0.8,marginBottom:6}}><span>{points} pts</span><span>{level.next} pts pour le prochain niveau</span></div>
+      <div style={{height:8,background:'rgba(255,255,255,0.2)',borderRadius:4}}><div style={{height:'100%',width:`${pct}%`,background:'white',borderRadius:4,transition:'width 0.7s ease'}}/></div>
     </div>}
-    {badges.length>0&&<div>
-      <p style={{fontSize:11,opacity:0.8,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.05em'}}>Badges</p>
-      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-        {badges.map(b=><span key={b.id} style={{background:'rgba(255,255,255,0.2)',padding:'4px 10px',borderRadius:20,fontSize:12,fontWeight:500}}>{b.icon} {b.label}</span>)}
-      </div>
-    </div>}
+    {badges.length>0&&<div><p style={{fontSize:11,opacity:0.8,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.05em'}}>Badges</p><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{badges.map(b=><span key={b.id} style={{background:'rgba(255,255,255,0.2)',padding:'4px 10px',borderRadius:20,fontSize:12,fontWeight:500}}>{b.icon} {b.label}</span>)}</div></div>}
   </div>;
 }
 
@@ -316,29 +289,16 @@ function GamificationCard({gamification}) {
 function Leaderboard({refreshKey}) {
   const [data,setData]=useState([]);
   const [loading,setLoading]=useState(true);
-  useEffect(()=>{
-    setLoading(true);
-    apiFetch('/gamification/leaderboard').then(setData).catch(console.error).finally(()=>setLoading(false));
-  },[refreshKey]);
-  if(loading) return <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:32,textAlign:'center'}}><Spinner/></div>;
+  useEffect(()=>{setLoading(true);apiFetch('/gamification/leaderboard').then(setData).catch(console.error).finally(()=>setLoading(false));},[refreshKey]);
+  if(loading) return null;
   if(data.length===0) return null;
   return <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,overflow:'hidden'}}>
-    <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}>
-      <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>🏆 Classement de l'équipe</h3>
-    </div>
+    <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}><h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>🏆 Classement de l'équipe</h3></div>
     {data.map((c,i)=>(
       <div key={c.id} style={{display:'flex',alignItems:'center',gap:16,padding:'14px 20px',borderBottom:i<data.length-1?'1px solid #f1f5f9':'none',background:i===0?'#fffbeb':'white'}}>
-        <div style={{width:32,height:32,borderRadius:'50%',background:i===0?'#fef3c7':i===1?'#f1f5f9':'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,flexShrink:0}}>
-          {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
-        </div>
-        <div style={{flex:1}}>
-          <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{c.name}</p>
-          <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs · {c.closed} closings</p>
-        </div>
-        <div style={{textAlign:'right'}}>
-          <p style={{fontWeight:700,fontSize:16,color:'#6366f1',margin:0}}>{c.points} pts</p>
-          <p style={{fontSize:12,color:'#94a3b8',margin:0}}>moy. {c.avgScore}%</p>
-        </div>
+        <div style={{width:32,height:32,borderRadius:'50%',background:i===0?'#fef3c7':i===1?'#f1f5f9':'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,flexShrink:0}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+        <div style={{flex:1}}><p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{c.name}</p><p style={{fontSize:12,color:'#94a3b8',margin:0}}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs · {c.closed} closings</p></div>
+        <div style={{textAlign:'right'}}><p style={{fontWeight:700,fontSize:16,color:'#6366f1',margin:0}}>{c.points} pts</p><p style={{fontSize:12,color:'#94a3b8',margin:0}}>moy. {c.avgScore}%</p></div>
       </div>
     ))}
   </div>;
@@ -375,10 +335,8 @@ function CheckboxGroup({label,options,value=[],onChange}) {
 function SectionNotes({notes={},onChange}) {
   return <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,paddingTop:16,marginTop:8,borderTop:'1px solid #f1f5f9'}}>
     {[{key:'strength',label:'👍 Point fort',placeholder:'Ce qui a bien fonctionné...',color:'#059669'},{key:'weakness',label:'👎 Point faible',placeholder:"Ce qui n'a pas bien fonctionné...",color:'#dc2626'},{key:'improvement',label:'📈 Amélioration',placeholder:'Comment améliorer...',color:'#d97706'}].map(({key,label,placeholder,color})=>(
-      <div key={key}>
-        <label style={{display:'block',fontSize:11,fontWeight:600,color,marginBottom:6}}>{label}</label>
-        <textarea rows={2} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})}
-          style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'8px 10px',fontSize:12,resize:'none',fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+      <div key={key}><label style={{display:'block',fontSize:11,fontWeight:600,color,marginBottom:6}}>{label}</label>
+        <textarea rows={2} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})} style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'8px 10px',fontSize:12,resize:'none',fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
       </div>
     ))}
   </div>;
@@ -393,7 +351,7 @@ function CategoryCard({number,title,children}) {
   </div>;
 }
 
-// ─── SECTIONS ─────────────────────────────────────────────────────────────────
+// ─── SECTIONS D'ÉVALUATION ────────────────────────────────────────────────────
 function DecouverteSection({data={},onChange,notes,onNotesChange}) {
   const set=(k,v)=>onChange({...data,[k]:v});
   return <CategoryCard number="1" title="Phase de découverte">
@@ -461,16 +419,11 @@ function AuthShell({subtitle,icon,children}) {
     </div>
   </div>;
 }
-
 function LoginPage({onLogin,goToRegister,goToForgot}) {
   const [f,setF]=useState({email:'',password:''});
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
-  const submit=async e=>{
-    e.preventDefault();setError('');setLoading(true);
-    try{const data=await apiFetch('/auth/login',{method:'POST',body:f});setToken(data.token);onLogin(data.user,data.gamification);}
-    catch(err){setError(err.message);}finally{setLoading(false);}
-  };
+  const submit=async e=>{e.preventDefault();setError('');setLoading(true);try{const data=await apiFetch('/auth/login',{method:'POST',body:f});setToken(data.token);onLogin(data.user,data.gamification);}catch(err){setError(err.message);}finally{setLoading(false);}};
   return <AuthShell icon="📞" subtitle="Connectez-vous à votre compte">
     <Alert type="error" message={error}/>
     <form onSubmit={submit}>
@@ -482,7 +435,6 @@ function LoginPage({onLogin,goToRegister,goToForgot}) {
     <p style={{textAlign:'center',fontSize:13,color:'#64748b',marginTop:20}}>Pas encore de compte ?{' '}<button onClick={goToRegister} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:13}}>S'inscrire</button></p>
   </AuthShell>;
 }
-
 function RegisterPage({onLogin,goToLogin}) {
   const [f,setF]=useState({name:'',email:'',password:'',confirm:'',role:'closer',invite_code:''});
   const [error,setError]=useState('');
@@ -502,8 +454,7 @@ function RegisterPage({onLogin,goToLogin}) {
       <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:8}}>Je suis...</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         {[{value:'closer',label:'🎯 Closer',desc:'Je fais des appels'},{value:'head_of_sales',label:'👑 Head of Sales',desc:'Je gère une équipe'}].map(({value,label,desc})=>(
-          <button key={value} type="button" onClick={()=>setF({...f,role:value})}
-            style={{padding:'12px 16px',borderRadius:10,border:`2px solid ${f.role===value?'#6366f1':'#e2e8f0'}`,background:f.role===value?'#f5f3ff':'white',cursor:'pointer',textAlign:'left',transition:'all 0.2s',fontFamily:'inherit'}}>
+          <button key={value} type="button" onClick={()=>setF({...f,role:value})} style={{padding:'12px 16px',borderRadius:10,border:`2px solid ${f.role===value?'#6366f1':'#e2e8f0'}`,background:f.role===value?'#f5f3ff':'white',cursor:'pointer',textAlign:'left',transition:'all 0.2s',fontFamily:'inherit'}}>
             <p style={{fontWeight:600,fontSize:13,color:f.role===value?'#4c1d95':'#374151',margin:0}}>{label}</p>
             <p style={{fontSize:11,color:'#94a3b8',margin:'2px 0 0'}}>{desc}</p>
           </button>
@@ -524,24 +475,16 @@ function RegisterPage({onLogin,goToLogin}) {
     <p style={{textAlign:'center',fontSize:13,color:'#64748b',marginTop:20}}>Déjà un compte ?{' '}<button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:13}}>Se connecter</button></p>
   </AuthShell>;
 }
-
 function ForgotPasswordPage({goToLogin}) {
-  const [email,setEmail]=useState('');
-  const [sent,setSent]=useState(false);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState('');
+  const [email,setEmail]=useState('');const [sent,setSent]=useState(false);const [loading,setLoading]=useState(false);const [error,setError]=useState('');
   const submit=async e=>{e.preventDefault();setError('');setLoading(true);try{await apiFetch('/auth/forgot-password',{method:'POST',body:{email}});setSent(true);}catch(err){setError(err.message);}finally{setLoading(false);}};
   return <AuthShell icon="🔐" subtitle="Réinitialisation du mot de passe">
     {sent?<div style={{textAlign:'center'}}><div style={{fontSize:48,marginBottom:16}}>📬</div><h2 style={{fontSize:18,fontWeight:600,color:'#1e293b',marginBottom:8}}>Email envoyé !</h2><p style={{color:'#64748b',fontSize:14,marginBottom:24}}>Si cet email existe, vous recevrez un lien sous peu.</p><Btn variant="secondary" onClick={goToLogin} style={{width:'100%'}}>Retour à la connexion</Btn></div>:
     <><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:20}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Email</label><Input type="email" placeholder="votre@email.com" value={email} onChange={e=>setEmail(e.target.value)} required/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Envoi...':'Envoyer le lien'}</Btn></form><p style={{textAlign:'center',fontSize:13,marginTop:16}}><button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',cursor:'pointer',fontSize:13}}>← Retour</button></p></>}
   </AuthShell>;
 }
-
 function ResetPasswordPage({token,onDone}) {
-  const [f,setF]=useState({password:'',confirm:''});
-  const [error,setError]=useState('');
-  const [success,setSuccess]=useState(false);
-  const [loading,setLoading]=useState(false);
+  const [f,setF]=useState({password:'',confirm:''});const [error,setError]=useState('');const [success,setSuccess]=useState(false);const [loading,setLoading]=useState(false);
   const submit=async e=>{e.preventDefault();setError('');if(f.password!==f.confirm)return setError('Les mots de passe ne correspondent pas');if(f.password.length<8)return setError('Trop court');setLoading(true);try{await apiFetch('/auth/reset-password',{method:'POST',body:{token,password:f.password}});setSuccess(true);setTimeout(onDone,2000);}catch(err){setError(err.message);}finally{setLoading(false);}};
   return <AuthShell icon="🔑" subtitle="Nouveau mot de passe">
     {success?<Alert type="success" message="Mot de passe modifié ! Redirection..."/>:<><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:14}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Nouveau mot de passe</label><Input type="password" placeholder="8 caractères minimum" value={f.password} onChange={e=>setF({...f,password:e.target.value})} required/></div><div style={{marginBottom:20}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Confirmer</label><Input type="password" placeholder="••••••••" value={f.confirm} onChange={e=>setF({...f,confirm:e.target.value})} required/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Modification...':'Modifier le mot de passe'}</Btn></form></>}
@@ -570,166 +513,240 @@ function DebriefCard({debrief,onClick,showUser}) {
   </div>;
 }
 
-// ─── PAGE : TEAM ──────────────────────────────────────────────────────────────
-function TeamPage({toast}) {
-  const [teamData,setTeamData]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [generating,setGenerating]=useState(false);
-  const [copied,setCopied]=useState(null);
-  const [selected,setSelected]=useState(null);
+// ─── HEAD OF SALES PAGE (DASHBOARD + ÉQUIPE) ─────────────────────────────────
+function HOSPage({toast, leaderboardKey}) {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [teamData, setTeamData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(null);
 
-  const load=useCallback(()=>{setLoading(true);apiFetch('/team').then(setTeamData).catch(console.error).finally(()=>setLoading(false));},[]);
-  useEffect(()=>{load();},[load]);
-
-  const generateCode=async()=>{
-    setGenerating(true);
-    try{await apiFetch('/team/invite',{method:'POST'});load();toast('Code généré avec succès !');}
-    catch(err){toast(err.message,'error');}finally{setGenerating(false);}
-  };
-  const removeMember=async(id,name)=>{
-    if(!confirm(`Retirer ${name} de l'équipe ?`)) return;
-    try{await apiFetch(`/team/members/${id}`,{method:'DELETE'});load();toast(`${name} retiré de l'équipe`);}
-    catch(err){toast(err.message,'error');}
-  };
-  const handleCopy=(code)=>{copyToClipboard(code);setCopied(code);toast('Code copié !');setTimeout(()=>setCopied(null),2000);};
-
-  if(loading) return <Spinner full/>;
-  const {members=[],inviteCodes=[]}=teamData||{};
-  const sel=members.find(m=>m.id===selected);
-
-  return <div style={{display:'flex',flexDirection:'column',gap:24}}>
-    <div>
-      <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>👥 Gestion de l'équipe</h1>
-      <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{members.length} membre{members.length!==1?'s':''} dans votre équipe</p>
-    </div>
-
-    {/* Codes */}
-    <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-        <div>
-          <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>🔑 Codes d'invitation</h3>
-          <p style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Chaque code est à usage unique — partagez-le à un closer</p>
-        </div>
-        <Btn onClick={generateCode} disabled={generating} style={{fontSize:13,padding:'8px 16px'}}>{generating?'Génération...':'+ Générer un code'}</Btn>
-      </div>
-      {inviteCodes.length===0?
-        <div style={{background:'#f8fafc',borderRadius:8,padding:20,textAlign:'center',color:'#94a3b8',fontSize:13}}>Aucun code actif — générez-en un pour inviter un closer</div>:
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {inviteCodes.map(inv=>(
-            <div key={inv.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:'#f8fafc',borderRadius:8,border:'1px solid #e2e8f0'}}>
-              <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <span style={{fontFamily:'monospace',fontSize:20,fontWeight:700,color:'#6366f1',letterSpacing:'0.15em'}}>{inv.code}</span>
-                <span style={{fontSize:11,color:'#94a3b8'}}>Valide · usage unique</span>
-              </div>
-              <Btn variant={copied===inv.code?'green':'secondary'} onClick={()=>handleCopy(inv.code)} style={{fontSize:12,padding:'6px 12px'}}>
-                {copied===inv.code?'✓ Copié !':'📋 Copier'}
-              </Btn>
-            </div>
-          ))}
-        </div>
-      }
-    </div>
-
-    {/* Membres */}
-    <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,overflow:'hidden'}}>
-      <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}>
-        <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>Membres de l'équipe</h3>
-      </div>
-      {members.length===0?
-        <div style={{padding:40,textAlign:'center',color:'#94a3b8'}}>Aucun membre — partagez un code d'invitation !</div>:
-        members.map((m,i)=>(
-          <div key={m.id}>
-            <div style={{display:'flex',alignItems:'center',gap:16,padding:'16px 20px',borderBottom:i<members.length-1||selected===m.id?'1px solid #f1f5f9':'none',cursor:'pointer'}} onClick={()=>setSelected(selected===m.id?null:m.id)}>
-              <div style={{width:40,height:40,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:16,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0).toUpperCase()}</div>
-              <div style={{flex:1}}>
-                <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{m.name}</p>
-                <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{m.email} · {m.level.icon} {m.level.name}</p>
-              </div>
-              <div style={{display:'flex',gap:24,textAlign:'center',marginRight:16}}>
-                {[{l:'Debriefs',v:m.totalDebriefs,c:'#1e293b'},{l:'Moy.',v:`${m.avgScore}%`,c:'#1e293b'},{l:'Closings',v:m.closed,c:'#059669'}].map(({l,v,c})=>(
-                  <div key={l}><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{l}</p><p style={{fontWeight:700,color:c,margin:0}}>{v}</p></div>
-                ))}
-              </div>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontWeight:700,fontSize:15,color:'#6366f1'}}>{m.points} pts</span>
-                <Btn variant="danger" onClick={e=>{e.stopPropagation();removeMember(m.id,m.name);}} style={{width:32,height:32,padding:0,borderRadius:8,fontSize:12}}>✕</Btn>
-                <span style={{color:selected===m.id?'#6366f1':'#cbd5e1',fontSize:16}}>{selected===m.id?'▲':'▼'}</span>
-              </div>
-            </div>
-            {selected===m.id&&(
-              <div style={{padding:'16px 20px 20px',background:'#fafafa',borderBottom:i<members.length-1?'1px solid #f1f5f9':'none'}}>
-                {m.chartData.length>0?<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:12}}>📈 Évolution du score</p><ProgressChart debriefs={m.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>:
-                <p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief enregistré pour l'instant</p>}
-                {m.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:12}}>{m.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
-              </div>
-            )}
-          </div>
-        ))
-      }
-    </div>
-  </div>;
-}
-
-// ─── PAGE : HOS DASHBOARD ─────────────────────────────────────────────────────
-function HOSDashboard({refreshKey}) {
-  const [team,setTeam]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [selected,setSelected]=useState(null);
-  useEffect(()=>{
+  const load = useCallback(() => {
     setLoading(true);
-    apiFetch('/team/dashboard').then(setTeam).catch(console.error).finally(()=>setLoading(false));
-  },[refreshKey]);
-  if(loading) return <Spinner full/>;
-  const sel=team.find(c=>c.id===selected);
+    apiFetch('/team').then(setTeamData).catch(console.error).finally(() => setLoading(false));
+  }, []);
+  useEffect(() => { load(); }, [load, leaderboardKey]);
+
+  const generateCode = async () => {
+    setGenerating(true);
+    try { await apiFetch('/team/invite', { method: 'POST' }); load(); toast('Code généré !'); }
+    catch (err) { toast(err.message, 'error'); } finally { setGenerating(false); }
+  };
+  const removeMember = async (id, name) => {
+    if (!confirm(`Retirer ${name} de l'équipe ?`)) return;
+    try { await apiFetch(`/team/members/${id}`, { method: 'DELETE' }); load(); toast(`${name} retiré de l'équipe`); }
+    catch (err) { toast(err.message, 'error'); }
+  };
+  const handleCopy = (code) => { copyToClipboard(code); setCopied(code); toast('Code copié !'); setTimeout(() => setCopied(null), 2000); };
+
+  if (loading) return <Spinner full />;
+  const { members = [], inviteCodes = [] } = teamData || {};
+  const sel = members.find(m => m.id === selected);
+
+  // Métriques globales équipe
+  const totalDebriefs = members.reduce((s, m) => s + m.totalDebriefs, 0);
+  const totalClosings = members.reduce((s, m) => s + m.closed, 0);
+  const avgTeamScore = members.length > 0 ? Math.round(members.reduce((s, m) => s + m.avgScore, 0) / members.length) : 0;
+  const closeRate = totalDebriefs > 0 ? Math.round((totalClosings / totalDebriefs) * 100) : 0;
+  const topPerformer = members.length > 0 ? members.reduce((best, m) => m.avgScore > best.avgScore ? m : best, members[0]) : null;
+  const mostActive = members.length > 0 ? members.reduce((best, m) => m.totalDebriefs > best.totalDebriefs ? m : best, members[0]) : null;
+
+  // Meilleure/pire section de l'équipe
+  const sectionAvgs = ['decouverte','reformulation','projection','presentation_offre','closing'].map(key => {
+    const vals = members.flatMap(m => m.chartData || []);
+    return { key, label: {decouverte:'Découverte',reformulation:'Reformulation',projection:'Projection',presentation_offre:'Offre',closing:'Closing'}[key] };
+  });
+
   return <div style={{display:'flex',flexDirection:'column',gap:24}}>
-    <div>
-      <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>👑 Dashboard Head of Sales</h1>
-      <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{team.length} closer{team.length!==1?'s':''} dans votre équipe</p>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
+      <div>
+        <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>👑 Head of Sales</h1>
+        <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{members.length} closer{members.length!==1?'s':''} dans votre équipe</p>
+      </div>
+      {/* Tabs */}
+      <div style={{display:'flex',gap:4,background:'#f1f5f9',padding:4,borderRadius:10}}>
+        {[{key:'dashboard',label:'📊 Dashboard'},{key:'equipe',label:'👥 Équipe'}].map(({key,label})=>(
+          <button key={key} onClick={()=>setActiveTab(key)}
+            style={{padding:'8px 16px',borderRadius:8,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',transition:'all 0.2s',background:activeTab===key?'white':'transparent',color:activeTab===key?'#1e293b':'#64748b',boxShadow:activeTab===key?'0 1px 4px rgba(0,0,0,0.1)':'none',fontFamily:'inherit'}}>
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
-    {team.length===0?
-      <EmptyState icon="👥" title="Aucun closer dans votre équipe" subtitle="Partagez des codes d'invitation depuis l'onglet Équipe" action={null}/>:
+
+    {activeTab === 'dashboard' && (<>
+      {members.length === 0 ?
+        <EmptyState icon="👥" title="Aucun closer dans votre équipe" subtitle="Allez dans l'onglet Équipe pour générer des codes d'invitation" action={<Btn onClick={()=>setActiveTab('equipe')}>Gérer l'équipe</Btn>}/> :
       <>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
-          {team.map(c=>(
-            <div key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
-              style={{background:'white',border:`2px solid ${selected===c.id?'#6366f1':'#e2e8f0'}`,borderRadius:12,padding:20,cursor:'pointer',transition:'all 0.2s',boxShadow:selected===c.id?'0 4px 16px rgba(99,102,241,0.15)':'none'}}>
-              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-                <div style={{width:40,height:40,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:16,color:'#6366f1',flexShrink:0}}>{c.name.charAt(0).toUpperCase()}</div>
-                <div style={{flex:1}}><p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{c.name}</p><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{c.level.icon} {c.level.name}</p></div>
-                <p style={{fontWeight:700,fontSize:18,color:'#6366f1',margin:0}}>{c.points} pts</p>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,fontSize:12}}>
-                {[{l:'Debriefs',v:c.totalDebriefs,col:'#1e293b'},{l:'Moy.',v:`${c.avgScore}%`,col:'#1e293b'},{l:'Closings',v:c.closed,col:'#059669'}].map(({l,v,col})=>(
-                  <div key={l} style={{background:'#f8fafc',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
-                    <p style={{color:'#94a3b8',margin:0}}>{l}</p><p style={{fontWeight:700,color:col,margin:0}}>{v}</p>
-                  </div>
-                ))}
-              </div>
-              {c.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:10}}>{c.badges.map(b=><span key={b.id} style={{fontSize:16}} title={b.label}>{b.icon}</span>)}</div>}
+        {/* KPIs équipe */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
+          {[
+            {label:'Debriefs équipe',value:totalDebriefs,icon:'📋',bg:'#ede9fe',color:'#6366f1'},
+            {label:'Score moyen équipe',value:`${avgTeamScore}%`,icon:'🎯',bg:'#d1fae5',color:'#059669'},
+            {label:'Taux de closing',value:`${closeRate}%`,icon:'✅',bg:'#fef3c7',color:'#d97706'},
+            {label:'Total closings',value:totalClosings,icon:'🏆',bg:'#f0fdf4',color:'#059669'},
+          ].map(({label,value,icon,bg,color})=>(
+            <div key={label} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:'16px 20px',display:'flex',alignItems:'center',gap:14}}>
+              <div style={{width:44,height:44,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{icon}</div>
+              <div><p style={{fontSize:11,color:'#64748b',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</p><p style={{fontSize:22,fontWeight:700,color,margin:0}}>{value}</p></div>
             </div>
           ))}
         </div>
-        {sel&&<div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
-          <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',marginBottom:4}}>📈 Évolution de {sel.name}</h3>
-          <p style={{fontSize:13,color:'#94a3b8',marginBottom:16}}>Moy. {sel.avgScore}% · {sel.totalDebriefs} debriefs · {sel.closed} closings</p>
-          {sel.chartData.length>0?<ProgressChart debriefs={sel.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/>:
-          <p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief enregistré</p>}
+
+        {/* Top performers */}
+        {(topPerformer||mostActive)&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+          {topPerformer&&<div style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)',border:'1px solid #fcd34d',borderRadius:12,padding:20}}>
+            <p style={{fontSize:12,color:'#92400e',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',margin:'0 0 8px'}}>🥇 Meilleur score moyen</p>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:16,color:'#d97706'}}>{topPerformer.name.charAt(0)}</div>
+              <div><p style={{fontWeight:700,fontSize:16,color:'#1e293b',margin:0}}>{topPerformer.name}</p><p style={{fontSize:13,color:'#92400e',margin:0}}>{topPerformer.avgScore}% de moyenne · {topPerformer.level.icon} {topPerformer.level.name}</p></div>
+            </div>
+          </div>}
+          {mostActive&&mostActive.id!==topPerformer?.id&&<div style={{background:'linear-gradient(135deg,#ede9fe,#ddd6fe)',border:'1px solid #c4b5fd',borderRadius:12,padding:20}}>
+            <p style={{fontSize:12,color:'#4c1d95',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',margin:'0 0 8px'}}>🔥 Plus actif</p>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:16,color:'#6366f1'}}>{mostActive.name.charAt(0)}</div>
+              <div><p style={{fontWeight:700,fontSize:16,color:'#1e293b',margin:0}}>{mostActive.name}</p><p style={{fontSize:13,color:'#4c1d95',margin:0}}>{mostActive.totalDebriefs} debriefs · {mostActive.closed} closings</p></div>
+            </div>
+          </div>}
         </div>}
-      </>
-    }
+
+        {/* Tableau des closers */}
+        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,overflow:'hidden'}}>
+          <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}>
+            <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>Performance individuelle</h3>
+          </div>
+          <table style={{width:'100%',borderCollapse:'collapse'}}>
+            <thead>
+              <tr style={{background:'#f8fafc'}}>
+                {['Closer','Niveau','Debriefs','Score moy.','Closings','Taux closing','Points'].map(h=>(
+                  <th key={h} style={{padding:'10px 16px',fontSize:11,fontWeight:600,color:'#64748b',textAlign:'left',textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:'1px solid #e2e8f0'}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...members].sort((a,b)=>b.avgScore-a.avgScore).map((m,i)=>{
+                const cr=m.totalDebriefs>0?Math.round((m.closed/m.totalDebriefs)*100):0;
+                return <tr key={m.id} onClick={()=>setSelected(selected===m.id?null:m.id)} style={{cursor:'pointer',background:selected===m.id?'#f5f3ff':i%2===0?'white':'#fafafa',borderBottom:'1px solid #f1f5f9'}}>
+                  <td style={{padding:'12px 16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{width:32,height:32,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0)}</div>
+                      <span style={{fontWeight:600,fontSize:13,color:'#1e293b'}}>{m.name}</span>
+                    </div>
+                  </td>
+                  <td style={{padding:'12px 16px',fontSize:12,color:'#64748b'}}>{m.level.icon} {m.level.name}</td>
+                  <td style={{padding:'12px 16px',fontSize:13,fontWeight:600,color:'#1e293b'}}>{m.totalDebriefs}</td>
+                  <td style={{padding:'12px 16px'}}>
+                    <span style={{fontWeight:700,fontSize:13,color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':m.avgScore>=40?'#6366f1':'#ef4444'}}>{m.avgScore}%</span>
+                  </td>
+                  <td style={{padding:'12px 16px',fontSize:13,fontWeight:600,color:'#059669'}}>{m.closed}</td>
+                  <td style={{padding:'12px 16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{flex:1,height:6,background:'#f1f5f9',borderRadius:3,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${cr}%`,background:cr>=50?'#059669':cr>=30?'#d97706':'#ef4444',borderRadius:3}}/>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:600,color:'#374151',minWidth:32}}>{cr}%</span>
+                    </div>
+                  </td>
+                  <td style={{padding:'12px 16px',fontWeight:700,fontSize:13,color:'#6366f1'}}>{m.points} pts</td>
+                </tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Graphique du closer sélectionné */}
+        {sel&&<div style={{background:'white',border:'1px solid #6366f1',borderRadius:12,padding:24}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+            <div>
+              <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>📈 Évolution de {sel.name}</h3>
+              <p style={{fontSize:13,color:'#94a3b8',marginTop:4}}>Moy. {sel.avgScore}% · {sel.totalDebriefs} debriefs · {sel.closed} closings · {sel.level.icon} {sel.level.name}</p>
+            </div>
+            <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:18}}>✕</button>
+          </div>
+          {sel.chartData.length>0?
+            <ProgressChart debriefs={sel.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/>:
+            <p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief enregistré</p>
+          }
+          {sel.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:12}}>{sel.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
+        </div>}
+      </>}
+    </>)}
+
+    {activeTab === 'equipe' && (<>
+      {/* Codes d'invitation */}
+      <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+          <div>
+            <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>🔑 Codes d'invitation</h3>
+            <p style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Chaque code est à usage unique — partagez-le à un closer</p>
+          </div>
+          <Btn onClick={generateCode} disabled={generating} style={{fontSize:13,padding:'8px 16px'}}>{generating?'Génération...':'+ Générer un code'}</Btn>
+        </div>
+        {inviteCodes.length===0?
+          <div style={{background:'#f8fafc',borderRadius:8,padding:20,textAlign:'center',color:'#94a3b8',fontSize:13}}>Aucun code actif — générez-en un pour inviter un closer</div>:
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {inviteCodes.map(inv=>(
+              <div key={inv.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:'#f8fafc',borderRadius:8,border:'1px solid #e2e8f0'}}>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <span style={{fontFamily:'monospace',fontSize:20,fontWeight:700,color:'#6366f1',letterSpacing:'0.15em'}}>{inv.code}</span>
+                  <span style={{fontSize:11,color:'#94a3b8'}}>Valide · usage unique</span>
+                </div>
+                <Btn variant={copied===inv.code?'green':'secondary'} onClick={()=>handleCopy(inv.code)} style={{fontSize:12,padding:'6px 12px'}}>{copied===inv.code?'✓ Copié !':'📋 Copier'}</Btn>
+              </div>
+            ))}
+          </div>
+        }
+      </div>
+
+      {/* Membres */}
+      <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,overflow:'hidden'}}>
+        <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}>
+          <h3 style={{fontSize:15,fontWeight:600,color:'#1e293b',margin:0}}>Membres de l'équipe ({members.length})</h3>
+        </div>
+        {members.length===0?
+          <div style={{padding:40,textAlign:'center',color:'#94a3b8'}}>Aucun membre — partagez un code d'invitation !</div>:
+          members.map((m,i)=>(
+            <div key={m.id}>
+              <div style={{display:'flex',alignItems:'center',gap:16,padding:'16px 20px',borderBottom:i<members.length-1||selected===m.id?'1px solid #f1f5f9':'none',cursor:'pointer'}} onClick={()=>setSelected(selected===m.id?null:m.id)}>
+                <div style={{width:40,height:40,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:16,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0).toUpperCase()}</div>
+                <div style={{flex:1}}>
+                  <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{m.name}</p>
+                  <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{m.email} · {m.level.icon} {m.level.name}</p>
+                </div>
+                <div style={{display:'flex',gap:24,textAlign:'center',marginRight:16}}>
+                  {[{l:'Debriefs',v:m.totalDebriefs,c:'#1e293b'},{l:'Moy.',v:`${m.avgScore}%`,c:'#1e293b'},{l:'Closings',v:m.closed,c:'#059669'}].map(({l,v,c})=>(
+                    <div key={l}><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{l}</p><p style={{fontWeight:700,color:c,margin:0}}>{v}</p></div>
+                  ))}
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontWeight:700,fontSize:15,color:'#6366f1'}}>{m.points} pts</span>
+                  <Btn variant="danger" onClick={e=>{e.stopPropagation();removeMember(m.id,m.name);}} style={{width:32,height:32,padding:0,borderRadius:8,fontSize:12}}>✕</Btn>
+                  <span style={{color:selected===m.id?'#6366f1':'#cbd5e1',fontSize:16}}>{selected===m.id?'▲':'▼'}</span>
+                </div>
+              </div>
+              {selected===m.id&&(
+                <div style={{padding:'16px 20px 20px',background:'#fafafa',borderBottom:i<members.length-1?'1px solid #f1f5f9':'none'}}>
+                  {m.chartData.length>0?<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:12}}>📈 Évolution du score</p><ProgressChart debriefs={m.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>:
+                  <p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief pour l'instant</p>}
+                  {m.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:12}}>{m.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
+                </div>
+              )}
+            </div>
+          ))
+        }
+      </div>
+    </>)}
   </div>;
 }
 
-// ─── PAGE : DASHBOARD ─────────────────────────────────────────────────────────
+// ─── PAGES PRINCIPALES ────────────────────────────────────────────────────────
 function Dashboard({debriefs,navigate,user,gamification,leaderboardKey}) {
-  const recent=debriefs.slice(0,5);
   const isHOS=user.role==='head_of_sales';
   return <div style={{display:'flex',flexDirection:'column',gap:32}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
-      <div>
-        <h1 style={{fontSize:28,fontWeight:700,color:'#1e293b',margin:0}}>Tableau de bord</h1>
-        <p style={{color:'#64748b',marginTop:4,fontSize:14}}>Bonjour, {user.name} 👋</p>
-      </div>
+      <div><h1 style={{fontSize:28,fontWeight:700,color:'#1e293b',margin:0}}>Tableau de bord</h1><p style={{color:'#64748b',marginTop:4,fontSize:14}}>Bonjour, {user.name} 👋</p></div>
       <Btn onClick={()=>navigate('NewDebrief')}>+ Nouveau debrief</Btn>
     </div>
     {gamification&&<GamificationCard gamification={gamification}/>}
@@ -744,47 +761,43 @@ function Dashboard({debriefs,navigate,user,gamification,leaderboardKey}) {
         <h2 style={{fontSize:17,fontWeight:600,color:'#1e293b',margin:0}}>Derniers debriefs</h2>
         {debriefs.length>5&&<button onClick={()=>navigate('DebriefHistory')} style={{background:'none',border:'none',color:'#6366f1',fontSize:13,cursor:'pointer'}}>Voir tout ›</button>}
       </div>
-      {recent.length===0?
-        <EmptyState icon="📋" title="Aucun debrief enregistré" subtitle="Créez votre premier debrief pour commencer à suivre vos progrès" action={<Btn variant="secondary" onClick={()=>navigate('NewDebrief')}>+ Créer votre premier debrief</Btn>}/>:
-        <div style={{display:'flex',flexDirection:'column',gap:10}}>{recent.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id)} showUser={isHOS}/>)}</div>
+      {debriefs.length===0?
+        <EmptyState icon="📋" title="Aucun debrief enregistré" subtitle="Créez votre premier debrief pour suivre vos progrès" action={<Btn variant="secondary" onClick={()=>navigate('NewDebrief')}>+ Créer votre premier debrief</Btn>}/>:
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>{debriefs.slice(0,5).map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id)} showUser={isHOS}/>)}</div>
       }
     </div>
   </div>;
 }
 
-// ─── PAGE : HISTORIQUE ────────────────────────────────────────────────────────
-function DebriefHistory({debriefs,navigate,user,initialSearch=''}) {
-  const [search,setSearch]=useState(initialSearch);
+function DebriefHistory({debriefs,navigate,user}) {
+  const [search,setSearch]=useState('');
   const isHOS=user.role==='head_of_sales';
   const filtered=debriefs.filter(d=>{const q=search.toLowerCase();return d.prospect_name?.toLowerCase().includes(q)||d.closer_name?.toLowerCase().includes(q)||d.user_name?.toLowerCase().includes(q);});
   return <div style={{display:'flex',flexDirection:'column',gap:24}}>
-    <div>
-      <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>Historique des debriefs</h1>
-      <p style={{color:'#94a3b8',fontSize:13,marginTop:4}}>{debriefs.length} debrief{debriefs.length!==1?'s':''} enregistré{debriefs.length!==1?'s':''}</p>
-    </div>
+    <div><h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>Historique des debriefs</h1><p style={{color:'#94a3b8',fontSize:13,marginTop:4}}>{debriefs.length} debrief{debriefs.length!==1?'s':''} enregistré{debriefs.length!==1?'s':''}</p></div>
     <div style={{position:'relative'}}>
       <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#94a3b8'}}>🔍</span>
-      <input placeholder={isHOS?"Rechercher par prospect, closer ou membre...":"Rechercher par prospect ou closer..."} value={search} onChange={e=>setSearch(e.target.value)}
-        style={{width:'100%',padding:'10px 12px 10px 36px',border:'1px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+      <input placeholder="Rechercher..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'10px 12px 10px 36px',border:'1px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
       {search&&<button onClick={()=>setSearch('')} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:16}}>✕</button>}
     </div>
-    {filtered.length===0?
-      <EmptyState icon="🔍" title="Aucun résultat" subtitle={search?`Aucun debrief ne correspond à "${search}"`:"Aucun debrief enregistré"} action={search?<Btn variant="secondary" onClick={()=>setSearch('')}>Effacer la recherche</Btn>:null}/>:
-      <div style={{display:'flex',flexDirection:'column',gap:10}}>{filtered.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id)} showUser={isHOS}/>)}</div>
-    }
+    {filtered.length===0?<EmptyState icon="🔍" title="Aucun résultat" subtitle={search?`Aucun debrief pour "${search}"`:"Aucun debrief enregistré"} action={search?<Btn variant="secondary" onClick={()=>setSearch('')}>Effacer</Btn>:null}/>:
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>{filtered.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id,'DebriefHistory')} showUser={isHOS}/>)}</div>}
   </div>;
 }
 
-// ─── PAGE : DEBRIEF DETAIL ────────────────────────────────────────────────────
 function DebriefDetail({debrief,navigate,onDelete,fromPage}) {
-  if(!debrief) return <div style={{textAlign:'center',padding:80}}><p style={{color:'#94a3b8'}}>Debrief introuvable</p><Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{marginTop:16}}>Retour au dashboard</Btn></div>;
+  if(!debrief) return <div style={{textAlign:'center',padding:80}}><p style={{color:'#94a3b8'}}>Debrief introuvable</p><Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{marginTop:16}}>Retour</Btn></div>;
   const pct=Math.round(debrief.percentage||0);
-  const SECTION_LABELS={decouverte:'Phase de découverte',reformulation:'Reformulation',projection:'Projection',presentation_offre:"Présentation de l'offre",closing:'Closing'};
-  const CRITERIA_LABELS={accroche:'Accroche',decouverte:'Découverte',douleur:'Douleur',presentation_offre:'Offre',traitement_objections:'Objections',closing:'Closing',energie_ton:'Énergie',ecoute_active:'Écoute'};
+  const SECTIONS=[
+    {key:'decouverte',label:'Phase de découverte'},
+    {key:'reformulation',label:'Reformulation'},
+    {key:'projection',label:'Projection'},
+    {key:'presentation_offre',label:"Présentation de l'offre"},
+    {key:'closing',label:'Closing'},
+  ];
   const getBarColor=v=>v>=4?'#059669':v>=3?'#d97706':v>=2?'#6366f1':'#ef4444';
-
-  // Calculer les scores depuis les sections sauvegardées
-  const sectionScores = debrief.sections ? computeSectionScoresLocal(debrief.sections) : (debrief.scores || {});
+  // Calculer les scores depuis les sections — toujours cohérent avec ce qui est évalué
+  const sectionScores = computeSectionScores(debrief.sections || {});
 
   return <div style={{display:'flex',flexDirection:'column',gap:24}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
@@ -795,7 +808,6 @@ function DebriefDetail({debrief,navigate,onDelete,fromPage}) {
           <div style={{display:'flex',gap:16,fontSize:12,color:'#94a3b8',marginTop:4}}>
             <span>📅 {formatDate(debrief.call_date)}</span>
             <span>👤 {debrief.closer_name}</span>
-            {debrief.user_name&&<span>👤 par {debrief.user_name}</span>}
           </div>
         </div>
       </div>
@@ -806,47 +818,37 @@ function DebriefDetail({debrief,navigate,onDelete,fromPage}) {
       </div>
     </div>
 
-    <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:20}}>
-      <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
+    <div style={{display:'grid',gridTemplateColumns:'240px 1fr',gap:20}}>
+      {/* Gauche : Score + Radar (5 sections cohérentes) */}
+      <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
         <ScoreGauge percentage={pct} size="lg"/>
         <p style={{fontSize:13,color:'#94a3b8',margin:0}}>{debrief.total_score} / {debrief.max_score} points</p>
         <RadarScore scores={sectionScores}/>
       </div>
-      <div style={{display:'flex',flexDirection:'column',gap:16}}>
-        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
-          <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:16}}>Score par section</h3>
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            {Object.entries(SECTION_LABELS).map(([key,label])=>{
-              const val=sectionScores[key]||0;
-              return <div key={key}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
-                  <span style={{fontSize:13,fontWeight:600,color:'#374151'}}>{label}</span>
-                  <span style={{fontSize:12,fontWeight:700,padding:'2px 8px',borderRadius:6,border:'1px solid #e2e8f0',color:getBarColor(val)}}>{val}/5</span>
-                </div>
-                <div style={{height:8,background:'#f1f5f9',borderRadius:4,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${(val/5)*100}%`,background:getBarColor(val),borderRadius:4,transition:'width 0.7s ease-in-out'}}/>
-                </div>
-              </div>;
-            })}
-          </div>
+
+      {/* Droite : Barres par section */}
+      <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
+        <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:20}}>Score par section</h3>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {SECTIONS.map(({key,label})=>{
+            const val=sectionScores[key]||0;
+            return <div key={key}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                <span style={{fontSize:13,fontWeight:600,color:'#374151'}}>{label}</span>
+                <span style={{fontSize:12,fontWeight:700,padding:'2px 8px',borderRadius:6,border:'1px solid #e2e8f0',color:getBarColor(val)}}>{val}/5</span>
+              </div>
+              <div style={{height:10,background:'#f1f5f9',borderRadius:5,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(val/5)*100}%`,background:getBarColor(val),borderRadius:5,transition:'width 0.7s ease-in-out'}}/>
+              </div>
+              {/* Notes de section */}
+              {debrief.section_notes?.[key]&&(()=>{const n=debrief.section_notes[key];if(!n.strength&&!n.weakness&&!n.improvement) return null;return <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:8}}>
+                {n.strength&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {n.strength}</div>}
+                {n.weakness&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {n.weakness}</div>}
+                {n.improvement&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fffbeb',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {n.improvement}</div>}
+              </div>;})()}
+            </div>;
+          })}
         </div>
-        {debrief.section_notes&&Object.values(debrief.section_notes).some(n=>n&&(n.strength||n.weakness||n.improvement))&&(
-          <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:24}}>
-            <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:16}}>Notes par section</h3>
-            {Object.entries({decouverte:'Découverte',reformulation:'Reformulation',projection:'Projection',offre:'Offre',closing:'Closing'}).map(([key,label])=>{
-              const n=debrief.section_notes?.[key];
-              if(!n||(!n.strength&&!n.weakness&&!n.improvement)) return null;
-              return <div key={key} style={{marginBottom:12}}>
-                <p style={{fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>{label}</p>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
-                  {n.strength&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {n.strength}</div>}
-                  {n.weakness&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {n.weakness}</div>}
-                  {n.improvement&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fffbeb',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {n.improvement}</div>}
-                </div>
-              </div>;
-            })}
-          </div>
-        )}
       </div>
     </div>
 
@@ -860,7 +862,6 @@ function DebriefDetail({debrief,navigate,onDelete,fromPage}) {
   </div>;
 }
 
-// ─── PAGE : NEW DEBRIEF ───────────────────────────────────────────────────────
 function NewDebrief({navigate,onSave,toast}) {
   const [form,setForm]=useState({prospect_name:'',call_date:new Date().toISOString().split('T')[0],closer_name:'',call_link:'',is_closed:null,notes:''});
   const [sections,setSections]=useState({decouverte:{},reformulation:{},projection:{},offre:{},closing:{}});
@@ -872,7 +873,7 @@ function NewDebrief({navigate,onSave,toast}) {
 
   const submit=async e=>{
     e.preventDefault();
-    if(form.is_closed===null){toast('Veuillez indiquer le résultat de l\'appel','error');return;}
+    if(form.is_closed===null){toast("Indiquez le résultat de l'appel",'error');return;}
     setLoading(true);
     try{
       const result=await apiFetch('/debriefs',{method:'POST',body:{...form,sections,section_notes:sectionNotes,total_score:total,max_score:max,percentage,scores:{},criteria_notes:{}}});
@@ -949,27 +950,23 @@ export default function App() {
   const [burst,setBurst]=useState(null);
   const [leaderboardKey,setLeaderboardKey]=useState(0);
 
-  // Detect reset token in URL
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const rt=params.get('reset_token');
     if(rt){setResetToken(rt);window.history.replaceState({},document.title,window.location.pathname);}
   },[]);
 
-  // Register session expiry handler
   useEffect(()=>{
     _onSessionExpired=()=>{setUser(null);setDebriefs([]);setGamification(null);setPage('Dashboard');setAuthPage('login');toast('Session expirée, veuillez vous reconnecter','error');};
     return()=>{_onSessionExpired=null;};
   },[toast]);
 
-  // Restore session
   useEffect(()=>{
     const token=getToken();
     if(!token){setLoadingAuth(false);return;}
     apiFetch('/auth/me').then(u=>setUser(u)).catch(()=>clearToken()).finally(()=>setLoadingAuth(false));
   },[]);
 
-  // Load data when user set
   useEffect(()=>{
     if(!user) return;
     setLoadingDebriefs(true);
@@ -978,36 +975,15 @@ export default function App() {
       .catch(console.error).finally(()=>setLoadingDebriefs(false));
   },[user]);
 
-  const navigate=(p,id=null,from=null)=>{
-    setPage(p);setSelectedId(id);
-    if(from) setFromPage(from);
-    else if(p!=='DebriefDetail') setFromPage(null);
-    window.scrollTo({top:0,behavior:'smooth'});
-  };
-
-  const onLogin=(u,gam)=>{
-    setUser(u);
-    if(gam) setGamification(gam);
-    setPage('Dashboard');
-    toast(`Bienvenue, ${u.name} !`);
-  };
-
-  const onLogout=()=>{
-    clearToken();setUser(null);setDebriefs([]);setGamification(null);
-    setPage('Dashboard');setAuthPage('login');
-    toast('Déconnecté avec succès');
-  };
+  const navigate=(p,id=null,from=null)=>{setPage(p);setSelectedId(id);if(from)setFromPage(from);else if(p!=='DebriefDetail')setFromPage(null);window.scrollTo({top:0,behavior:'smooth'});};
+  const onLogin=(u,gam)=>{setUser(u);if(gam)setGamification(gam);setPage('Dashboard');toast(`Bienvenue, ${u.name} !`);};
+  const onLogout=()=>{clearToken();setUser(null);setDebriefs([]);setGamification(null);setPage('Dashboard');setAuthPage('login');toast('Déconnecté');};
 
   const onSave=(debrief,gam)=>{
     setDebriefs(prev=>[debrief,...prev]);
     if(gam){
-      const prev=gamification;
-      setGamification(gam);
-      setLeaderboardKey(k=>k+1);
-      if(gam.pointsEarned>0){
-        setBurst({points:gam.pointsEarned,levelUp:gam.levelUp,newLevel:gam.level.name});
-        setTimeout(()=>setBurst(null),3500);
-      }
+      setGamification(gam);setLeaderboardKey(k=>k+1);
+      if(gam.pointsEarned>0){setBurst({points:gam.pointsEarned,levelUp:gam.levelUp,newLevel:gam.level.name});setTimeout(()=>setBurst(null),3500);}
     }
   };
 
@@ -1016,7 +992,7 @@ export default function App() {
     try{
       const result=await apiFetch(`/debriefs/${id}`,{method:'DELETE'});
       setDebriefs(prev=>prev.filter(d=>d.id!==id));
-      if(result.gamification) setGamification(result.gamification);
+      if(result.gamification)setGamification(result.gamification);
       setLeaderboardKey(k=>k+1);
       toast('Debrief supprimé');
       navigate('Dashboard');
@@ -1030,12 +1006,11 @@ export default function App() {
     {key:'Dashboard',label:'Tableau de bord',icon:'⊞'},
     {key:'NewDebrief',label:'Nouveau debrief',icon:'+'},
     {key:'DebriefHistory',label:'Historique',icon:'🕐'},
-    ...(isHOS?[{key:'HOSDashboard',label:'Head of Sales',icon:'👑'},{key:'TeamPage',label:'Équipe',icon:'👥'}]:[]),
+    ...(isHOS?[{key:'HOSPage',label:'Head of Sales',icon:'👑'}]:[]),
   ];
 
   if(loadingAuth) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
-  if(resetToken) return <ResetPasswordPage token={resetToken} onDone={()=>{setResetToken(null);setAuthPage('login');toast('Mot de passe modifié ! Connectez-vous.');}} />;
-
+  if(resetToken) return <ResetPasswordPage token={resetToken} onDone={()=>{setResetToken(null);setAuthPage('login');toast('Mot de passe modifié !');}} />;
   if(!user){
     if(authPage==='register') return <RegisterPage onLogin={onLogin} goToLogin={()=>setAuthPage('login')}/>;
     if(authPage==='forgot') return <ForgotPasswordPage goToLogin={()=>setAuthPage('login')}/>;
@@ -1046,7 +1021,6 @@ export default function App() {
     <style>{`@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box}`}</style>
     {burst&&<PointsBurst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel}/>}
     <ToastContainer toasts={toasts}/>
-
     <header style={{position:'sticky',top:0,zIndex:50,background:'rgba(255,255,255,0.92)',backdropFilter:'blur(16px)',borderBottom:'1px solid #e2e8f0'}}>
       <div style={{maxWidth:1100,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64}}>
         <button onClick={()=>navigate('Dashboard')} style={{display:'flex',alignItems:'center',gap:10,background:'none',border:'none',cursor:'pointer',padding:0,fontFamily:'inherit'}}>
@@ -1072,15 +1046,13 @@ export default function App() {
         </div>
       </div>
     </header>
-
     <main style={{maxWidth:1100,margin:'0 auto',padding:'32px 24px'}}>
       {loadingDebriefs?<Spinner full/>:<>
         {page==='Dashboard'&&<Dashboard debriefs={debriefs} navigate={navigate} user={user} gamification={gamification} leaderboardKey={leaderboardKey}/>}
         {page==='NewDebrief'&&<NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
         {page==='DebriefHistory'&&<DebriefHistory debriefs={debriefs} navigate={navigate} user={user}/>}
         {page==='DebriefDetail'&&<DebriefDetail debrief={selectedDebrief} navigate={navigate} onDelete={onDelete} fromPage={fromPage}/>}
-        {page==='HOSDashboard'&&isHOS&&<HOSDashboard refreshKey={leaderboardKey}/>}
-        {page==='TeamPage'&&isHOS&&<TeamPage toast={toast}/>}
+        {page==='HOSPage'&&isHOS&&<HOSPage toast={toast} leaderboardKey={leaderboardKey}/>}
       </>}
     </main>
   </div>;
