@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_BASE = 'https://closer-backend-production.up.railway.app/api';
+
 // ─── API CLIENT ───────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('closer_token'); }
 function setToken(t) { localStorage.setItem('closer_token', t); }
@@ -34,75 +35,62 @@ function computeScore(sections) {
     } else { if (val === positive) points += 1; }
   };
   const d = sections.decouverte || {};
-  count(d.douleur_surface, 'oui', 1);
-  count(d.douleur_profonde, ['oui', 'partiel'], 1);
+  count(d.douleur_surface, 'oui', 1); count(d.douleur_profonde, ['oui', 'partiel'], 1);
   count(d.couches_douleur, ['couche1', 'couche2', 'couche3'], 3);
-  count(d.temporalite, 'oui', 1);
-  count(d.urgence, ['oui', 'artificielle'], 1);
+  count(d.temporalite, 'oui', 1); count(d.urgence, ['oui', 'artificielle'], 1);
   const r = sections.reformulation || {};
-  count(r.reformulation, ['oui', 'partiel'], 1);
-  count(r.prospect_reconnu, ['oui', 'moyen'], 1);
+  count(r.reformulation, ['oui', 'partiel'], 1); count(r.prospect_reconnu, ['oui', 'moyen'], 1);
   count(r.couches_reformulation, ['physique', 'quotidien', 'identitaire'], 3);
   const p = sections.projection || {};
-  count(p.projection_posee, 'oui', 1);
-  count(p.qualite_reponse, ['forte', 'moyenne'], 1);
+  count(p.projection_posee, 'oui', 1); count(p.qualite_reponse, ['forte', 'moyenne'], 1);
   count(p.deadline_levier, 'oui', 1);
   const o = sections.offre || {};
-  count(o.colle_douleurs, ['oui', 'partiel'], 1);
-  count(o.exemples_transformation, ['oui', 'moyen'], 1);
+  count(o.colle_douleurs, ['oui', 'partiel'], 1); count(o.exemples_transformation, ['oui', 'moyen'], 1);
   count(o.duree_justifiee, ['oui', 'partiel'], 1);
   const c = sections.closing || {};
-  count(c.annonce_prix, 'directe', 1);
-  count(c.silence_prix, 'oui', 1);
-  count(c.douleur_reancree, 'oui', 1);
-  count(c.objection_isolee, 'oui', 1);
+  count(c.annonce_prix, 'directe', 1); count(c.silence_prix, 'oui', 1);
+  count(c.douleur_reancree, 'oui', 1); count(c.objection_isolee, 'oui', 1);
   count(c.resultat_closing, ['close', 'retrograde', 'relance'], 1);
   return { total: points, max, percentage: max > 0 ? Math.round((points / max) * 100) : 0 };
 }
 
 // ─── UTILITIES ────────────────────────────────────────────────────────────────
 function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 function formatDateShort(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 }
 
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
 function Input({ placeholder, value, onChange, type = 'text', required, style = {} }) {
-  return (
-    <input type={type} placeholder={placeholder} value={value} onChange={onChange} required={required}
-      style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', ...style }} />
-  );
+  return <input type={type} placeholder={placeholder} value={value} onChange={onChange} required={required}
+    style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', ...style }} />;
 }
-
 function Textarea({ placeholder, value, onChange, rows = 3 }) {
-  return (
-    <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
-      style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '8px 12px', fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box', color: '#1e293b' }} />
-  );
+  return <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
+    style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '8px 12px', fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box', color: '#1e293b' }} />;
 }
-
 function Btn({ children, onClick, type = 'button', variant = 'primary', disabled, style = {} }) {
   const base = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer', border: 'none', transition: 'all 0.2s', opacity: disabled ? 0.6 : 1, fontFamily: 'inherit' };
   const variants = {
     primary: { background: '#6366f1', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' },
     secondary: { background: 'white', color: '#374151', border: '1px solid #e2e8f0' },
     danger: { background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' },
-    ghost: { background: 'transparent', color: '#64748b' },
+    ghost: { background: 'transparent', color: '#64748b', border: 'none' },
   };
   return <button type={type} onClick={onClick} disabled={disabled} style={{ ...base, ...variants[variant], ...style }}>{children}</button>;
 }
-
 function Alert({ type, message }) {
   if (!message) return null;
-  const styles = {
-    error: { background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b' },
-    success: { background: '#d1fae5', border: '1px solid #6ee7b7', color: '#065f46' },
-  };
+  const styles = { error: { background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b' }, success: { background: '#d1fae5', border: '1px solid #6ee7b7', color: '#065f46' } };
   return <div style={{ ...styles[type], padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{message}</div>;
+}
+function Spinner() {
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+    <div style={{ width: 32, height: 32, border: '4px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>;
 }
 
 // ─── SCORE GAUGE ──────────────────────────────────────────────────────────────
@@ -139,14 +127,12 @@ function ScoreBadge({ pct }) {
 
 function ClosedBadge({ isClosed }) {
   if (isClosed === null || isClosed === undefined) return null;
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: isClosed ? '#d1fae5' : '#fee2e2', color: isClosed ? '#065f46' : '#991b1b' }}>
-      {isClosed ? '✓ Closer' : '✗ Non Closer'}
-    </span>
-  );
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: isClosed ? '#d1fae5' : '#fee2e2', color: isClosed ? '#065f46' : '#991b1b' }}>
+    {isClosed ? '✓ Closer' : '✗ Non Closer'}
+  </span>;
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
+// ─── STATS OVERVIEW ───────────────────────────────────────────────────────────
 function StatsOverview({ debriefs }) {
   const total = debriefs.length;
   const avgScore = total > 0 ? Math.round(debriefs.reduce((s, d) => s + (d.percentage || 0), 0) / total) : 0;
@@ -193,8 +179,7 @@ function ProgressChart({ debriefs }) {
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" /><stop offset="100%" stopColor="#6366f1" stopOpacity="0" /></linearGradient></defs>
         {[0, 25, 50, 75, 100].map(v => { const y = padT + innerH - (v / 100) * innerH; return <g key={v}><line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" /><text x={padL - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">{v}%</text></g>; })}
-        <path d={area} fill="url(#cg)" />
-        <path d={path} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={area} fill="url(#cg)" /><path d={path} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         {data.map((d, i) => (
           <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} style={{ cursor: 'pointer' }}>
             <circle cx={xs[i]} cy={ys[i]} r={hovered === i ? 7 : 5} fill="#6366f1" stroke="white" strokeWidth="2" />
@@ -215,14 +200,13 @@ function RadarScore({ scores }) {
   const n = keys.length, cx = 110, cy = 110, R = 80;
   const angle = i => (i / n) * 2 * Math.PI - Math.PI / 2;
   const dataPoints = keys.map((k, i) => { const val = (scores[k] || 0) / 5; const a = angle(i); return [cx + R * val * Math.cos(a), cy + R * val * Math.sin(a)]; });
-  const polyPoints = dataPoints.map(p => p.join(',')).join(' ');
   return (
     <svg width="220" height="220" viewBox="0 0 220 220" style={{ overflow: 'visible' }}>
       {[1,2,3,4,5].map(level => { const r = (level/5)*R; const pts = keys.map((_,i) => { const a = angle(i); return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`; }).join(' '); return <polygon key={level} points={pts} fill="none" stroke="#e2e8f0" strokeWidth="1" />; })}
       {keys.map((_,i) => { const a = angle(i); return <line key={i} x1={cx} y1={cy} x2={cx+R*Math.cos(a)} y2={cy+R*Math.sin(a)} stroke="#e2e8f0" strokeWidth="1" />; })}
-      <polygon points={polyPoints} fill="rgba(99,102,241,0.15)" stroke="#6366f1" strokeWidth="2" />
+      <polygon points={dataPoints.map(p => p.join(',')).join(' ')} fill="rgba(99,102,241,0.15)" stroke="#6366f1" strokeWidth="2" />
       {dataPoints.map(([x,y],i) => <circle key={i} cx={x} cy={y} r={3} fill="#6366f1" />)}
-      {keys.map((_,i) => { const a = angle(i); const lx = cx+(R+20)*Math.cos(a); const ly = cy+(R+20)*Math.sin(a); return <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="central" fontSize="9" fill="#64748b" fontWeight="500">{labels[i]}</text>; })}
+      {keys.map((_,i) => { const a = angle(i); return <text key={i} x={cx+(R+20)*Math.cos(a)} y={cy+(R+20)*Math.sin(a)} textAnchor="middle" dominantBaseline="central" fontSize="9" fill="#64748b" fontWeight="500">{labels[i]}</text>; })}
     </svg>
   );
 }
@@ -239,14 +223,102 @@ function DebriefCard({ debrief, onClick, showUser }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
           <span>📅 {formatDate(debrief.call_date)}</span>
           <span>👤 {debrief.closer_name}</span>
-          {showUser && debrief.user_name && <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: 4, color: '#64748b' }}>par {debrief.user_name}</span>}
+          {showUser && debrief.user_name && <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>par {debrief.user_name}</span>}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <ClosedBadge isClosed={debrief.is_closed} />
         <ScoreBadge pct={pct} />
-        <span style={{ color: hovered ? '#6366f1' : '#cbd5e1', fontSize: 18, transition: 'color 0.2s' }}>›</span>
+        <span style={{ color: hovered ? '#6366f1' : '#cbd5e1', fontSize: 18 }}>›</span>
       </div>
+    </div>
+  );
+}
+
+// ─── GAMIFICATION CARD ────────────────────────────────────────────────────────
+function GamificationCard({ gamification }) {
+  if (!gamification) return null;
+  const { points, level, badges, totalDebriefs } = gamification;
+  const progressPct = level.next ? Math.round(((points - level.min) / (level.next - level.min)) * 100) : 100;
+
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', borderRadius: 16, padding: 24, color: 'white' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <p style={{ fontSize: 12, opacity: 0.8, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Niveau actuel</p>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: '4px 0 0' }}>{level.icon} {level.name}</h2>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: 12, opacity: 0.8, margin: 0 }}>Points totaux</p>
+          <p style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>{points}</p>
+        </div>
+      </div>
+
+      {level.next && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, opacity: 0.8, marginBottom: 6 }}>
+            <span>{points} pts</span>
+            <span>{level.next} pts pour le prochain niveau</span>
+          </div>
+          <div style={{ height: 8, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}>
+            <div style={{ height: '100%', width: `${progressPct}%`, background: 'white', borderRadius: 4, transition: 'width 0.7s ease' }} />
+          </div>
+        </div>
+      )}
+
+      {badges.length > 0 && (
+        <div>
+          <p style={{ fontSize: 11, opacity: 0.8, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Badges obtenus</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {badges.map(b => (
+              <span key={b.id} style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500 }}>
+                {b.icon} {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── LEADERBOARD ──────────────────────────────────────────────────────────────
+function Leaderboard({ navigate }) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/gamification/leaderboard').then(setData).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1e293b', margin: 0 }}>🏆 Classement de l'équipe</h3>
+      </div>
+      {data.length === 0 ? (
+        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Aucun closer encore inscrit</div>
+      ) : (
+        <div>
+          {data.map((closer, i) => (
+            <div key={closer.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', borderBottom: i < data.length - 1 ? '1px solid #f1f5f9' : 'none', background: i === 0 ? '#fffbeb' : 'white' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: i === 0 ? '#fef3c7' : i === 1 ? '#f1f5f9' : i === 2 ? '#fef3c7' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: i === 0 ? '#d97706' : '#64748b', flexShrink: 0 }}>
+                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', margin: 0 }}>{closer.name}</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>{closer.level.icon} {closer.level.name} · {closer.totalDebriefs} debriefs · {closer.closed} closings</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontWeight: 700, fontSize: 16, color: '#6366f1', margin: 0 }}>{closer.points} pts</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>moy. {closer.avgScore}%</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -267,7 +339,6 @@ function RadioGroup({ label, options, value, onChange }) {
     </div>
   );
 }
-
 function CheckboxGroup({ label, options, value = [], onChange }) {
   const toggle = v => value.includes(v) ? onChange(value.filter(x => x !== v)) : onChange([...value, v]);
   return (
@@ -284,7 +355,6 @@ function CheckboxGroup({ label, options, value = [], onChange }) {
     </div>
   );
 }
-
 function SectionNotes({ notes = {}, onChange }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, paddingTop: 16, marginTop: 8, borderTop: '1px solid #f1f5f9' }}>
@@ -298,7 +368,6 @@ function SectionNotes({ notes = {}, onChange }) {
     </div>
   );
 }
-
 function CategoryCard({ number, title, children }) {
   return (
     <div style={{ borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', overflow: 'hidden', marginBottom: 16 }}>
@@ -311,14 +380,14 @@ function CategoryCard({ number, title, children }) {
   );
 }
 
-// ─── EVALUATION SECTIONS ──────────────────────────────────────────────────────
+// ─── SECTIONS D'ÉVALUATION ────────────────────────────────────────────────────
 function DecouverteSection({ data = {}, onChange, notes, onNotesChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   return (
     <CategoryCard number="1" title="Phase de découverte">
       <RadioGroup label="Douleur de surface identifiée ?" options={[{ value: 'oui', label: 'Oui' }, { value: 'non', label: 'Non' }]} value={data.douleur_surface} onChange={v => set('douleur_surface', v)} />
       {data.douleur_surface === 'oui' && <div style={{ marginTop: -8, marginBottom: 16 }}><Input placeholder="Note ce qu'elle était..." value={data.douleur_surface_note || ''} onChange={e => set('douleur_surface_note', e.target.value)} /></div>}
-      <RadioGroup label="Douleur profonde / identitaire atteinte ?" options={[{ value: 'oui', label: '✅ Oui — le prospect l\'a verbalisé fort' }, { value: 'partiel', label: '⚠️ Partiellement — effleurée mais pas amplifiée' }, { value: 'non', label: '❌ Non — resté en surface' }]} value={data.douleur_profonde} onChange={v => set('douleur_profonde', v)} />
+      <RadioGroup label="Douleur profonde / identitaire atteinte ?" options={[{ value: 'oui', label: "✅ Oui — le prospect l'a verbalisé fort" }, { value: 'partiel', label: '⚠️ Partiellement — effleurée mais pas amplifiée' }, { value: 'non', label: '❌ Non — resté en surface' }]} value={data.douleur_profonde} onChange={v => set('douleur_profonde', v)} />
       {data.douleur_profonde && data.douleur_profonde !== 'non' && <div style={{ marginTop: -8, marginBottom: 16 }}><Input placeholder="Note la douleur profonde identifiée..." value={data.douleur_profonde_note || ''} onChange={e => set('douleur_profonde_note', e.target.value)} /></div>}
       <CheckboxGroup label="Couches de douleur creusées (0 à 3)" options={[{ value: 'couche1', label: 'Couche 1 : physique / performance' }, { value: 'couche2', label: 'Couche 2 : impact quotidien / social' }, { value: 'couche3', label: 'Couche 3 : identité / peur du futur' }]} value={data.couches_douleur || []} onChange={v => set('couches_douleur', v)} />
       <RadioGroup label="Temporalité de la douleur demandée ?" options={[{ value: 'oui', label: '✅ Oui — "depuis combien de temps ?"' }, { value: 'non', label: '❌ Non' }]} value={data.temporalite} onChange={v => set('temporalite', v)} />
@@ -328,7 +397,6 @@ function DecouverteSection({ data = {}, onChange, notes, onNotesChange }) {
     </CategoryCard>
   );
 }
-
 function ReformulationSection({ data = {}, onChange, notes, onNotesChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   return (
@@ -340,7 +408,6 @@ function ReformulationSection({ data = {}, onChange, notes, onNotesChange }) {
     </CategoryCard>
   );
 }
-
 function ProjectionSection({ data = {}, onChange, notes, onNotesChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   return (
@@ -352,19 +419,17 @@ function ProjectionSection({ data = {}, onChange, notes, onNotesChange }) {
     </CategoryCard>
   );
 }
-
 function PresentationOffreSection({ data = {}, onChange, notes, onNotesChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   return (
     <CategoryCard number="4" title="Présentation de l'offre">
       <RadioGroup label="Présentation collée aux douleurs du prospect ?" options={[{ value: 'oui', label: '✅ Oui — chaque feature reliée à une douleur spécifique' }, { value: 'partiel', label: '⚠️ Partiellement — quelques liens faits' }, { value: 'non', label: '❌ Non — présentation générique, liste de features' }]} value={data.colle_douleurs} onChange={v => set('colle_douleurs', v)} />
-      <RadioGroup label="Exemples de transformations / résultats bien choisis ?" options={[{ value: 'oui', label: '✅ Oui — le prospect s\'est reconnu' }, { value: 'moyen', label: '⚠️ Moyen' }, { value: 'non', label: '❌ Non — exemples inadaptés au profil' }]} value={data.exemples_transformation} onChange={v => set('exemples_transformation', v)} />
-      <RadioGroup label="Durée / Offre bien justifiée ?" options={[{ value: 'oui', label: '✅ Oui — reliée à l\'objectif et au temps nécessaire' }, { value: 'partiel', label: '⚠️ Partiellement' }, { value: 'non', label: '❌ Non' }]} value={data.duree_justifiee} onChange={v => set('duree_justifiee', v)} />
+      <RadioGroup label="Exemples de transformations / résultats bien choisis ?" options={[{ value: 'oui', label: "✅ Oui — le prospect s'est reconnu" }, { value: 'moyen', label: '⚠️ Moyen' }, { value: 'non', label: '❌ Non — exemples inadaptés au profil' }]} value={data.exemples_transformation} onChange={v => set('exemples_transformation', v)} />
+      <RadioGroup label="Durée / Offre bien justifiée ?" options={[{ value: 'oui', label: "✅ Oui — reliée à l'objectif et au temps nécessaire" }, { value: 'partiel', label: '⚠️ Partiellement' }, { value: 'non', label: '❌ Non' }]} value={data.duree_justifiee} onChange={v => set('duree_justifiee', v)} />
       <SectionNotes notes={notes} onChange={onNotesChange} />
     </CategoryCard>
   );
 }
-
 function ClosingSection({ data = {}, onChange, notes, onNotesChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   return (
@@ -381,22 +446,19 @@ function ClosingSection({ data = {}, onChange, notes, onNotesChange }) {
 }
 
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
-function LoginPage({ onLogin, goToRegister }) {
+function LoginPage({ onLogin, goToRegister, goToForgot }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    setError(''); setLoading(true);
+    e.preventDefault(); setError(''); setLoading(true);
     try {
       const data = await apiFetch('/auth/login', { method: 'POST', body: { email, password } });
-      setToken(data.token);
-      onLogin(data.user);
-    } catch (err) {
-      setError(err.message);
-    } finally { setLoading(false); }
+      setToken(data.token); onLogin(data.user);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -414,22 +476,20 @@ function LoginPage({ onLogin, goToRegister }) {
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email</label>
               <Input type="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 8 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Mot de passe</label>
               <Input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
-            <Btn type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? 'Connexion...' : 'Se connecter'}
-            </Btn>
+            <div style={{ textAlign: 'right', marginBottom: 24 }}>
+              <button type="button" onClick={goToForgot} style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 12, cursor: 'pointer' }}>Mot de passe oublié ?</button>
+            </div>
+            <Btn type="submit" disabled={loading} style={{ width: '100%' }}>{loading ? 'Connexion...' : 'Se connecter'}</Btn>
           </form>
           <p style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 20 }}>
             Pas encore de compte ?{' '}
             <button onClick={goToRegister} style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>S'inscrire</button>
           </p>
         </div>
-        <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 16 }}>
-          Admin par défaut : admin@closerdebrief.com / Admin1234!
-        </p>
       </div>
     </div>
   );
@@ -441,18 +501,15 @@ function RegisterPage({ onLogin, goToLogin }) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault(); setError('');
     if (form.password !== form.confirm) return setError('Les mots de passe ne correspondent pas');
     if (form.password.length < 8) return setError('Le mot de passe doit contenir au moins 8 caractères');
     setLoading(true);
     try {
       const data = await apiFetch('/auth/register', { method: 'POST', body: { name: form.name, email: form.email, password: form.password } });
-      setToken(data.token);
-      onLogin(data.user);
-    } catch (err) {
-      setError(err.message);
-    } finally { setLoading(false); }
+      setToken(data.token); onLogin(data.user);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -466,25 +523,15 @@ function RegisterPage({ onLogin, goToLogin }) {
         <div style={{ background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 8px 32px rgba(99,102,241,0.12)', border: '1px solid #e2e8f0' }}>
           <Alert type="error" message={error} />
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Nom complet</label>
-              <Input placeholder="Jean Dupont" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            {[{ key: 'name', label: 'Nom complet', placeholder: 'Jean Dupont', type: 'text' }, { key: 'email', label: 'Email', placeholder: 'votre@email.com', type: 'email' }, { key: 'password', label: 'Mot de passe', placeholder: '8 caractères minimum', type: 'password' }, { key: 'confirm', label: 'Confirmer le mot de passe', placeholder: '••••••••', type: 'password' }].map(({ key, label, placeholder, type }) => (
+              <div key={key} style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{label}</label>
+                <Input type={type} placeholder={placeholder} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} required />
+              </div>
+            ))}
+            <div style={{ marginTop: 10 }}>
+              <Btn type="submit" disabled={loading} style={{ width: '100%' }}>{loading ? 'Création...' : 'Créer mon compte'}</Btn>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email</label>
-              <Input type="email" placeholder="votre@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Mot de passe</label>
-              <Input type="password" placeholder="8 caractères minimum" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Confirmer le mot de passe</label>
-              <Input type="password" placeholder="••••••••" value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} required />
-            </div>
-            <Btn type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? 'Création...' : 'Créer mon compte'}
-            </Btn>
           </form>
           <p style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 20 }}>
             Déjà un compte ?{' '}
@@ -496,25 +543,213 @@ function RegisterPage({ onLogin, goToLogin }) {
   );
 }
 
+function ForgotPasswordPage({ goToLogin }) {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async e => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      await apiFetch('/auth/forgot-password', { method: 'POST', body: { email } });
+      setSent(true);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 420 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto 16px' }}>🔐</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 }}>Mot de passe oublié</h1>
+        </div>
+        <div style={{ background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 8px 32px rgba(99,102,241,0.12)', border: '1px solid #e2e8f0' }}>
+          {sent ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>Email envoyé !</h2>
+              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 24 }}>Si cet email existe, vous recevrez un lien de réinitialisation dans quelques minutes.</p>
+              <Btn variant="secondary" onClick={goToLogin} style={{ width: '100%' }}>Retour à la connexion</Btn>
+            </div>
+          ) : (
+            <>
+              <Alert type="error" message={error} />
+              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.</p>
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email</label>
+                  <Input type="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <Btn type="submit" disabled={loading} style={{ width: '100%' }}>{loading ? 'Envoi...' : 'Envoyer le lien'}</Btn>
+              </form>
+              <p style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 16 }}>
+                <button onClick={goToLogin} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 13 }}>← Retour à la connexion</button>
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordPage({ token, onDone }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async e => {
+    e.preventDefault(); setError('');
+    if (password !== confirm) return setError('Les mots de passe ne correspondent pas');
+    if (password.length < 8) return setError('Le mot de passe doit contenir au moins 8 caractères');
+    setLoading(true);
+    try {
+      await apiFetch('/auth/reset-password', { method: 'POST', body: { token, password } });
+      setSuccess(true);
+      setTimeout(onDone, 2000);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 420 }}>
+        <div style={{ background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 8px 32px rgba(99,102,241,0.12)', border: '1px solid #e2e8f0' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>🔑 Nouveau mot de passe</h1>
+          {success ? (
+            <Alert type="success" message="Mot de passe modifié ! Redirection en cours..." />
+          ) : (
+            <>
+              <Alert type="error" message={error} />
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Nouveau mot de passe</label>
+                  <Input type="password" placeholder="8 caractères minimum" value={password} onChange={e => setPassword(e.target.value)} required />
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Confirmer</label>
+                  <Input type="password" placeholder="••••••••" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+                </div>
+                <Btn type="submit" disabled={loading} style={{ width: '100%' }}>{loading ? 'Modification...' : 'Modifier le mot de passe'}</Btn>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+function AdminDashboard({ navigate }) {
+  const [team, setTeam] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    apiFetch('/admin/team').then(setTeam).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Spinner />;
+
+  const selectedCloser = team.find(c => c.id === selected);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b', margin: 0 }}>👑 Dashboard Admin</h1>
+        <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>{team.length} closer{team.length > 1 ? 's' : ''} dans l'équipe</p>
+      </div>
+
+      {team.length === 0 ? (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+          Aucun closer inscrit pour l'instant
+        </div>
+      ) : (
+        <>
+          {/* Grille des closers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {team.map(closer => (
+              <div key={closer.id} onClick={() => setSelected(selected === closer.id ? null : closer.id)}
+                style={{ background: 'white', border: `2px solid ${selected === closer.id ? '#6366f1' : '#e2e8f0'}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, color: '#6366f1', flexShrink: 0 }}>
+                    {closer.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', margin: 0 }}>{closer.name}</p>
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{closer.level.icon} {closer.level.name}</p>
+                  </div>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    <p style={{ fontWeight: 700, fontSize: 18, color: '#6366f1', margin: 0 }}>{closer.points} pts</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, fontSize: 12 }}>
+                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                    <p style={{ color: '#94a3b8', margin: 0 }}>Debriefs</p>
+                    <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>{closer.totalDebriefs}</p>
+                  </div>
+                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                    <p style={{ color: '#94a3b8', margin: 0 }}>Moy.</p>
+                    <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>{closer.avgScore}%</p>
+                  </div>
+                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                    <p style={{ color: '#94a3b8', margin: 0 }}>Closings</p>
+                    <p style={{ fontWeight: 700, color: '#059669', margin: 0 }}>{closer.closed}</p>
+                  </div>
+                </div>
+                {closer.badges.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+                    {closer.badges.map(b => <span key={b.id} style={{ fontSize: 16 }} title={b.label}>{b.icon}</span>)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Graphique du closer sélectionné */}
+          {selectedCloser && selectedCloser.chartData.length > 0 && (
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>
+                📈 Évolution de {selectedCloser.name}
+              </h3>
+              <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Score moyen : {selectedCloser.avgScore}% · {selectedCloser.totalDebriefs} debriefs</p>
+              <ProgressChart debriefs={selectedCloser.chartData.map((d, i) => ({ ...d, id: i, percentage: d.score, prospect_name: d.prospect, call_date: d.date }))} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN PAGES ───────────────────────────────────────────────────────────────
-function Dashboard({ debriefs, navigate, user }) {
+function Dashboard({ debriefs, navigate, user, gamification }) {
   const recentDebriefs = debriefs.slice(0, 5);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: 0 }}>Tableau de bord</h1>
-          <p style={{ color: '#64748b', marginTop: 4, fontSize: 14 }}>
-            Bonjour, {user.name} {user.role === 'admin' && <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, marginLeft: 6 }}>Admin</span>}
-          </p>
+          <p style={{ color: '#64748b', marginTop: 4, fontSize: 14 }}>Bonjour, {user.name} 👋</p>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>
+
+      {gamification && <GamificationCard gamification={gamification} />}
       <StatsOverview debriefs={debriefs} />
+
       <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1e293b', marginBottom: 16 }}>Évolution du score</h2>
         <ProgressChart debriefs={debriefs} />
       </div>
+
+      <Leaderboard navigate={navigate} />
+
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h2 style={{ fontSize: 17, fontWeight: 600, color: '#1e293b', margin: 0 }}>Derniers debriefs</h2>
@@ -548,7 +783,7 @@ function DebriefHistory({ debriefs, navigate, user }) {
         <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>{debriefs.length} debrief{debriefs.length > 1 ? 's' : ''} enregistré{debriefs.length > 1 ? 's' : ''}</p>
       </div>
       <div style={{ position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }}>🔍</span>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
         <input placeholder="Rechercher par prospect ou closer..." value={search} onChange={e => setSearch(e.target.value)}
           style={{ width: '100%', padding: '10px 12px 10px 36px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
       </div>
@@ -570,7 +805,6 @@ function DebriefDetail({ debrief, navigate, onDelete }) {
   const pct = Math.round(debrief.percentage || 0);
   const CRITERIA_LABELS = { accroche: 'Accroche / Prise de contact', decouverte: 'Phase de découverte', douleur: 'Identification de la douleur', presentation_offre: "Présentation de l'offre", traitement_objections: 'Traitement des objections', closing: 'Closing', energie_ton: 'Énergie & Ton', ecoute_active: 'Écoute active' };
   const getBarColor = val => val >= 4 ? '#059669' : val >= 3 ? '#d97706' : val >= 2 ? '#6366f1' : '#ef4444';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -578,7 +812,7 @@ function DebriefDetail({ debrief, navigate, onDelete }) {
           <Btn variant="secondary" onClick={() => navigate('Dashboard')} style={{ width: 36, height: 36, padding: 0, borderRadius: 8 }}>←</Btn>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 }}>{debrief.prospect_name}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
               <span>📅 {formatDate(debrief.call_date)}</span>
               <span>👤 {debrief.closer_name}</span>
             </div>
@@ -606,7 +840,7 @@ function DebriefDetail({ debrief, navigate, onDelete }) {
                 <div key={key}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, border: '1px solid #e2e8f0', color: '#374151' }}>{val}/5</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, border: '1px solid #e2e8f0' }}>{val}/5</span>
                   </div>
                   <div style={{ height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(val / 5) * 100}%`, background: getBarColor(val), borderRadius: 4, transition: 'width 0.7s ease-in-out' }} />
@@ -645,15 +879,12 @@ function NewDebrief({ navigate, onSave }) {
   const { total, max, percentage } = computeScore(sections);
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault(); setLoading(true);
     try {
       const saved = await apiFetch('/debriefs', { method: 'POST', body: { ...form, sections, section_notes: sectionNotes, total_score: total, max_score: max, percentage, scores: {}, criteria_notes: {} } });
-      onSave(saved);
-      navigate('DebriefDetail', saved.id);
-    } catch (err) {
-      alert(err.message);
-    } finally { setLoading(false); }
+      onSave(saved); navigate('DebriefDetail', saved.id);
+    } catch (err) { alert(err.message); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -681,7 +912,7 @@ function NewDebrief({ navigate, onSave }) {
                 <div style={{ display: 'flex', gap: 10 }}>
                   {[{ val: true, label: '✅ Closer', border: '#059669', bg: '#d1fae5', color: '#065f46' }, { val: false, label: '❌ Non Closer', border: '#dc2626', bg: '#fee2e2', color: '#991b1b' }].map(({ val, label, border, bg, color }) => (
                     <button key={String(val)} type="button" onClick={() => setForm({ ...form, is_closed: val })}
-                      style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: `2px solid ${form.is_closed === val ? border : '#e2e8f0'}`, background: form.is_closed === val ? bg : 'white', color: form.is_closed === val ? color : '#94a3b8', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}>{label}</button>
+                      style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: `2px solid ${form.is_closed === val ? border : '#e2e8f0'}`, background: form.is_closed === val ? bg : 'white', color: form.is_closed === val ? color : '#94a3b8', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
                   ))}
                 </div>
               </div>
@@ -703,9 +934,7 @@ function NewDebrief({ navigate, onSave }) {
               <ScoreGauge percentage={percentage} size="lg" />
               <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>{total} / {max} points</p>
               {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed} />}
-              <Btn type="submit" disabled={loading} style={{ width: '100%' }}>
-                {loading ? 'Enregistrement...' : '💾 Enregistrer le debrief'}
-              </Btn>
+              <Btn type="submit" disabled={loading} style={{ width: '100%' }}>{loading ? 'Enregistrement...' : '💾 Enregistrer le debrief'}</Btn>
             </div>
           </div>
         </div>
@@ -716,32 +945,47 @@ function NewDebrief({ navigate, onSave }) {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [authPage, setAuthPage] = useState('login'); // 'login' | 'register'
+  const [authPage, setAuthPage] = useState('login');
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [page, setPage] = useState('Dashboard');
   const [selectedId, setSelectedId] = useState(null);
   const [debriefs, setDebriefs] = useState([]);
   const [loadingDebriefs, setLoadingDebriefs] = useState(false);
+  const [gamification, setGamification] = useState(null);
+  const [resetToken, setResetToken] = useState(null);
 
-  // Restore session on mount
+  // Détecter le token de reset dans l'URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rt = params.get('reset_token');
+    if (rt) {
+      setResetToken(rt);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Restaurer la session
   useEffect(() => {
     const token = getToken();
     if (!token) { setLoadingAuth(false); return; }
-    apiFetch('/auth/me').then(u => { setUser(u); }).catch(() => { clearToken(); }).finally(() => setLoadingAuth(false));
+    apiFetch('/auth/me').then(u => setUser(u)).catch(() => clearToken()).finally(() => setLoadingAuth(false));
   }, []);
 
-  // Load debriefs when user is set
+  // Charger debriefs + gamification
   useEffect(() => {
     if (!user) return;
     setLoadingDebriefs(true);
-    apiFetch('/debriefs').then(setDebriefs).catch(console.error).finally(() => setLoadingDebriefs(false));
+    Promise.all([
+      apiFetch('/debriefs'),
+      apiFetch('/gamification/me')
+    ]).then(([d, g]) => { setDebriefs(d); setGamification(g); }).catch(console.error).finally(() => setLoadingDebriefs(false));
   }, [user]);
 
   const navigate = (p, id = null) => { setPage(p); setSelectedId(id); };
   const onLogin = u => { setUser(u); setPage('Dashboard'); };
-  const onLogout = () => { clearToken(); setUser(null); setDebriefs([]); setPage('Dashboard'); };
-  const onSave = d => setDebriefs(prev => [d, ...prev]);
+  const onLogout = () => { clearToken(); setUser(null); setDebriefs([]); setGamification(null); setPage('Dashboard'); };
+  const onSave = d => { setDebriefs(prev => [d, ...prev]); apiFetch('/gamification/me').then(setGamification).catch(console.error); };
   const onDelete = async id => {
     try { await apiFetch(`/debriefs/${id}`, { method: 'DELETE' }); setDebriefs(prev => prev.filter(d => d.id !== id)); } catch (err) { alert(err.message); }
   };
@@ -751,19 +995,18 @@ export default function App() {
     { key: 'Dashboard', label: 'Tableau de bord', icon: '⊞' },
     { key: 'NewDebrief', label: 'Nouveau debrief', icon: '+' },
     { key: 'DebriefHistory', label: 'Historique', icon: '🕐' },
+    ...(user?.role === 'admin' ? [{ key: 'AdminDashboard', label: 'Admin', icon: '👑' }] : []),
   ];
 
-  if (loadingAuth) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 36, height: 36, border: '4px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
+  if (loadingAuth) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner /></div>;
+
+  // Page de reset mot de passe
+  if (resetToken) return <ResetPasswordPage token={resetToken} onDone={() => { setResetToken(null); setAuthPage('login'); }} />;
 
   if (!user) {
-    return authPage === 'login'
-      ? <LoginPage onLogin={onLogin} goToRegister={() => setAuthPage('register')} />
-      : <RegisterPage onLogin={onLogin} goToLogin={() => setAuthPage('login')} />;
+    if (authPage === 'register') return <RegisterPage onLogin={onLogin} goToLogin={() => setAuthPage('login')} />;
+    if (authPage === 'forgot') return <ForgotPasswordPage goToLogin={() => setAuthPage('login')} />;
+    return <LoginPage onLogin={onLogin} goToRegister={() => setAuthPage('register')} goToForgot={() => setAuthPage('forgot')} />;
   }
 
   return (
@@ -789,21 +1032,20 @@ export default function App() {
               </div>
               <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{user.name}</span>
               {user.role === 'admin' && <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>ADMIN</span>}
+              {gamification && <span style={{ fontSize: 13 }} title={gamification.level.name}>{gamification.level.icon}</span>}
             </div>
             <Btn variant="secondary" onClick={onLogout} style={{ padding: '6px 12px', fontSize: 12 }}>Déconnexion</Btn>
           </div>
         </div>
       </header>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
-        {loadingDebriefs
-          ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}><div style={{ width: 32, height: 32, border: '4px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /><style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style></div>
-          : <>
-            {page === 'Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} />}
-            {page === 'NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} />}
-            {page === 'DebriefHistory' && <DebriefHistory debriefs={debriefs} navigate={navigate} user={user} />}
-            {page === 'DebriefDetail' && <DebriefDetail debrief={selectedDebrief} navigate={navigate} onDelete={onDelete} />}
-          </>
-        }
+        {loadingDebriefs ? <Spinner /> : <>
+          {page === 'Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gamification={gamification} />}
+          {page === 'NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} />}
+          {page === 'DebriefHistory' && <DebriefHistory debriefs={debriefs} navigate={navigate} user={user} />}
+          {page === 'DebriefDetail' && <DebriefDetail debrief={selectedDebrief} navigate={navigate} onDelete={onDelete} />}
+          {page === 'AdminDashboard' && user.role === 'admin' && <AdminDashboard navigate={navigate} />}
+        </>}
       </main>
     </div>
   );
