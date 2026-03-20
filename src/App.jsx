@@ -23,6 +23,17 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
+// ─── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
+function useIsMobile(breakpoint=768) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 // ─── SCORE ────────────────────────────────────────────────────────────────────
 function computeScore(sections) {
   let points=0,max=0;
@@ -34,7 +45,6 @@ function computeScore(sections) {
   const c=sections.closing||{};count(c.annonce_prix,'directe',1);count(c.silence_prix,'oui',1);count(c.douleur_reancree,'oui',1);count(c.objection_isolee,'oui',1);count(c.resultat_closing,['close','retrograde','relance'],1);
   return{total:points,max,percentage:max>0?Math.round((points/max)*100):0};
 }
-
 function computeSectionScores(sections) {
   const s=sections||{};const pct=(pts,max)=>max>0?Math.round((pts/max)*5):0;
   const d=s.decouverte||{};let dPts=0;if(d.douleur_surface==='oui')dPts++;if(['oui','partiel'].includes(d.douleur_profonde))dPts++;if(Array.isArray(d.couches_douleur))dPts+=Math.min(d.couches_douleur.length,3);if(d.temporalite==='oui')dPts++;if(['oui','artificielle'].includes(d.urgence))dPts++;
@@ -44,26 +54,25 @@ function computeSectionScores(sections) {
   const c=s.closing||{};let cPts=0;if(c.annonce_prix==='directe')cPts++;if(c.silence_prix==='oui')cPts++;if(c.douleur_reancree==='oui')cPts++;if(c.objection_isolee==='oui')cPts++;if(['close','retrograde','relance'].includes(c.resultat_closing))cPts++;
   return{decouverte:pct(dPts,7),reformulation:pct(rPts,5),projection:pct(pPts,3),presentation_offre:pct(oPts,3),closing:pct(cPts,5)};
 }
-
 function computeLevel(p){
   if(p>=500)return{name:'Légende',icon:'👑',min:500,next:null};if(p>=200)return{name:'Expert',icon:'💎',min:200,next:500};if(p>=100)return{name:'Confirmé',icon:'🥇',min:100,next:200};if(p>=50)return{name:'Intermédiaire',icon:'🥈',min:50,next:100};if(p>=20)return{name:'Débutant+',icon:'🥉',min:20,next:50};return{name:'Débutant',icon:'🌱',min:0,next:20};
 }
 
-// ─── UTILS ────────────────────────────────────────────────────────────────────
 function formatDate(s){try{return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});}catch{return s||'';}}
 function formatDateShort(s){try{return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});}catch{return s||'';}}
 function copyToClipboard(t){navigator.clipboard.writeText(t).catch(()=>{});}
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function useToast(){
-  const [toasts,setToasts]=useState([]);
+  const[toasts,setToasts]=useState([]);
   const toast=useCallback((msg,type='success',duration=3500)=>{const id=Date.now()+Math.random();setToasts(p=>[...p.slice(-4),{id,msg,type}]);setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),duration);},[]);
   return{toasts,toast};
 }
 function ToastContainer({toasts}){
+  const isMobile=useIsMobile();
   if(!toasts.length)return null;
-  return<div style={{position:'fixed',bottom:24,right:24,zIndex:9999,display:'flex',flexDirection:'column',gap:8}}>
-    {toasts.map(t=><div key={t.id} style={{padding:'12px 18px',borderRadius:10,fontSize:13,fontWeight:500,background:t.type==='error'?'#dc2626':t.type==='info'?'#6366f1':'#1e293b',color:'white',boxShadow:'0 4px 20px rgba(0,0,0,0.15)',display:'flex',alignItems:'center',gap:8,animation:'slideIn 0.25s ease',maxWidth:320}}>
+  return<div style={{position:'fixed',bottom:isMobile?16:24,right:isMobile?8:24,left:isMobile?8:'auto',zIndex:9999,display:'flex',flexDirection:'column',gap:8}}>
+    {toasts.map(t=><div key={t.id} style={{padding:'12px 16px',borderRadius:10,fontSize:13,fontWeight:500,background:t.type==='error'?'#dc2626':t.type==='info'?'#6366f1':'#1e293b',color:'white',boxShadow:'0 4px 20px rgba(0,0,0,0.15)',display:'flex',alignItems:'center',gap:8,animation:'slideIn 0.25s ease'}}>
       <span style={{flexShrink:0}}>{t.type==='error'?'✕':t.type==='info'?'ℹ':'✓'}</span>{t.msg}
     </div>)}
     <style>{`@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}`}</style>
@@ -72,10 +81,10 @@ function ToastContainer({toasts}){
 
 function PointsBurst({points,levelUp,newLevel,onDone}){
   useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[onDone]);
-  return<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9998,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
-    <div style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)',borderRadius:20,padding:'24px 40px',boxShadow:'0 8px 40px rgba(99,102,241,0.5)',color:'white',textAlign:'center',animation:'burstIn 0.4s cubic-bezier(0.34,1.56,0.64,1)'}}>
-      <p style={{fontSize:36,fontWeight:800,margin:0}}>+{points} pts !</p>
-      {levelUp&&<p style={{fontSize:16,fontWeight:600,margin:'8px 0 0',opacity:0.9}}>🎉 Nouveau niveau : {newLevel}</p>}
+  return<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9998,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+    <div style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)',borderRadius:20,padding:'24px 32px',boxShadow:'0 8px 40px rgba(99,102,241,0.5)',color:'white',textAlign:'center',animation:'burstIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',maxWidth:'90vw'}}>
+      <p style={{fontSize:32,fontWeight:800,margin:0}}>+{points} pts !</p>
+      {levelUp&&<p style={{fontSize:15,fontWeight:600,margin:'8px 0 0',opacity:0.9}}>🎉 Nouveau niveau : {newLevel}</p>}
     </div>
     <style>{`@keyframes burstIn{from{transform:scale(0.3);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
   </div>;
@@ -84,40 +93,40 @@ function PointsBurst({points,levelUp,newLevel,onDone}){
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
 function Input({placeholder,value,onChange,type='text',required,autoFocus,style={}}){
   return<input type={type} placeholder={placeholder} value={value} onChange={onChange} required={required} autoFocus={autoFocus}
-    style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'9px 12px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',color:'#1e293b',transition:'border-color 0.15s',...style}}
+    style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'11px 12px',fontSize:14,fontFamily:'inherit',outline:'none',boxSizing:'border-box',color:'#1e293b',transition:'border-color 0.15s',...style}}
     onFocus={e=>e.target.style.borderColor='#6366f1'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>;
 }
 function Textarea({placeholder,value,onChange,rows=3}){
-  return<textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows} style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'8px 12px',fontSize:13,fontFamily:'inherit',outline:'none',resize:'vertical',boxSizing:'border-box',color:'#1e293b'}}/>;
+  return<textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows} style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'10px 12px',fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',boxSizing:'border-box',color:'#1e293b'}}/>;
 }
 function Btn({children,onClick,type='button',variant='primary',disabled,style={}}){
   const v={primary:{background:'#6366f1',color:'white',border:'none',boxShadow:'0 2px 8px rgba(99,102,241,0.3)'},secondary:{background:'white',color:'#374151',border:'1px solid #e2e8f0',boxShadow:'none'},danger:{background:'#fee2e2',color:'#dc2626',border:'1px solid #fca5a5',boxShadow:'none'},ghost:{background:'transparent',color:'#64748b',border:'none',boxShadow:'none'},green:{background:'#d1fae5',color:'#065f46',border:'1px solid #6ee7b7',boxShadow:'none'}};
-  return<button type={type} onClick={onClick} disabled={disabled} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,padding:'10px 20px',borderRadius:10,fontSize:14,fontWeight:600,cursor:disabled?'not-allowed':'pointer',transition:'all 0.15s',opacity:disabled?0.55:1,fontFamily:'inherit',...v[variant],...style}}>{children}</button>;
+  return<button type={type} onClick={onClick} disabled={disabled} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,padding:'11px 20px',borderRadius:10,fontSize:14,fontWeight:600,cursor:disabled?'not-allowed':'pointer',transition:'all 0.15s',opacity:disabled?0.55:1,fontFamily:'inherit',...v[variant],...style}}>{children}</button>;
 }
 function Alert({type,message}){
   if(!message)return null;
   const s={error:{background:'#fee2e2',border:'1px solid #fca5a5',color:'#991b1b'},success:{background:'#d1fae5',border:'1px solid #6ee7b7',color:'#065f46'},info:{background:'#ede9fe',border:'1px solid #c4b5fd',color:'#4c1d95'}};
-  return<div style={{...s[type||'info'],padding:'10px 14px',borderRadius:8,fontSize:13,marginBottom:16}}>{message}</div>;
+  return<div style={{...s[type||'info'],padding:'12px 14px',borderRadius:8,fontSize:14,marginBottom:16}}>{message}</div>;
 }
 function Spinner({full=false,size=32}){
   const el=<><div style={{width:size,height:size,border:`${size>20?4:3}px solid #e2e8f0`,borderTopColor:'#6366f1',borderRadius:'50%',animation:'spin 0.75s linear infinite'}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></>;
   return full?<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'50vh'}}>{el}</div>:el;
 }
 function EmptyState({icon,title,subtitle,action}){
-  return<div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:48,textAlign:'center'}}>
+  return<div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:'40px 24px',textAlign:'center'}}>
     <div style={{fontSize:40,marginBottom:12}}>{icon}</div>
     <p style={{fontWeight:600,fontSize:16,color:'#1e293b',margin:'0 0 6px'}}>{title}</p>
-    <p style={{color:'#94a3b8',fontSize:13,margin:`0 0 ${action?'20px':0}`}}>{subtitle}</p>
+    <p style={{color:'#94a3b8',fontSize:14,margin:`0 0 ${action?'20px':0}`}}>{subtitle}</p>
     {action}
   </div>;
 }
 function Card({children,style={}}){return<div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:12,...style}}>{children}</div>;}
 function Modal({title,onClose,children}){
-  return<div style={{position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div style={{background:'white',borderRadius:16,padding:28,width:'100%',maxWidth:480,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+  return<div style={{position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:0}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:'white',borderRadius:'16px 16px 0 0',padding:24,width:'100%',maxWidth:500,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 -8px 40px rgba(0,0,0,0.15)'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
         <h2 style={{fontSize:17,fontWeight:700,color:'#1e293b',margin:0}}>{title}</h2>
-        <button onClick={onClose} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:20,lineHeight:1,padding:'2px 6px'}}>✕</button>
+        <button onClick={onClose} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:22,lineHeight:1,padding:'2px 6px'}}>✕</button>
       </div>
       {children}
     </div>
@@ -140,11 +149,11 @@ function ScoreGauge({percentage,size='lg'}){
 }
 function ScoreBadge({pct}){
   const s=pct>=80?{bg:'#d1fae5',c:'#065f46',b:'#6ee7b7'}:pct>=60?{bg:'#fef3c7',c:'#92400e',b:'#fcd34d'}:pct>=40?{bg:'#ede9fe',c:'#4c1d95',b:'#c4b5fd'}:{bg:'#fee2e2',c:'#991b1b',b:'#fca5a5'};
-  return<span style={{background:s.bg,color:s.c,border:`1px solid ${s.b}`,padding:'2px 10px',borderRadius:8,fontWeight:700,fontSize:13}}>{pct}%</span>;
+  return<span style={{background:s.bg,color:s.c,border:`1px solid ${s.b}`,padding:'3px 10px',borderRadius:8,fontWeight:700,fontSize:13,whiteSpace:'nowrap'}}>{pct}%</span>;
 }
 function ClosedBadge({isClosed}){
   if(isClosed===null||isClosed===undefined)return null;
-  return<span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 10px',borderRadius:8,fontSize:12,fontWeight:600,background:isClosed?'#d1fae5':'#fee2e2',color:isClosed?'#065f46':'#991b1b'}}>{isClosed?'✓ Closer':'✗ Non Closer'}</span>;
+  return<span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:8,fontSize:12,fontWeight:600,background:isClosed?'#d1fae5':'#fee2e2',color:isClosed?'#065f46':'#991b1b',whiteSpace:'nowrap'}}>{isClosed?'✓ Closer':'✗ Non Closer'}</span>;
 }
 
 // ─── RADAR (5 sections) ───────────────────────────────────────────────────────
@@ -154,7 +163,7 @@ function RadarScore({scores}){
   const n=SECTIONS.length,cx=110,cy=110,R=80;const angle=i=>(i/n)*2*Math.PI-Math.PI/2;
   const pts=SECTIONS.map((s,i)=>{const v=(scores[s.key]||0)/5,a=angle(i);return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];});
   const allZero=SECTIONS.every(s=>(scores[s.key]||0)===0);
-  return<svg width="220" height="220" viewBox="0 0 220 220" style={{overflow:'visible'}}>
+  return<svg width="220" height="220" viewBox="0 0 220 220" style={{overflow:'visible',maxWidth:'100%'}}>
     {[1,2,3,4,5].map(l=>{const r=(l/5)*R,ps=SECTIONS.map((_,i)=>{const a=angle(i);return`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');return<polygon key={l} points={ps} fill="none" stroke="#e2e8f0" strokeWidth="1"/>;} )}
     {SECTIONS.map((_,i)=>{const a=angle(i);return<line key={i} x1={cx} y1={cy} x2={cx+R*Math.cos(a)} y2={cy+R*Math.sin(a)} stroke="#e2e8f0" strokeWidth="1"/>;})}
     {!allZero&&<><polygon points={pts.map(p=>p.join(',')).join(' ')} fill="rgba(99,102,241,0.15)" stroke="#6366f1" strokeWidth="2"/>{pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={3} fill="#6366f1"/>)}</>}
@@ -162,56 +171,62 @@ function RadarScore({scores}){
   </svg>;
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
+// ─── STATS OVERVIEW ───────────────────────────────────────────────────────────
 function StatsOverview({debriefs}){
+  const isMobile=useIsMobile();
   const total=debriefs.length,avg=total>0?Math.round(debriefs.reduce((s,d)=>s+(d.percentage||0),0)/total):0,best=total>0?Math.round(Math.max(...debriefs.map(d=>d.percentage||0))):0;
   const sorted=[...debriefs].sort((a,b)=>new Date(b.call_date)-new Date(a.call_date));
   const r3=sorted.slice(0,3),p3=sorted.slice(3,6);
   const rA=r3.length>0?r3.reduce((s,d)=>s+(d.percentage||0),0)/r3.length:0,pA=p3.length>0?p3.reduce((s,d)=>s+(d.percentage||0),0)/p3.length:0;
   const trend=p3.length>0?Math.round(rA-pA):0;
-  return<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
+  return<div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:isMobile?10:16}}>
     {[{label:'Total appels',value:total,icon:'📞',bg:'#ede9fe',color:'#6366f1'},{label:'Score moyen',value:`${avg}%`,icon:'🎯',bg:'#d1fae5',color:'#059669'},{label:'Meilleur score',value:`${best}%`,icon:'🏆',bg:'#fef3c7',color:'#d97706'},{label:'Tendance',value:`${trend>=0?'+':''}${trend}%`,icon:trend>=0?'📈':'📉',bg:trend>=0?'#d1fae5':'#fee2e2',color:trend>=0?'#059669':'#dc2626'}].map(({label,value,icon,bg,color})=>(
-      <Card key={label} style={{padding:'16px 20px',display:'flex',alignItems:'center',gap:14}}>
-        <div style={{width:44,height:44,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{icon}</div>
-        <div><p style={{fontSize:11,color:'#64748b',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</p><p style={{fontSize:22,fontWeight:700,color,margin:0}}>{value}</p></div>
+      <Card key={label} style={{padding:isMobile?'12px 14px':'16px 20px',display:'flex',alignItems:'center',gap:isMobile?10:14}}>
+        <div style={{width:isMobile?36:44,height:isMobile?36:44,borderRadius:10,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:isMobile?16:20,flexShrink:0}}>{icon}</div>
+        <div>
+          <p style={{fontSize:10,color:'#64748b',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</p>
+          <p style={{fontSize:isMobile?18:22,fontWeight:700,color,margin:0}}>{value}</p>
+        </div>
       </Card>
     ))}
   </div>;
 }
 
+// ─── PROGRESS CHART ───────────────────────────────────────────────────────────
 function ProgressChart({debriefs}){
-  const [hov,setHov]=useState(null);
+  const[hov,setHov]=useState(null);
   const data=[...debriefs].sort((a,b)=>new Date(a.call_date)-new Date(b.call_date)).map(d=>({date:formatDateShort(d.call_date||d.date),score:Math.round(d.percentage||d.score||0),prospect:d.prospect_name||d.prospect||''}));
-  if(!data.length)return<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:240,color:'#94a3b8',fontSize:14}}>Aucune donnée à afficher</div>;
-  const W=560,H=220,pL=44,pR=20,pT=20,pB=30,iW=W-pL-pR,iH=H-pT-pB;
+  if(!data.length)return<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:200,color:'#94a3b8',fontSize:14}}>Aucune donnée à afficher</div>;
+  const W=560,H=200,pL=44,pR=20,pT=16,pB=28,iW=W-pL-pR,iH=H-pT-pB;
   const xs=data.map((_,i)=>pL+(i/Math.max(data.length-1,1))*iW);const ys=data.map(d=>pT+iH-(d.score/100)*iH);const path=xs.map((x,i)=>`${i===0?'M':'L'} ${x} ${ys[i]}`).join(' ');
-  return<div style={{width:'100%',overflowX:'auto'}}>
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+  return<div style={{width:'100%',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{minWidth:280}}>
       <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity="0.18"/><stop offset="100%" stopColor="#6366f1" stopOpacity="0"/></linearGradient></defs>
-      {[0,25,50,75,100].map(v=>{const y=pT+iH-(v/100)*iH;return<g key={v}><line x1={pL} y1={y} x2={W-pR} y2={y} stroke="#f1f5f9" strokeWidth="1"/><text x={pL-6} y={y+4} textAnchor="end" fontSize="10" fill="#94a3b8">{v}%</text></g>;})}
+      {[0,50,100].map(v=>{const y=pT+iH-(v/100)*iH;return<g key={v}><line x1={pL} y1={y} x2={W-pR} y2={y} stroke="#f1f5f9" strokeWidth="1"/><text x={pL-6} y={y+4} textAnchor="end" fontSize="10" fill="#94a3b8">{v}%</text></g>;})}
       <path d={`${path} L ${xs[xs.length-1]} ${pT+iH} L ${pL} ${pT+iH} Z`} fill="url(#cg)"/>
       <path d={path} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       {data.map((d,i)=>(
-        <g key={i} onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)} style={{cursor:'pointer'}}>
-          <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:4} fill="#6366f1" stroke="white" strokeWidth="2"/>
+        <g key={i} onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)} onTouchStart={()=>setHov(hov===i?null:i)} style={{cursor:'pointer'}}>
+          <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:5} fill="#6366f1" stroke="white" strokeWidth="2"/>
           {hov===i&&<g><rect x={Math.max(pL,Math.min(xs[i]-55,W-pR-110))} y={ys[i]-52} width={110} height={44} rx="6" fill="white" stroke="#e2e8f0" strokeWidth="1"/><text x={Math.max(pL+55,Math.min(xs[i],W-pR-55))} y={ys[i]-34} textAnchor="middle" fontSize="11" fontWeight="600" fill="#1e293b">{d.prospect||'—'}</text><text x={Math.max(pL+55,Math.min(xs[i],W-pR-55))} y={ys[i]-18} textAnchor="middle" fontSize="10" fill="#64748b">{d.date} · {d.score}%</text></g>}
-          <text x={xs[i]} y={pT+iH+18} textAnchor="middle" fontSize="10" fill="#94a3b8">{d.date}</text>
+          <text x={xs[i]} y={pT+iH+16} textAnchor="middle" fontSize="10" fill="#94a3b8">{d.date}</text>
         </g>
       ))}
     </svg>
   </div>;
 }
 
+// ─── GAMIFICATION CARD ────────────────────────────────────────────────────────
 function GamificationCard({gamification}){
   if(!gamification)return null;
   const{points,level,badges}=gamification;const pct=level.next?Math.min(Math.round(((points-level.min)/(level.next-level.min))*100),100):100;
-  return<div style={{background:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)',borderRadius:16,padding:24,color:'white'}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-      <div><p style={{fontSize:11,opacity:0.75,margin:0,textTransform:'uppercase',letterSpacing:'0.06em'}}>Niveau actuel</p><h2 style={{fontSize:22,fontWeight:700,margin:'4px 0 0'}}>{level.icon} {level.name}</h2></div>
-      <div style={{textAlign:'right'}}><p style={{fontSize:11,opacity:0.75,margin:0}}>Points totaux</p><p style={{fontSize:28,fontWeight:700,margin:0}}>{points}</p></div>
+  return<div style={{background:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)',borderRadius:16,padding:20,color:'white'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+      <div><p style={{fontSize:11,opacity:0.75,margin:0,textTransform:'uppercase',letterSpacing:'0.06em'}}>Niveau actuel</p><h2 style={{fontSize:20,fontWeight:700,margin:'4px 0 0'}}>{level.icon} {level.name}</h2></div>
+      <div style={{textAlign:'right'}}><p style={{fontSize:11,opacity:0.75,margin:0}}>Points</p><p style={{fontSize:26,fontWeight:700,margin:0}}>{points}</p></div>
     </div>
-    {level.next&&<div style={{marginBottom:badges.length>0?16:0}}><div style={{display:'flex',justifyContent:'space-between',fontSize:11,opacity:0.75,marginBottom:6}}><span>{points} pts</span><span>{level.next-points} pts avant {computeLevel(level.next).name}</span></div><div style={{height:8,background:'rgba(255,255,255,0.2)',borderRadius:4}}><div style={{height:'100%',width:`${pct}%`,background:'rgba(255,255,255,0.9)',borderRadius:4,transition:'width 0.7s ease'}}/></div></div>}
-    {badges.length>0&&<div><p style={{fontSize:11,opacity:0.75,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>Badges</p><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{badges.map(b=><span key={b.id} style={{background:'rgba(255,255,255,0.2)',padding:'4px 10px',borderRadius:20,fontSize:12,fontWeight:500}}>{b.icon} {b.label}</span>)}</div></div>}
+    {level.next&&<div style={{marginBottom:badges.length>0?14:0}}><div style={{display:'flex',justifyContent:'space-between',fontSize:11,opacity:0.75,marginBottom:5}}><span>{points} pts</span><span>{level.next-points} pts avant {computeLevel(level.next).name}</span></div><div style={{height:8,background:'rgba(255,255,255,0.2)',borderRadius:4}}><div style={{height:'100%',width:`${pct}%`,background:'rgba(255,255,255,0.9)',borderRadius:4,transition:'width 0.7s ease'}}/></div></div>}
+    {badges.length>0&&<div><p style={{fontSize:11,opacity:0.75,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>Badges</p><div style={{display:'flex',flexWrap:'wrap',gap:6}}>{badges.map(b=><span key={b.id} style={{background:'rgba(255,255,255,0.2)',padding:'4px 10px',borderRadius:20,fontSize:12,fontWeight:500}}>{b.icon} {b.label}</span>)}</div></div>}
   </div>;
 }
 
@@ -220,11 +235,11 @@ function Leaderboard({refreshKey}){
   useEffect(()=>{setLoading(true);apiFetch('/gamification/leaderboard').then(setData).catch(()=>setData([])).finally(()=>setLoading(false));},[refreshKey]);
   if(loading||!data.length)return null;
   return<Card style={{overflow:'hidden'}}>
-    <div style={{padding:'16px 20px',borderBottom:'1px solid #f1f5f9',background:'#f8fafc'}}><h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',margin:0}}>🏆 Classement</h3></div>
-    {data.map((c,i)=><div key={c.id} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 20px',borderBottom:i<data.length-1?'1px solid #f1f5f9':'none',background:i===0?'#fffbeb':'white'}}>
-      <div style={{width:30,height:30,borderRadius:'50%',background:i===0?'#fef3c7':i===1?'#f1f5f9':'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,flexShrink:0}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
-      <div style={{flex:1}}><p style={{fontWeight:600,fontSize:13,color:'#1e293b',margin:0}}>{c.name}</p><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs · {c.closed} closings</p></div>
-      <div style={{textAlign:'right'}}><p style={{fontWeight:700,fontSize:15,color:'#6366f1',margin:0}}>{c.points} pts</p><p style={{fontSize:11,color:'#94a3b8',margin:0}}>moy. {c.avgScore}%</p></div>
+    <div style={{padding:'14px 16px',borderBottom:'1px solid #f1f5f9',background:'#f8fafc'}}><h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',margin:0}}>🏆 Classement</h3></div>
+    {data.map((c,i)=><div key={c.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:i<data.length-1?'1px solid #f1f5f9':'none',background:i===0?'#fffbeb':'white'}}>
+      <div style={{width:28,height:28,borderRadius:'50%',background:i===0?'#fef3c7':i===1?'#f1f5f9':'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,flexShrink:0}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+      <div style={{flex:1,minWidth:0}}><p style={{fontWeight:600,fontSize:13,color:'#1e293b',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.name}</p><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs</p></div>
+      <div style={{textAlign:'right',flexShrink:0}}><p style={{fontWeight:700,fontSize:14,color:'#6366f1',margin:0}}>{c.points} pts</p><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{c.avgScore}%</p></div>
     </div>)}
   </Card>;
 }
@@ -232,10 +247,10 @@ function Leaderboard({refreshKey}){
 // ─── FORM PRIMITIVES ──────────────────────────────────────────────────────────
 function RadioGroup({label,options,value,onChange}){
   return<div style={{marginBottom:16}}>
-    {label&&<p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:8}}>{label}</p>}
+    {label&&<p style={{fontSize:14,fontWeight:600,color:'#374151',marginBottom:8}}>{label}</p>}
     <div style={{display:'flex',flexDirection:'column',gap:6}}>
-      {options.map(opt=><label key={opt.value} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 12px',borderRadius:8,border:`1px solid ${value===opt.value?'#6366f1':'#e2e8f0'}`,background:value===opt.value?'#f5f3ff':'white',cursor:'pointer',fontSize:13,color:value===opt.value?'#4c1d95':'#64748b',transition:'all 0.15s'}}>
-        <input type="radio" style={{marginTop:2,accentColor:'#6366f1'}} checked={value===opt.value} onChange={()=>onChange(opt.value)}/><span>{opt.label}</span>
+      {options.map(opt=><label key={opt.value} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'12px 14px',borderRadius:8,border:`1px solid ${value===opt.value?'#6366f1':'#e2e8f0'}`,background:value===opt.value?'#f5f3ff':'white',cursor:'pointer',fontSize:14,color:value===opt.value?'#4c1d95':'#64748b',transition:'all 0.15s'}}>
+        <input type="radio" style={{marginTop:3,accentColor:'#6366f1',flexShrink:0}} checked={value===opt.value} onChange={()=>onChange(opt.value)}/><span>{opt.label}</span>
       </label>)}
     </div>
   </div>;
@@ -243,30 +258,31 @@ function RadioGroup({label,options,value,onChange}){
 function CheckboxGroup({label,options,value=[],onChange}){
   const toggle=v=>value.includes(v)?onChange(value.filter(x=>x!==v)):onChange([...value,v]);
   return<div style={{marginBottom:16}}>
-    {label&&<p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:8}}>{label}</p>}
+    {label&&<p style={{fontSize:14,fontWeight:600,color:'#374151',marginBottom:8}}>{label}</p>}
     <div style={{display:'flex',flexDirection:'column',gap:6}}>
-      {options.map(opt=><label key={opt.value} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 12px',borderRadius:8,border:`1px solid ${value.includes(opt.value)?'#6366f1':'#e2e8f0'}`,background:value.includes(opt.value)?'#f5f3ff':'white',cursor:'pointer',fontSize:13,color:value.includes(opt.value)?'#4c1d95':'#64748b',transition:'all 0.15s'}}>
-        <input type="checkbox" style={{marginTop:2,accentColor:'#6366f1'}} checked={value.includes(opt.value)} onChange={()=>toggle(opt.value)}/><span>{opt.label}</span>
+      {options.map(opt=><label key={opt.value} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'12px 14px',borderRadius:8,border:`1px solid ${value.includes(opt.value)?'#6366f1':'#e2e8f0'}`,background:value.includes(opt.value)?'#f5f3ff':'white',cursor:'pointer',fontSize:14,color:value.includes(opt.value)?'#4c1d95':'#64748b',transition:'all 0.15s'}}>
+        <input type="checkbox" style={{marginTop:3,accentColor:'#6366f1',flexShrink:0}} checked={value.includes(opt.value)} onChange={()=>toggle(opt.value)}/><span>{opt.label}</span>
       </label>)}
     </div>
   </div>;
 }
 function SectionNotes({notes={},onChange}){
-  return<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,paddingTop:16,marginTop:8,borderTop:'1px solid #f1f5f9'}}>
+  const isMobile=useIsMobile(640);
+  return<div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:10,paddingTop:16,marginTop:8,borderTop:'1px solid #f1f5f9'}}>
     {[{key:'strength',label:'👍 Point fort',placeholder:'Ce qui a bien fonctionné...',color:'#059669'},{key:'weakness',label:'👎 Point faible',placeholder:"Ce qui n'a pas bien fonctionné...",color:'#dc2626'},{key:'improvement',label:'📈 Amélioration',placeholder:'Comment améliorer...',color:'#d97706'}].map(({key,label,placeholder,color})=>(
-      <div key={key}><label style={{display:'block',fontSize:11,fontWeight:600,color,marginBottom:5}}>{label}</label>
-        <textarea rows={2} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})} style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'7px 10px',fontSize:12,resize:'none',fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+      <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color,marginBottom:5}}>{label}</label>
+        <textarea rows={isMobile?2:3} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})} style={{width:'100%',borderRadius:8,border:'1px solid #e2e8f0',padding:'8px 10px',fontSize:13,resize:'none',fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
       </div>
     ))}
   </div>;
 }
 function CategoryCard({number,title,children}){
   return<div style={{borderRadius:12,border:'1px solid #e2e8f0',background:'white',overflow:'hidden',marginBottom:16}}>
-    <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 20px',background:'#f5f3ff',borderBottom:'1px solid #e2e8f0'}}>
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',background:'#f5f3ff',borderBottom:'1px solid #e2e8f0'}}>
       <span style={{width:28,height:28,borderRadius:'50%',background:'#6366f1',color:'white',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{number}</span>
       <h3 style={{fontWeight:600,fontSize:14,margin:0,color:'#1e293b'}}>{title}</h3>
     </div>
-    <div style={{padding:20}}>{children}</div>
+    <div style={{padding:16}}>{children}</div>
   </div>;
 }
 
@@ -279,7 +295,7 @@ function DecouverteSection({data={},onChange,notes,onNotesChange}){
     <RadioGroup label="Douleur profonde / identitaire atteinte ?" options={[{value:'oui',label:"✅ Oui — verbalisé fort"},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}]} value={data.douleur_profonde} onChange={v=>set('douleur_profonde',v)}/>
     {data.douleur_profonde&&data.douleur_profonde!=='non'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Note la douleur profonde..." value={data.douleur_profonde_note||''} onChange={e=>set('douleur_profonde_note',e.target.value)}/></div>}
     <CheckboxGroup label="Couches de douleur creusées" options={[{value:'couche1',label:'Couche 1 : physique / performance'},{value:'couche2',label:'Couche 2 : impact quotidien / social'},{value:'couche3',label:'Couche 3 : identité / peur du futur'}]} value={data.couches_douleur||[]} onChange={v=>set('couches_douleur',v)}/>
-    <RadioGroup label="Temporalité demandée ?" options={[{value:'oui',label:'✅ Oui — "depuis combien de temps ?"'},{value:'non',label:'❌ Non'}]} value={data.temporalite} onChange={v=>set('temporalite',v)}/>
+    <RadioGroup label="Temporalité demandée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.temporalite} onChange={v=>set('temporalite',v)}/>
     <RadioGroup label="Urgence naturelle identifiée ?" options={[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}]} value={data.urgence} onChange={v=>set('urgence',v)}/>
     {data.urgence==='oui'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Laquelle ?" value={data.urgence_note||''} onChange={e=>set('urgence_note',e.target.value)}/></div>}
     <SectionNotes notes={notes} onChange={onNotesChange}/>
@@ -327,14 +343,14 @@ function ClosingSection({data={},onChange,notes,onNotesChange}){
 
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({subtitle,icon,children}){
-  return<div style={{minHeight:'100vh',background:'linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+  return<div style={{minHeight:'100vh',background:'linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
     <div style={{width:'100%',maxWidth:460}}>
-      <div style={{textAlign:'center',marginBottom:32}}>
-        <div style={{width:56,height:56,borderRadius:16,background:'#6366f1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,margin:'0 auto 16px'}}>{icon}</div>
-        <h1 style={{fontSize:26,fontWeight:700,color:'#1e293b',margin:0}}>CloserDebrief</h1>
+      <div style={{textAlign:'center',marginBottom:28}}>
+        <div style={{width:56,height:56,borderRadius:16,background:'#6366f1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,margin:'0 auto 14px'}}>{icon}</div>
+        <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>CloserDebrief</h1>
         <p style={{color:'#64748b',fontSize:14,marginTop:6}}>{subtitle}</p>
       </div>
-      <div style={{background:'white',borderRadius:16,padding:32,boxShadow:'0 8px 32px rgba(99,102,241,0.1)',border:'1px solid #e2e8f0'}}>{children}</div>
+      <div style={{background:'white',borderRadius:16,padding:24,boxShadow:'0 8px 32px rgba(99,102,241,0.1)',border:'1px solid #e2e8f0'}}>{children}</div>
     </div>
   </div>;
 }
@@ -344,12 +360,12 @@ function LoginPage({onLogin,goToRegister,goToForgot}){
   return<AuthShell icon="📞" subtitle="Connectez-vous à votre compte">
     <Alert type="error" message={error}/>
     <form onSubmit={submit}>
-      <div style={{marginBottom:16}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Email</label><Input type="email" placeholder="votre@email.com" value={f.email} onChange={e=>setF({...f,email:e.target.value})} required autoFocus/></div>
-      <div style={{marginBottom:8}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Mot de passe</label><Input type="password" placeholder="••••••••" value={f.password} onChange={e=>setF({...f,password:e.target.value})} required/></div>
-      <div style={{textAlign:'right',marginBottom:24}}><button type="button" onClick={goToForgot} style={{background:'none',border:'none',color:'#6366f1',fontSize:12,cursor:'pointer'}}>Mot de passe oublié ?</button></div>
+      <div style={{marginBottom:16}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Email</label><Input type="email" placeholder="votre@email.com" value={f.email} onChange={e=>setF({...f,email:e.target.value})} required autoFocus/></div>
+      <div style={{marginBottom:8}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Mot de passe</label><Input type="password" placeholder="••••••••" value={f.password} onChange={e=>setF({...f,password:e.target.value})} required/></div>
+      <div style={{textAlign:'right',marginBottom:24}}><button type="button" onClick={goToForgot} style={{background:'none',border:'none',color:'#6366f1',fontSize:13,cursor:'pointer'}}>Mot de passe oublié ?</button></div>
       <Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Connexion...':'Se connecter'}</Btn>
     </form>
-    <p style={{textAlign:'center',fontSize:13,color:'#64748b',marginTop:20}}>Pas encore de compte ?{' '}<button onClick={goToRegister} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:13}}>S'inscrire</button></p>
+    <p style={{textAlign:'center',fontSize:14,color:'#64748b',marginTop:20}}>Pas encore de compte ?{' '}<button onClick={goToRegister} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:14}}>S'inscrire</button></p>
   </AuthShell>;
 }
 function RegisterPage({onLogin,goToLogin}){
@@ -358,10 +374,10 @@ function RegisterPage({onLogin,goToLogin}){
   return<AuthShell icon="📞" subtitle="Créez votre compte">
     <Alert type="error" message={error}/>
     <div style={{marginBottom:20}}>
-      <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:8}}>Je suis...</label>
+      <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:8}}>Je suis...</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         {[{value:'closer',label:'🎯 Closer',desc:'Je fais des appels'},{value:'head_of_sales',label:'👑 Head of Sales',desc:'Je gère une équipe'}].map(({value,label,desc})=>(
-          <button key={value} type="button" onClick={()=>setF({...f,role:value})} style={{padding:'12px 16px',borderRadius:10,border:`2px solid ${f.role===value?'#6366f1':'#e2e8f0'}`,background:f.role===value?'#f5f3ff':'white',cursor:'pointer',textAlign:'left',transition:'all 0.2s',fontFamily:'inherit'}}>
+          <button key={value} type="button" onClick={()=>setF({...f,role:value})} style={{padding:'12px 14px',borderRadius:10,border:`2px solid ${f.role===value?'#6366f1':'#e2e8f0'}`,background:f.role===value?'#f5f3ff':'white',cursor:'pointer',textAlign:'left',transition:'all 0.2s',fontFamily:'inherit'}}>
             <p style={{fontWeight:600,fontSize:13,color:f.role===value?'#4c1d95':'#374151',margin:0}}>{label}</p>
             <p style={{fontSize:11,color:'#94a3b8',margin:'2px 0 0'}}>{desc}</p>
           </button>
@@ -370,477 +386,398 @@ function RegisterPage({onLogin,goToLogin}){
     </div>
     <form onSubmit={submit}>
       {[{key:'name',label:'Nom complet',ph:'Jean Dupont',type:'text'},{key:'email',label:'Email',ph:'votre@email.com',type:'email'},{key:'password',label:'Mot de passe',ph:'8 caractères minimum',type:'password'},{key:'confirm',label:'Confirmer',ph:'••••••••',type:'password'}].map(({key,label,ph,type})=>(
-        <div key={key} style={{marginBottom:14}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>{label}</label><Input type={type} placeholder={ph} value={f[key]} onChange={e=>setF({...f,[key]:e.target.value})} required/></div>
+        <div key={key} style={{marginBottom:14}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>{label}</label><Input type={type} placeholder={ph} value={f[key]} onChange={e=>setF({...f,[key]:e.target.value})} required/></div>
       ))}
-      {f.role==='closer'&&<div style={{marginBottom:14}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>🔑 Code d'invitation</label><Input placeholder="Ex: ABC12345" value={f.invite_code} onChange={e=>setF({...f,invite_code:e.target.value.toUpperCase()})} required/><p style={{fontSize:11,color:'#94a3b8',marginTop:4}}>Demandez ce code à votre Head of Sales</p></div>}
+      {f.role==='closer'&&<div style={{marginBottom:14}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>🔑 Code d'invitation</label><Input placeholder="Ex: ABC12345" value={f.invite_code} onChange={e=>setF({...f,invite_code:e.target.value.toUpperCase()})} required/><p style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Demandez ce code à votre Head of Sales</p></div>}
       <Btn type="submit" disabled={loading} style={{width:'100%',marginTop:8}}>{loading?'Création...':'Créer mon compte'}</Btn>
     </form>
-    <p style={{textAlign:'center',fontSize:13,color:'#64748b',marginTop:20}}>Déjà un compte ?{' '}<button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:13}}>Se connecter</button></p>
+    <p style={{textAlign:'center',fontSize:14,color:'#64748b',marginTop:20}}>Déjà un compte ?{' '}<button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',fontWeight:600,cursor:'pointer',fontSize:14}}>Se connecter</button></p>
   </AuthShell>;
 }
 function ForgotPasswordPage({goToLogin}){
   const[email,setEmail]=useState('');const[sent,setSent]=useState(false);const[loading,setLoading]=useState(false);const[error,setError]=useState('');
   const submit=async e=>{e.preventDefault();setError('');setLoading(true);try{await apiFetch('/auth/forgot-password',{method:'POST',body:{email}});setSent(true);}catch(err){setError(err.message);}finally{setLoading(false);}};
   return<AuthShell icon="🔐" subtitle="Réinitialisation du mot de passe">
-    {sent?<div style={{textAlign:'center'}}><div style={{fontSize:48,marginBottom:16}}>📬</div><h2 style={{fontSize:18,fontWeight:600,color:'#1e293b',marginBottom:8}}>Email envoyé !</h2><p style={{color:'#64748b',fontSize:13,marginBottom:24}}>Si cet email est enregistré, vous recevrez un lien sous peu.</p><Btn variant="secondary" onClick={goToLogin} style={{width:'100%'}}>Retour à la connexion</Btn></div>:
-    <><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:20}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Email</label><Input type="email" placeholder="votre@email.com" value={email} onChange={e=>setEmail(e.target.value)} required autoFocus/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Envoi...':'Envoyer le lien'}</Btn></form><p style={{textAlign:'center',fontSize:13,marginTop:16}}><button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',cursor:'pointer',fontSize:13}}>← Retour</button></p></>}
+    {sent?<div style={{textAlign:'center'}}><div style={{fontSize:48,marginBottom:16}}>📬</div><h2 style={{fontSize:18,fontWeight:600,color:'#1e293b',marginBottom:8}}>Email envoyé !</h2><p style={{color:'#64748b',fontSize:14,marginBottom:24}}>Vérifiez votre boîte mail.</p><Btn variant="secondary" onClick={goToLogin} style={{width:'100%'}}>Retour à la connexion</Btn></div>:
+    <><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:20}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Email</label><Input type="email" placeholder="votre@email.com" value={email} onChange={e=>setEmail(e.target.value)} required autoFocus/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Envoi...':'Envoyer le lien'}</Btn></form><p style={{textAlign:'center',fontSize:13,marginTop:16}}><button onClick={goToLogin} style={{background:'none',border:'none',color:'#6366f1',cursor:'pointer',fontSize:13}}>← Retour</button></p></>}
   </AuthShell>;
 }
 function ResetPasswordPage({token,onDone}){
   const[f,setF]=useState({password:'',confirm:''});const[error,setError]=useState('');const[success,setSuccess]=useState(false);const[loading,setLoading]=useState(false);
   const submit=async e=>{e.preventDefault();setError('');if(f.password!==f.confirm)return setError('Les mots de passe ne correspondent pas');if(f.password.length<8)return setError('Trop court');setLoading(true);try{await apiFetch('/auth/reset-password',{method:'POST',body:{token,password:f.password}});setSuccess(true);setTimeout(onDone,2000);}catch(err){setError(err.message);}finally{setLoading(false);}};
   return<AuthShell icon="🔑" subtitle="Nouveau mot de passe">
-    {success?<Alert type="success" message="Mot de passe modifié ! Redirection..."/>:<><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:14}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Nouveau mot de passe</label><Input type="password" placeholder="8 caractères minimum" value={f.password} onChange={e=>setF({...f,password:e.target.value})} required autoFocus/></div><div style={{marginBottom:20}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Confirmer</label><Input type="password" placeholder="••••••••" value={f.confirm} onChange={e=>setF({...f,confirm:e.target.value})} required/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Modification...':'Modifier le mot de passe'}</Btn></form></>}
+    {success?<Alert type="success" message="Mot de passe modifié ! Redirection..."/>:<><Alert type="error" message={error}/><form onSubmit={submit}><div style={{marginBottom:14}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Nouveau mot de passe</label><Input type="password" placeholder="8 caractères minimum" value={f.password} onChange={e=>setF({...f,password:e.target.value})} required autoFocus/></div><div style={{marginBottom:20}}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Confirmer</label><Input type="password" placeholder="••••••••" value={f.confirm} onChange={e=>setF({...f,confirm:e.target.value})} required/></div><Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Modification...':'Modifier le mot de passe'}</Btn></form></>}
   </AuthShell>;
 }
 
 // ─── DEBRIEF CARD ─────────────────────────────────────────────────────────────
 function DebriefCard({debrief,onClick,showUser}){
   const[hov,setHov]=useState(false);const pct=Math.round(debrief.percentage||0);
-  return<div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:'white',border:`1px solid ${hov?'#a5b4fc':'#e2e8f0'}`,borderRadius:12,padding:'14px 18px',cursor:'pointer',transition:'all 0.15s',boxShadow:hov?'0 4px 16px rgba(99,102,241,0.1)':'none',display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
+  return<div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:'white',border:`1px solid ${hov?'#a5b4fc':'#e2e8f0'}`,borderRadius:12,padding:'14px 16px',cursor:'pointer',transition:'all 0.15s',boxShadow:hov?'0 4px 16px rgba(99,102,241,0.1)':'none',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
     <div style={{flex:1,minWidth:0}}>
       <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:'0 0 4px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{debrief.prospect_name}</p>
-      <div style={{display:'flex',alignItems:'center',gap:12,fontSize:12,color:'#94a3b8',flexWrap:'wrap'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,fontSize:12,color:'#94a3b8',flexWrap:'wrap'}}>
         <span>📅 {formatDate(debrief.call_date)}</span><span>👤 {debrief.closer_name}</span>
         {showUser&&debrief.user_name&&<span style={{background:'#f1f5f9',padding:'1px 6px',borderRadius:4}}>par {debrief.user_name}</span>}
       </div>
     </div>
-    <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}><ClosedBadge isClosed={debrief.is_closed}/><ScoreBadge pct={pct}/><span style={{color:hov?'#6366f1':'#d1d5db',fontSize:18,transition:'color 0.15s'}}>›</span></div>
+    <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+      <ClosedBadge isClosed={debrief.is_closed}/>
+      <ScoreBadge pct={pct}/>
+      <span style={{color:hov?'#6366f1':'#d1d5db',fontSize:18}}>›</span>
+    </div>
   </div>;
 }
 
-// ─── MEMBER CARD (avec gestion équipe) ────────────────────────────────────────
-function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, onSelect }) {
-  const [movingTo, setMovingTo] = useState('');
-  const otherTeams = teams.filter(t => t.id !== currentTeamId);
-  return (
-    <>
-      <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 20px',cursor:'pointer',transition:'background 0.1s',background:selected?'#f5f3ff':'white'}} onClick={onSelect}>
-        <div style={{width:38,height:38,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,color:'#6366f1',flexShrink:0}}>{member.name.charAt(0)}</div>
-        <div style={{flex:1}}>
-          <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0}}>{member.name}</p>
-          <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{member.email} · {member.level.icon} {member.level.name}</p>
-        </div>
-        <div style={{display:'flex',gap:18,textAlign:'center',marginRight:8}}>
-          {[{l:'Debriefs',v:member.totalDebriefs,c:'#1e293b'},{l:'Moy.',v:`${member.avgScore}%`,c:'#1e293b'},{l:'Closings',v:member.closed,c:'#059669'}].map(({l,v,c})=>(
-            <div key={l}><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{l}</p><p style={{fontWeight:700,color:c,margin:0,fontSize:13}}>{v}</p></div>
-          ))}
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontWeight:700,fontSize:14,color:'#6366f1'}}>{member.points} pts</span>
-          {otherTeams.length > 0 && (
-            <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} onClick={e=>e.stopPropagation()}
-              style={{fontSize:12,border:'1px solid #e2e8f0',borderRadius:6,padding:'4px 8px',fontFamily:'inherit',color:'#374151',background:'white',cursor:'pointer'}}>
-              <option value="">Déplacer vers...</option>
+// ─── MEMBER ROW ───────────────────────────────────────────────────────────────
+function MemberRow({member,teams,currentTeamId,onRemove,onMove,selected,onSelect}){
+  const[movingTo,setMovingTo]=useState('');const isMobile=useIsMobile();
+  const otherTeams=teams.filter(t=>t.id!==currentTeamId);
+  return<>
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',cursor:'pointer',background:selected?'#f5f3ff':'white'}} onClick={onSelect}>
+      <div style={{width:36,height:36,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,color:'#6366f1',flexShrink:0}}>{member.name.charAt(0)}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{member.name}</p>
+        <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{member.level.icon} {member.level.name} · {member.totalDebriefs} debriefs · {member.avgScore}%</p>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+        {!isMobile&&otherTeams.length>0&&(
+          <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} onClick={e=>e.stopPropagation()} style={{fontSize:12,border:'1px solid #e2e8f0',borderRadius:6,padding:'4px 8px',fontFamily:'inherit',color:'#374151',background:'white',cursor:'pointer'}}>
+            <option value="">Déplacer...</option>
+            {otherTeams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        )}
+        {movingTo&&<Btn variant="green" onClick={e=>{e.stopPropagation();onMove(member.id,movingTo);setMovingTo('');}} style={{fontSize:12,padding:'4px 10px'}}>✓</Btn>}
+        <Btn variant="danger" onClick={e=>{e.stopPropagation();onRemove(member.id,member.name);}} style={{width:30,height:30,padding:0,borderRadius:8,fontSize:12}}>✕</Btn>
+        <span style={{color:selected?'#6366f1':'#d1d5db',fontSize:14}}>{selected?'▲':'▼'}</span>
+      </div>
+    </div>
+    {selected&&(
+      <div style={{padding:'14px 16px 18px',background:'#fafafa',borderTop:'1px solid #f1f5f9'}}>
+        {isMobile&&otherTeams.length>0&&(
+          <div style={{marginBottom:12,display:'flex',gap:8,alignItems:'center'}}>
+            <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} style={{flex:1,fontSize:13,border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 10px',fontFamily:'inherit',color:'#374151',background:'white'}}>
+              <option value="">Déplacer vers une autre équipe...</option>
               {otherTeams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-          )}
-          {movingTo && (
-            <Btn variant="green" onClick={e=>{e.stopPropagation();onMove(member.id,movingTo);setMovingTo('');}} style={{fontSize:12,padding:'4px 10px'}}>✓</Btn>
-          )}
-          <Btn variant="danger" onClick={e=>{e.stopPropagation();onRemove(member.id,member.name);}} style={{width:30,height:30,padding:0,borderRadius:8,fontSize:12}}>✕</Btn>
-          <span style={{color:selected?'#6366f1':'#d1d5db',fontSize:14}}>{selected?'▲':'▼'}</span>
-        </div>
+            {movingTo&&<Btn variant="green" onClick={()=>{onMove(member.id,movingTo);setMovingTo('');}} style={{fontSize:13,padding:'8px 14px'}}>✓ Déplacer</Btn>}
+          </div>
+        )}
+        {member.chartData.length>0?<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:10}}>📈 Évolution du score</p><ProgressChart debriefs={member.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>:<p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'16px 0'}}>Aucun debrief enregistré</p>}
+        {member.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:10}}>{member.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
       </div>
-      {selected && (
-        <div style={{padding:'16px 20px 20px',background:'#fafafa',borderTop:'1px solid #f1f5f9'}}>
-          {member.chartData.length>0
-            ?<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:12}}>📈 Évolution du score</p><ProgressChart debriefs={member.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>
-            :<p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief pour l'instant</p>
-          }
-          {member.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:12}}>{member.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
-        </div>
-      )}
-    </>
-  );
+    )}
+  </>;
 }
 
-// ─── HOS PAGE — MULTI-ÉQUIPES ─────────────────────────────────────────────────
-function HOSPage({ toast, leaderboardKey }) {
-  const [tab, setTab]         = useState('dashboard');
-  const [teams, setTeams]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTeamId, setActiveTeamId] = useState(null);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [generating, setGenerating] = useState(null); // teamId en cours
-  const [copied, setCopied]   = useState(null);
-  const [showCreateTeam, setShowCreateTeam] = useState(false);
-  const [newTeamName, setNewTeamName] = useState('');
-  const [editingTeam, setEditingTeam] = useState(null); // {id, name}
-  const [creating, setCreating] = useState(false);
+// ─── HOS PAGE ─────────────────────────────────────────────────────────────────
+function HOSPage({toast,leaderboardKey}){
+  const[tab,setTab]=useState('dashboard');const[teams,setTeams]=useState([]);const[loading,setLoading]=useState(true);
+  const[activeTeamId,setActiveTeamId]=useState(null);const[selectedMember,setSelectedMember]=useState(null);
+  const[generating,setGenerating]=useState(null);const[copied,setCopied]=useState(null);
+  const[showCreateTeam,setShowCreateTeam]=useState(false);const[newTeamName,setNewTeamName]=useState('');
+  const[editingTeam,setEditingTeam]=useState(null);const[creating,setCreating]=useState(false);
+  const isMobile=useIsMobile();
 
-  const load = useCallback(() => {
-    setLoading(true);
-    apiFetch('/teams').then(data => {
-      setTeams(data);
-      // Sélectionner la première équipe par défaut
-      if (data.length > 0 && !activeTeamId) setActiveTeamId(data[0].id);
-    }).catch(() => setTeams([])).finally(() => setLoading(false));
-  }, [activeTeamId]);
+  const load=useCallback(()=>{setLoading(true);apiFetch('/teams').then(data=>{setTeams(data);if(data.length>0&&!activeTeamId)setActiveTeamId(data[0].id);}).catch(()=>setTeams([])).finally(()=>setLoading(false));},[activeTeamId]);
+  useEffect(()=>{load();},[leaderboardKey]);
 
-  useEffect(() => { load(); }, [leaderboardKey]);
+  const createTeam=async()=>{if(!newTeamName.trim())return;setCreating(true);try{const team=await apiFetch('/teams',{method:'POST',body:{name:newTeamName.trim()}});setTeams(prev=>[...prev,team]);setActiveTeamId(team.id);setNewTeamName('');setShowCreateTeam(false);toast(`Équipe "${team.name}" créée !`);}catch(err){toast(err.message,'error');}finally{setCreating(false);}};
+  const renameTeam=async()=>{if(!editingTeam?.name.trim())return;try{await apiFetch(`/teams/${editingTeam.id}`,{method:'PATCH',body:{name:editingTeam.name.trim()}});setTeams(prev=>prev.map(t=>t.id===editingTeam.id?{...t,name:editingTeam.name.trim()}:t));setEditingTeam(null);toast('Équipe renommée');}catch(err){toast(err.message,'error');}};
+  const deleteTeam=async(teamId,teamName)=>{if(!confirm(`Supprimer l'équipe "${teamName}" ?`))return;try{await apiFetch(`/teams/${teamId}`,{method:'DELETE'});const remaining=teams.filter(t=>t.id!==teamId);setTeams(remaining);if(activeTeamId===teamId)setActiveTeamId(remaining[0]?.id||null);toast(`Équipe supprimée`);}catch(err){toast(err.message,'error');}};
+  const generateCode=async teamId=>{setGenerating(teamId);try{const invite=await apiFetch(`/teams/${teamId}/invite`,{method:'POST'});setTeams(prev=>prev.map(t=>t.id===teamId?{...t,inviteCodes:[invite,...t.inviteCodes]}:t));toast('Code généré !');}catch(err){toast(err.message,'error');}finally{setGenerating(null);}};
+  const deleteCode=async(teamId,codeId)=>{try{await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'});setTeams(prev=>prev.map(t=>t.id===teamId?{...t,inviteCodes:t.inviteCodes.filter(c=>c.id!==codeId)}:t));toast('Code supprimé');}catch(err){toast(err.message,'error');}};
+  const removeMember=async(teamId,memberId,name)=>{if(!confirm(`Retirer ${name} ?`))return;try{await apiFetch(`/teams/${teamId}/members/${memberId}`,{method:'DELETE'});setTeams(prev=>prev.map(t=>t.id===teamId?{...t,members:t.members.filter(m=>m.id!==memberId)}:t));setSelectedMember(null);toast(`${name} retiré`);}catch(err){toast(err.message,'error');}};
+  const moveMember=async(memberId,toTeamId)=>{const fromTeam=teams.find(t=>t.members.some(m=>m.id===memberId));if(!fromTeam)return;const member=fromTeam.members.find(m=>m.id===memberId);try{await apiFetch(`/teams/${toTeamId}/members/${memberId}`,{method:'PATCH'});setTeams(prev=>prev.map(t=>{if(t.id===fromTeam.id)return{...t,members:t.members.filter(m=>m.id!==memberId)};if(t.id===toTeamId)return{...t,members:[...t.members,{...member,team_id:toTeamId}]};return t;}));const toTeam=teams.find(t=>t.id===toTeamId);toast(`${member.name} déplacé vers "${toTeam?.name}"`);setSelectedMember(null);}catch(err){toast(err.message,'error');}};
+  const handleCopy=code=>{copyToClipboard(code);setCopied(code);toast('Code copié !');setTimeout(()=>setCopied(null),2000);};
 
-  const activeTeam = teams.find(t => t.id === activeTeamId);
+  if(loading)return<Spinner full/>;
 
-  const createTeam = async () => {
-    if (!newTeamName.trim()) return;
-    setCreating(true);
-    try {
-      const team = await apiFetch('/teams', { method:'POST', body:{ name:newTeamName.trim() } });
-      setTeams(prev => [...prev, team]);
-      setActiveTeamId(team.id);
-      setNewTeamName('');
-      setShowCreateTeam(false);
-      toast(`Équipe "${team.name}" créée !`);
-    } catch(err) { toast(err.message,'error'); } finally { setCreating(false); }
-  };
+  const allMembers=teams.flatMap(t=>t.members);
+  const totalDebriefs=allMembers.reduce((s,m)=>s+m.totalDebriefs,0),totalClosings=allMembers.reduce((s,m)=>s+m.closed,0);
+  const avgTeam=allMembers.length>0?Math.round(allMembers.reduce((s,m)=>s+m.avgScore,0)/allMembers.length):0;
+  const closeRate=totalDebriefs>0?Math.round((totalClosings/totalDebriefs)*100):0;
+  const topPerformer=allMembers.length>0?allMembers.reduce((b,m)=>m.avgScore>b.avgScore?m:b,allMembers[0]):null;
+  const mostActive=allMembers.length>0?allMembers.reduce((b,m)=>m.totalDebriefs>b.totalDebriefs?m:b,allMembers[0]):null;
 
-  const renameTeam = async () => {
-    if (!editingTeam?.name.trim()) return;
-    try {
-      await apiFetch(`/teams/${editingTeam.id}`, { method:'PATCH', body:{ name:editingTeam.name.trim() } });
-      setTeams(prev => prev.map(t => t.id===editingTeam.id ? {...t,name:editingTeam.name.trim()} : t));
-      setEditingTeam(null);
-      toast('Équipe renommée');
-    } catch(err) { toast(err.message,'error'); }
-  };
+  return<div style={{display:'flex',flexDirection:'column',gap:20}}>
+    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+      <div><h1 style={{fontSize:22,fontWeight:700,color:'#1e293b',margin:0}}>👑 Head of Sales</h1><p style={{color:'#64748b',fontSize:13,marginTop:4}}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p></div>
+      <div style={{display:'flex',gap:4,background:'#f1f5f9',padding:4,borderRadius:10}}>
+        {[{key:'dashboard',label:'📊'},{key:'equipes',label:'👥'}].map(({key,label})=>(
+          <button key={key} onClick={()=>setTab(key)} style={{padding:'8px 16px',borderRadius:8,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',transition:'all 0.2s',background:tab===key?'white':'transparent',color:tab===key?'#1e293b':'#64748b',boxShadow:tab===key?'0 1px 4px rgba(0,0,0,0.08)':'none',fontFamily:'inherit'}}>{label} {!isMobile&&(key==='dashboard'?'Dashboard':'Équipes')}</button>
+        ))}
+      </div>
+    </div>
 
-  const deleteTeam = async (teamId, teamName) => {
-    if (!confirm(`Supprimer l'équipe "${teamName}" ? Les membres seront libérés.`)) return;
-    try {
-      await apiFetch(`/teams/${teamId}`, { method:'DELETE' });
-      const remaining = teams.filter(t => t.id !== teamId);
-      setTeams(remaining);
-      if (activeTeamId === teamId) setActiveTeamId(remaining[0]?.id || null);
-      toast(`Équipe "${teamName}" supprimée`);
-    } catch(err) { toast(err.message,'error'); }
-  };
-
-  const generateCode = async teamId => {
-    setGenerating(teamId);
-    try {
-      const invite = await apiFetch(`/teams/${teamId}/invite`, { method:'POST' });
-      setTeams(prev => prev.map(t => t.id===teamId ? {...t, inviteCodes:[invite,...t.inviteCodes]} : t));
-      toast('Code généré !');
-    } catch(err) { toast(err.message,'error'); } finally { setGenerating(null); }
-  };
-
-  const deleteCode = async (teamId, codeId) => {
-    try {
-      await apiFetch(`/teams/${teamId}/invite/${codeId}`, { method:'DELETE' });
-      setTeams(prev => prev.map(t => t.id===teamId ? {...t, inviteCodes:t.inviteCodes.filter(c=>c.id!==codeId)} : t));
-      toast('Code supprimé');
-    } catch(err) { toast(err.message,'error'); }
-  };
-
-  const removeMember = async (teamId, memberId, name) => {
-    if (!confirm(`Retirer ${name} de l'équipe ?`)) return;
-    try {
-      await apiFetch(`/teams/${teamId}/members/${memberId}`, { method:'DELETE' });
-      setTeams(prev => prev.map(t => t.id===teamId ? {...t, members:t.members.filter(m=>m.id!==memberId)} : t));
-      setSelectedMember(null);
-      toast(`${name} retiré`);
-    } catch(err) { toast(err.message,'error'); }
-  };
-
-  const moveMember = async (memberId, toTeamId) => {
-    const fromTeam = teams.find(t => t.members.some(m => m.id===memberId));
-    if (!fromTeam) return;
-    const member = fromTeam.members.find(m => m.id===memberId);
-    try {
-      await apiFetch(`/teams/${toTeamId}/members/${memberId}`, { method:'PATCH' });
-      setTeams(prev => prev.map(t => {
-        if (t.id === fromTeam.id) return {...t, members:t.members.filter(m=>m.id!==memberId)};
-        if (t.id === toTeamId) return {...t, members:[...t.members, {...member,team_id:toTeamId}]};
-        return t;
-      }));
-      const toTeam = teams.find(t=>t.id===toTeamId);
-      toast(`${member.name} déplacé vers "${toTeam?.name}"`);
-      setSelectedMember(null);
-    } catch(err) { toast(err.message,'error'); }
-  };
-
-  const handleCopy = code => { copyToClipboard(code); setCopied(code); toast('Code copié !'); setTimeout(()=>setCopied(null),2000); };
-
-  if (loading) return <Spinner full/>;
-
-  // KPIs globaux toutes équipes
-  const allMembers   = teams.flatMap(t => t.members);
-  const totalDebriefs = allMembers.reduce((s,m)=>s+m.totalDebriefs,0);
-  const totalClosings = allMembers.reduce((s,m)=>s+m.closed,0);
-  const avgTeam      = allMembers.length>0 ? Math.round(allMembers.reduce((s,m)=>s+m.avgScore,0)/allMembers.length) : 0;
-  const closeRate    = totalDebriefs>0 ? Math.round((totalClosings/totalDebriefs)*100) : 0;
-
-  return (
-    <div style={{display:'flex',flexDirection:'column',gap:24}}>
-      {/* Header */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
-        <div>
-          <h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>👑 Head of Sales</h1>
-          <p style={{color:'#64748b',fontSize:13,marginTop:4}}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p>
-        </div>
-        <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <div style={{display:'flex',gap:4,background:'#f1f5f9',padding:4,borderRadius:10}}>
-            {[{key:'dashboard',label:'📊 Dashboard'},{key:'equipes',label:'👥 Équipes'}].map(({key,label})=>(
-              <button key={key} onClick={()=>setTab(key)} style={{padding:'8px 16px',borderRadius:8,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',transition:'all 0.2s',background:tab===key?'white':'transparent',color:tab===key?'#1e293b':'#64748b',boxShadow:tab===key?'0 1px 4px rgba(0,0,0,0.08)':'none',fontFamily:'inherit'}}>{label}</button>
-            ))}
-          </div>
-        </div>
+    {tab==='dashboard'&&(allMembers.length===0?<EmptyState icon="👥" title="Aucun closer" subtitle="Créez des équipes et générez des codes" action={<Btn onClick={()=>setTab('equipes')}>Gérer les équipes</Btn>}/>:<>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:isMobile?10:16}}>
+        {[{label:'Debriefs',value:totalDebriefs,icon:'📋',bg:'#ede9fe',color:'#6366f1'},{label:'Score moy.',value:`${avgTeam}%`,icon:'🎯',bg:'#d1fae5',color:'#059669'},{label:'Taux closing',value:`${closeRate}%`,icon:'✅',bg:'#fef3c7',color:'#d97706'},{label:'Closings',value:totalClosings,icon:'🏆',bg:'#f0fdf4',color:'#059669'}].map(({label,value,icon,bg,color})=>(
+          <Card key={label} style={{padding:'12px 14px',display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:38,height:38,borderRadius:10,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{icon}</div>
+            <div><p style={{fontSize:10,color:'#64748b',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</p><p style={{fontSize:20,fontWeight:700,color,margin:0}}>{value}</p></div>
+          </Card>
+        ))}
       </div>
 
-      {/* ─── DASHBOARD ─── */}
-      {tab==='dashboard' && (
-        allMembers.length===0 ? (
-          <EmptyState icon="👥" title="Aucun closer dans vos équipes" subtitle="Créez des équipes et générez des codes d'invitation" action={<Btn onClick={()=>setTab('equipes')}>Gérer les équipes</Btn>}/>
-        ) : <>
-          {/* KPIs globaux */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
-            {[{label:'Total debriefs',value:totalDebriefs,icon:'📋',bg:'#ede9fe',color:'#6366f1'},{label:'Score moyen',value:`${avgTeam}%`,icon:'🎯',bg:'#d1fae5',color:'#059669'},{label:'Taux de closing',value:`${closeRate}%`,icon:'✅',bg:'#fef3c7',color:'#d97706'},{label:'Total closings',value:totalClosings,icon:'🏆',bg:'#f0fdf4',color:'#059669'}].map(({label,value,icon,bg,color})=>(
-              <Card key={label} style={{padding:'16px 20px',display:'flex',alignItems:'center',gap:14}}>
-                <div style={{width:44,height:44,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{icon}</div>
-                <div><p style={{fontSize:11,color:'#64748b',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</p><p style={{fontSize:22,fontWeight:700,color,margin:0}}>{value}</p></div>
-              </Card>
-            ))}
+      {topPerformer&&<div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
+        <div style={{background:'linear-gradient(135deg,#fef3c7,#fde68a)',border:'1px solid #fcd34d',borderRadius:12,padding:16}}>
+          <p style={{fontSize:11,color:'#92400e',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',margin:'0 0 8px'}}>🥇 Meilleur score</p>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:15,color:'#d97706',flexShrink:0}}>{topPerformer.name.charAt(0)}</div>
+            <div><p style={{fontWeight:700,fontSize:14,color:'#1e293b',margin:0}}>{topPerformer.name}</p><p style={{fontSize:12,color:'#92400e',margin:0}}>{topPerformer.avgScore}% · {topPerformer.level.icon} {topPerformer.level.name}</p></div>
           </div>
+        </div>
+        {mostActive&&mostActive.id!==topPerformer.id&&<div style={{background:'linear-gradient(135deg,#ede9fe,#ddd6fe)',border:'1px solid #c4b5fd',borderRadius:12,padding:16}}>
+          <p style={{fontSize:11,color:'#4c1d95',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',margin:'0 0 8px'}}>🔥 Plus actif</p>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:15,color:'#6366f1',flexShrink:0}}>{mostActive.name.charAt(0)}</div>
+            <div><p style={{fontWeight:700,fontSize:14,color:'#1e293b',margin:0}}>{mostActive.name}</p><p style={{fontSize:12,color:'#4c1d95',margin:0}}>{mostActive.totalDebriefs} debriefs · {mostActive.closed} closings</p></div>
+          </div>
+        </div>}
+      </div>}
 
-          {/* Onglets par équipe */}
-          {teams.length > 1 && (
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-              <button onClick={()=>setActiveTeamId(null)} style={{padding:'7px 16px',borderRadius:20,border:`1px solid ${!activeTeamId?'#6366f1':'#e2e8f0'}`,background:!activeTeamId?'#ede9fe':'white',color:!activeTeamId?'#4c1d95':'#64748b',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
-                Toutes les équipes
-              </button>
-              {teams.map(t=>(
-                <button key={t.id} onClick={()=>setActiveTeamId(t.id)} style={{padding:'7px 16px',borderRadius:20,border:`1px solid ${activeTeamId===t.id?'#6366f1':'#e2e8f0'}`,background:activeTeamId===t.id?'#ede9fe':'white',color:activeTeamId===t.id?'#4c1d95':'#64748b',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
-                  {t.name} <span style={{opacity:0.6,fontSize:11}}>({t.members.length})</span>
-                </button>
-              ))}
+      {teams.length>1&&<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        <button onClick={()=>setActiveTeamId(null)} style={{padding:'6px 14px',borderRadius:20,border:`1px solid ${!activeTeamId?'#6366f1':'#e2e8f0'}`,background:!activeTeamId?'#ede9fe':'white',color:!activeTeamId?'#4c1d95':'#64748b',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>Toutes</button>
+        {teams.map(t=><button key={t.id} onClick={()=>setActiveTeamId(t.id)} style={{padding:'6px 14px',borderRadius:20,border:`1px solid ${activeTeamId===t.id?'#6366f1':'#e2e8f0'}`,background:activeTeamId===t.id?'#ede9fe':'white',color:activeTeamId===t.id?'#4c1d95':'#64748b',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>{t.name} <span style={{opacity:0.6,fontSize:11}}>({t.members.length})</span></button>)}
+      </div>}
+
+      {(()=>{
+        const displayMembers=activeTeamId?(teams.find(t=>t.id===activeTeamId)?.members||[]):allMembers;
+        if(!displayMembers.length)return<EmptyState icon="👤" title="Aucun membre" subtitle="Générez un code dans l'onglet Équipes" action={null}/>;
+        return<Card style={{overflow:'hidden'}}>
+          <div style={{padding:'14px 16px',borderBottom:'1px solid #f1f5f9',background:'#f8fafc'}}><h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',margin:0}}>Performance individuelle</h3></div>
+          {isMobile?(
+            // Mobile: card layout
+            <div style={{display:'flex',flexDirection:'column',gap:0}}>
+              {[...displayMembers].sort((a,b)=>b.avgScore-a.avgScore).map((m,i)=>{
+                const cr=m.totalDebriefs>0?Math.round((m.closed/m.totalDebriefs)*100):0;
+                const mTeam=teams.find(t=>t.members.some(x=>x.id===m.id));
+                const isSel=selectedMember===m.id;
+                return<div key={m.id} style={{borderBottom:i<displayMembers.length-1?'1px solid #f1f5f9':'none'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,padding:'14px 16px',cursor:'pointer',background:isSel?'#f5f3ff':'white'}} onClick={()=>setSelectedMember(isSel?null:m.id)}>
+                    <div style={{width:36,height:36,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0)}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{fontWeight:600,fontSize:14,color:'#1e293b',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</p>
+                      <p style={{fontSize:12,color:'#94a3b8',margin:0}}>{mTeam?.name} · {m.level.icon} {m.level.name}</p>
+                    </div>
+                    <div style={{textAlign:'right',flexShrink:0}}>
+                      <p style={{fontWeight:700,fontSize:15,color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':m.avgScore>=40?'#6366f1':'#ef4444',margin:0}}>{m.avgScore}%</p>
+                      <p style={{fontSize:11,color:'#94a3b8',margin:0}}>{m.points} pts</p>
+                    </div>
+                    <span style={{color:isSel?'#6366f1':'#d1d5db',fontSize:14,flexShrink:0}}>{isSel?'▲':'▼'}</span>
+                  </div>
+                  {isSel&&<div style={{padding:'0 16px 16px',background:'#fafafa',borderTop:'1px solid #f1f5f9'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,margin:'12px 0'}}>
+                      {[{l:'Debriefs',v:m.totalDebriefs},{l:'Closings',v:m.closed},{l:'Taux',v:`${cr}%`}].map(({l,v})=><div key={l} style={{background:'white',borderRadius:8,padding:'8px 10px',textAlign:'center',border:'1px solid #e2e8f0'}}><p style={{fontSize:11,color:'#94a3b8',margin:0}}>{l}</p><p style={{fontWeight:700,color:'#1e293b',margin:0,fontSize:14}}>{v}</p></div>)}
+                    </div>
+                    {m.chartData.length>0&&<ProgressChart debriefs={m.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/>}
+                  </div>}
+                </div>;
+              })}
+            </div>
+          ):(
+            // Desktop: table layout
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead><tr style={{background:'#f8fafc'}}>{['Closer','Équipe','Niveau','Debriefs','Score','Closings','Taux','Points'].map(h=><th key={h} style={{padding:'10px 14px',fontSize:11,fontWeight:600,color:'#64748b',textAlign:'left',textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:'1px solid #e2e8f0',whiteSpace:'nowrap'}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {[...displayMembers].sort((a,b)=>b.avgScore-a.avgScore).map((m,i)=>{
+                    const cr=m.totalDebriefs>0?Math.round((m.closed/m.totalDebriefs)*100):0;
+                    const mTeam=teams.find(t=>t.members.some(x=>x.id===m.id));
+                    const isSel=selectedMember===m.id;
+                    return<>
+                      <tr key={m.id} onClick={()=>setSelectedMember(isSel?null:m.id)} style={{cursor:'pointer',background:isSel?'#f5f3ff':i%2===0?'white':'#fafafa',borderBottom:'1px solid #f1f5f9'}}>
+                        <td style={{padding:'12px 14px'}}><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:28,height:28,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0)}</div><span style={{fontWeight:600,fontSize:13,color:'#1e293b'}}>{m.name}</span></div></td>
+                        <td style={{padding:'12px 14px'}}><span style={{fontSize:12,background:'#f1f5f9',padding:'2px 8px',borderRadius:6,color:'#64748b'}}>{mTeam?.name||'—'}</span></td>
+                        <td style={{padding:'12px 14px',fontSize:12,color:'#64748b',whiteSpace:'nowrap'}}>{m.level.icon} {m.level.name}</td>
+                        <td style={{padding:'12px 14px',fontSize:13,fontWeight:600,color:'#1e293b'}}>{m.totalDebriefs}</td>
+                        <td style={{padding:'12px 14px'}}><span style={{fontWeight:700,fontSize:13,color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':m.avgScore>=40?'#6366f1':'#ef4444'}}>{m.avgScore}%</span></td>
+                        <td style={{padding:'12px 14px',fontSize:13,fontWeight:600,color:'#059669'}}>{m.closed}</td>
+                        <td style={{padding:'12px 14px'}}><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:50,height:6,background:'#f1f5f9',borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:`${cr}%`,background:cr>=50?'#059669':cr>=30?'#d97706':'#ef4444',borderRadius:3}}/></div><span style={{fontSize:12,fontWeight:600,color:'#374151',minWidth:28}}>{cr}%</span></div></td>
+                        <td style={{padding:'12px 14px',fontWeight:700,fontSize:13,color:'#6366f1'}}>{m.points}</td>
+                      </tr>
+                      {isSel&&<tr key={`${m.id}-d`}><td colSpan={8} style={{padding:0,background:'#fafafa',borderBottom:'1px solid #f1f5f9'}}>
+                        <div style={{padding:'16px 20px'}}>
+                          {m.chartData.length>0&&<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:10}}>📈 Évolution de {m.name}</p><ProgressChart debriefs={m.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>}
+                          {m.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:10}}>{m.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
+                        </div>
+                      </td></tr>}
+                    </>;
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
+        </Card>;
+      })()}
+    </>)}
 
-          {/* Tableau de performance */}
-          {(() => {
-            const displayMembers = activeTeamId ? (teams.find(t=>t.id===activeTeamId)?.members||[]) : allMembers;
-            if (!displayMembers.length) return <EmptyState icon="👤" title="Aucun membre dans cette équipe" subtitle="Générez un code d'invitation dans l'onglet Équipes" action={null}/>;
-            return (
-              <Card style={{overflow:'hidden'}}>
-                <div style={{padding:'16px 20px',borderBottom:'1px solid #f1f5f9',background:'#f8fafc',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',margin:0}}>Performance individuelle</h3>
-                  {activeTeamId && <span style={{fontSize:12,color:'#94a3b8'}}>{activeTeam?.name}</span>}
+    {tab==='equipes'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{display:'flex',justifyContent:'flex-end'}}><Btn onClick={()=>setShowCreateTeam(true)}>+ Nouvelle équipe</Btn></div>
+      {teams.length===0&&<EmptyState icon="👥" title="Aucune équipe" subtitle="Créez votre première équipe" action={<Btn onClick={()=>setShowCreateTeam(true)}>+ Créer une équipe</Btn>}/>}
+      {teams.map(team=>(
+        <Card key={team.id} style={{overflow:'hidden'}}>
+          <div style={{padding:'14px 16px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+              {editingTeam?.id===team.id?(
+                <div style={{display:'flex',alignItems:'center',gap:8,flex:1}}>
+                  <input value={editingTeam.name} onChange={e=>setEditingTeam({...editingTeam,name:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')renameTeam();if(e.key==='Escape')setEditingTeam(null);}} style={{flex:1,fontSize:14,fontWeight:600,border:'2px solid #6366f1',borderRadius:8,padding:'4px 10px',fontFamily:'inherit',outline:'none'}} autoFocus/>
+                  <Btn onClick={renameTeam} style={{padding:'5px 12px',fontSize:12}}>✓</Btn>
+                  <Btn variant="ghost" onClick={()=>setEditingTeam(null)} style={{padding:'5px 8px',fontSize:12}}>✕</Btn>
                 </div>
-                <div style={{overflowX:'auto'}}>
-                  <table style={{width:'100%',borderCollapse:'collapse'}}>
-                    <thead><tr style={{background:'#f8fafc'}}>
-                      {['Closer','Équipe','Niveau','Debriefs','Score moy.','Closings','Taux','Points'].map(h=>(
-                        <th key={h} style={{padding:'10px 14px',fontSize:11,fontWeight:600,color:'#64748b',textAlign:'left',textTransform:'uppercase',letterSpacing:'0.05em',borderBottom:'1px solid #e2e8f0',whiteSpace:'nowrap'}}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>
-                      {[...displayMembers].sort((a,b)=>b.avgScore-a.avgScore).map((m,i)=>{
-                        const cr=m.totalDebriefs>0?Math.round((m.closed/m.totalDebriefs)*100):0;
-                        const mTeam=teams.find(t=>t.members.some(x=>x.id===m.id));
-                        const isSel=selectedMember===m.id;
-                        return(<>
-                          <tr key={m.id} onClick={()=>setSelectedMember(isSel?null:m.id)} style={{cursor:'pointer',background:isSel?'#f5f3ff':i%2===0?'white':'#fafafa',borderBottom:'1px solid #f1f5f9',transition:'background 0.1s'}}>
-                            <td style={{padding:'12px 14px'}}><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:28,height:28,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,color:'#6366f1',flexShrink:0}}>{m.name.charAt(0)}</div><span style={{fontWeight:600,fontSize:13,color:'#1e293b'}}>{m.name}</span></div></td>
-                            <td style={{padding:'12px 14px'}}><span style={{fontSize:12,background:'#f1f5f9',padding:'2px 8px',borderRadius:6,color:'#64748b'}}>{mTeam?.name||'—'}</span></td>
-                            <td style={{padding:'12px 14px',fontSize:12,color:'#64748b',whiteSpace:'nowrap'}}>{m.level.icon} {m.level.name}</td>
-                            <td style={{padding:'12px 14px',fontSize:13,fontWeight:600,color:'#1e293b'}}>{m.totalDebriefs}</td>
-                            <td style={{padding:'12px 14px'}}><span style={{fontWeight:700,fontSize:13,color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':m.avgScore>=40?'#6366f1':'#ef4444'}}>{m.avgScore}%</span></td>
-                            <td style={{padding:'12px 14px',fontSize:13,fontWeight:600,color:'#059669'}}>{m.closed}</td>
-                            <td style={{padding:'12px 14px'}}><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:50,height:6,background:'#f1f5f9',borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:`${cr}%`,background:cr>=50?'#059669':cr>=30?'#d97706':'#ef4444',borderRadius:3}}/></div><span style={{fontSize:12,fontWeight:600,color:'#374151',minWidth:28}}>{cr}%</span></div></td>
-                            <td style={{padding:'12px 14px',fontWeight:700,fontSize:13,color:'#6366f1'}}>{m.points}</td>
-                          </tr>
-                          {isSel&&<tr key={`${m.id}-detail`}><td colSpan={8} style={{padding:0,background:'#fafafa',borderBottom:'1px solid #f1f5f9'}}>
-                            <div style={{padding:'16px 20px'}}>
-                              {m.chartData.length>0?<><p style={{fontSize:13,fontWeight:600,color:'#374151',marginBottom:12}}>📈 Évolution de {m.name}</p><ProgressChart debriefs={m.chartData.map((d,idx)=>({...d,id:idx,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>:<p style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun debrief enregistré</p>}
-                              {m.badges.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:12}}>{m.badges.map(b=><span key={b.id} style={{background:'#ede9fe',color:'#4c1d95',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
-                            </div>
-                          </td></tr>}
-                        </>);
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            );
-          })()}
-        </>
-      )}
-
-      {/* ─── ÉQUIPES ─── */}
-      {tab==='equipes' && (
-        <div style={{display:'flex',flexDirection:'column',gap:20}}>
-          {/* Bouton créer équipe */}
-          <div style={{display:'flex',justifyContent:'flex-end'}}>
-            <Btn onClick={()=>setShowCreateTeam(true)}>+ Nouvelle équipe</Btn>
-          </div>
-
-          {teams.length===0 && (
-            <EmptyState icon="👥" title="Aucune équipe" subtitle="Créez votre première équipe pour inviter des closers" action={<Btn onClick={()=>setShowCreateTeam(true)}>+ Créer une équipe</Btn>}/>
-          )}
-
-          {/* Une card par équipe */}
-          {teams.map(team => (
-            <Card key={team.id} style={{overflow:'hidden'}}>
-              {/* Header équipe */}
-              <div style={{padding:'16px 20px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
-                <div style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
-                  {editingTeam?.id===team.id ? (
-                    <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <input value={editingTeam.name} onChange={e=>setEditingTeam({...editingTeam,name:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')renameTeam();if(e.key==='Escape')setEditingTeam(null);}} style={{fontSize:15,fontWeight:600,border:'2px solid #6366f1',borderRadius:8,padding:'3px 10px',fontFamily:'inherit',outline:'none'}} autoFocus/>
-                      <Btn onClick={renameTeam} style={{padding:'5px 12px',fontSize:12}}>✓</Btn>
-                      <Btn variant="ghost" onClick={()=>setEditingTeam(null)} style={{padding:'5px 8px',fontSize:12}}>✕</Btn>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 style={{fontSize:15,fontWeight:700,color:'#1e293b',margin:0}}>{team.name}</h3>
-                      <span style={{fontSize:12,color:'#94a3b8'}}>{team.members.length} membre{team.members.length!==1?'s':''}</span>
-                    </>
-                  )}
-                </div>
-                <div style={{display:'flex',gap:8}}>
-                  <Btn variant="secondary" onClick={()=>setEditingTeam({id:team.id,name:team.name})} style={{padding:'6px 12px',fontSize:12}}>✏️ Renommer</Btn>
-                  <Btn onClick={()=>generateCode(team.id)} disabled={generating===team.id} style={{padding:'6px 14px',fontSize:12}}>{generating===team.id?'...':'+ Code d\'invitation'}</Btn>
-                  <Btn variant="danger" onClick={()=>deleteTeam(team.id,team.name)} style={{padding:'6px 12px',fontSize:12}}>🗑</Btn>
-                </div>
-              </div>
-
-              {/* Codes d'invitation */}
-              {team.inviteCodes.length > 0 && (
-                <div style={{padding:'12px 20px',borderBottom:'1px solid #f1f5f9',background:'#fffbeb',display:'flex',flexWrap:'wrap',gap:8,alignItems:'center'}}>
-                  <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>🔑 Codes actifs :</span>
-                  {team.inviteCodes.map(inv=>(
-                    <div key={inv.id} style={{display:'flex',alignItems:'center',gap:6,background:'white',border:'1px solid #fcd34d',borderRadius:8,padding:'4px 10px'}}>
-                      <span style={{fontFamily:'monospace',fontSize:14,fontWeight:700,color:'#6366f1',letterSpacing:'0.1em'}}>{inv.code}</span>
-                      <button onClick={()=>handleCopy(inv.code)} style={{background:'none',border:'none',cursor:'pointer',fontSize:13,color:copied===inv.code?'#059669':'#94a3b8'}} title="Copier">{copied===inv.code?'✓':'📋'}</button>
-                      <button onClick={()=>deleteCode(team.id,inv.id)} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#dc2626'}} title="Supprimer">✕</button>
-                    </div>
-                  ))}
-                </div>
+              ):(
+                <><h3 style={{fontSize:15,fontWeight:700,color:'#1e293b',margin:0}}>{team.name}</h3><span style={{fontSize:12,color:'#94a3b8'}}>{team.members.length} membre{team.members.length!==1?'s':''}</span></>
               )}
-
-              {/* Membres */}
-              {team.members.length===0 ? (
-                <div style={{padding:'24px 20px',textAlign:'center',color:'#94a3b8',fontSize:13}}>
-                  Aucun membre — générez un code et partagez-le
-                </div>
-              ) : (
-                team.members.map((m,i) => (
-                  <div key={m.id} style={{borderBottom:i<team.members.length-1?'1px solid #f1f5f9':'none'}}>
-                    <MemberRow
-                      member={m}
-                      teams={teams}
-                      currentTeamId={team.id}
-                      onRemove={(id,name)=>removeMember(team.id,id,name)}
-                      onMove={(memberId,toTeamId)=>moveMember(memberId,toTeamId)}
-                      selected={selectedMember===m.id}
-                      onSelect={()=>setSelectedMember(selectedMember===m.id?null:m.id)}
-                    />
-                  </div>
-                ))
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Modal créer équipe */}
-      {showCreateTeam && (
-        <Modal title="Créer une nouvelle équipe" onClose={()=>setShowCreateTeam(false)}>
-          <div style={{marginBottom:20}}>
-            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Nom de l'équipe</label>
-            <Input placeholder="Ex: Équipe Paris, Closers B2B..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==='Enter')createTeam();}}/>
+            </div>
+            <div style={{display:'flex',gap:8,flexShrink:0}}>
+              <Btn variant="secondary" onClick={()=>setEditingTeam({id:team.id,name:team.name})} style={{padding:'6px 10px',fontSize:12}}>✏️</Btn>
+              <Btn onClick={()=>generateCode(team.id)} disabled={generating===team.id} style={{padding:'6px 12px',fontSize:12}}>{generating===team.id?'...':'+ Code'}</Btn>
+              <Btn variant="danger" onClick={()=>deleteTeam(team.id,team.name)} style={{padding:'6px 10px',fontSize:12}}>🗑</Btn>
+            </div>
           </div>
-          <div style={{display:'flex',gap:10}}>
-            <Btn onClick={createTeam} disabled={creating||!newTeamName.trim()} style={{flex:1}}>{creating?'Création...':'Créer l\'équipe'}</Btn>
-            <Btn variant="secondary" onClick={()=>setShowCreateTeam(false)} style={{flex:1}}>Annuler</Btn>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+          {team.inviteCodes.length>0&&<div style={{padding:'10px 16px',borderBottom:'1px solid #f1f5f9',background:'#fffbeb',display:'flex',flexWrap:'wrap',gap:8,alignItems:'center'}}>
+            <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>🔑</span>
+            {team.inviteCodes.map(inv=><div key={inv.id} style={{display:'flex',alignItems:'center',gap:6,background:'white',border:'1px solid #fcd34d',borderRadius:8,padding:'4px 10px'}}>
+              <span style={{fontFamily:'monospace',fontSize:14,fontWeight:700,color:'#6366f1',letterSpacing:'0.1em'}}>{inv.code}</span>
+              <button onClick={()=>handleCopy(inv.code)} style={{background:'none',border:'none',cursor:'pointer',fontSize:13,color:copied===inv.code?'#059669':'#94a3b8'}}>{copied===inv.code?'✓':'📋'}</button>
+              <button onClick={()=>deleteCode(team.id,inv.id)} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#dc2626'}}>✕</button>
+            </div>)}
+          </div>}
+          {team.members.length===0?<div style={{padding:'20px 16px',textAlign:'center',color:'#94a3b8',fontSize:13}}>Aucun membre — générez un code</div>:
+          team.members.map((m,i)=><div key={m.id} style={{borderBottom:i<team.members.length-1?'1px solid #f1f5f9':'none'}}>
+            <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(memberId,toTeamId)=>moveMember(memberId,toTeamId)} selected={selectedMember===m.id} onSelect={()=>setSelectedMember(selectedMember===m.id?null:m.id)}/>
+          </div>)}
+        </Card>
+      ))}
+    </div>}
+
+    {showCreateTeam&&<Modal title="Créer une nouvelle équipe" onClose={()=>setShowCreateTeam(false)}>
+      <div style={{marginBottom:20}}>
+        <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Nom de l'équipe</label>
+        <Input placeholder="Ex: Équipe Paris, Closers B2B..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} autoFocus/>
+      </div>
+      <div style={{display:'flex',gap:10}}>
+        <Btn onClick={createTeam} disabled={creating||!newTeamName.trim()} style={{flex:1}}>{creating?'Création...':'Créer'}</Btn>
+        <Btn variant="secondary" onClick={()=>setShowCreateTeam(false)} style={{flex:1}}>Annuler</Btn>
+      </div>
+    </Modal>}
+  </div>;
 }
 
 // ─── PAGES PRINCIPALES ────────────────────────────────────────────────────────
 function Dashboard({debriefs,navigate,user,gamification,leaderboardKey}){
   const isHOS=user.role==='head_of_sales';
-  return<div style={{display:'flex',flexDirection:'column',gap:28}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
-      <div><h1 style={{fontSize:28,fontWeight:700,color:'#1e293b',margin:0}}>Tableau de bord</h1><p style={{color:'#64748b',marginTop:4,fontSize:14}}>Bonjour, {user.name} 👋</p></div>
+  return<div style={{display:'flex',flexDirection:'column',gap:24}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+      <div><h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>Tableau de bord</h1><p style={{color:'#64748b',marginTop:4,fontSize:14}}>Bonjour, {user.name} 👋</p></div>
       <Btn onClick={()=>navigate('NewDebrief')}>+ Nouveau debrief</Btn>
     </div>
     {gamification&&<GamificationCard gamification={gamification}/>}
     <StatsOverview debriefs={debriefs}/>
-    <Card style={{padding:24}}><h2 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:16}}>Évolution du score</h2><ProgressChart debriefs={debriefs}/></Card>
+    <Card style={{padding:20}}><h2 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:14}}>Évolution du score</h2><ProgressChart debriefs={debriefs}/></Card>
     <Leaderboard refreshKey={leaderboardKey}/>
     <div>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
         <h2 style={{fontSize:16,fontWeight:600,color:'#1e293b',margin:0}}>Derniers debriefs</h2>
         {debriefs.length>5&&<button onClick={()=>navigate('DebriefHistory')} style={{background:'none',border:'none',color:'#6366f1',fontSize:13,cursor:'pointer'}}>Voir tout ›</button>}
       </div>
-      {debriefs.length===0
-        ?<EmptyState icon="📋" title="Aucun debrief enregistré" subtitle="Créez votre premier debrief pour suivre vos progrès" action={<Btn variant="secondary" onClick={()=>navigate('NewDebrief')}>+ Créer votre premier debrief</Btn>}/>
-        :<div style={{display:'flex',flexDirection:'column',gap:10}}>{debriefs.slice(0,5).map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id)} showUser={isHOS}/>)}</div>
-      }
+      {debriefs.length===0?<EmptyState icon="📋" title="Aucun debrief enregistré" subtitle="Créez votre premier debrief" action={<Btn variant="secondary" onClick={()=>navigate('NewDebrief')}>+ Créer votre premier debrief</Btn>}/>:
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>{debriefs.slice(0,5).map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id)} showUser={isHOS}/>)}</div>}
     </div>
   </div>;
 }
+
 function DebriefHistory({debriefs,navigate,user}){
   const[search,setSearch]=useState('');const isHOS=user.role==='head_of_sales';
   const filtered=debriefs.filter(d=>{const q=search.toLowerCase();return d.prospect_name?.toLowerCase().includes(q)||d.closer_name?.toLowerCase().includes(q)||d.user_name?.toLowerCase().includes(q);});
-  return<div style={{display:'flex',flexDirection:'column',gap:24}}>
-    <div><h1 style={{fontSize:24,fontWeight:700,color:'#1e293b',margin:0}}>Historique des debriefs</h1><p style={{color:'#94a3b8',fontSize:13,marginTop:4}}>{debriefs.length} debrief{debriefs.length!==1?'s':''}</p></div>
+  return<div style={{display:'flex',flexDirection:'column',gap:20}}>
+    <div><h1 style={{fontSize:22,fontWeight:700,color:'#1e293b',margin:0}}>Historique</h1><p style={{color:'#94a3b8',fontSize:13,marginTop:4}}>{debriefs.length} debrief{debriefs.length!==1?'s':''}</p></div>
     <div style={{position:'relative'}}>
       <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#94a3b8',pointerEvents:'none'}}>🔍</span>
-      <input placeholder="Rechercher..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'10px 36px',border:'1px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
-      {search&&<button onClick={()=>setSearch('')} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:16,lineHeight:1}}>✕</button>}
+      <input placeholder="Rechercher..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'12px 36px',border:'1px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+      {search&&<button onClick={()=>setSearch('')} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:18,lineHeight:1}}>✕</button>}
     </div>
-    {filtered.length===0
-      ?<EmptyState icon="🔍" title="Aucun résultat" subtitle={search?`Aucun debrief pour "${search}"`:"Aucun debrief enregistré"} action={search?<Btn variant="secondary" onClick={()=>setSearch('')}>Effacer</Btn>:null}/>
-      :<div style={{display:'flex',flexDirection:'column',gap:10}}>{filtered.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id,'DebriefHistory')} showUser={isHOS}/>)}</div>
-    }
+    {filtered.length===0?<EmptyState icon="🔍" title="Aucun résultat" subtitle={search?`Aucun debrief pour "${search}"`:"Aucun debrief"} action={search?<Btn variant="secondary" onClick={()=>setSearch('')}>Effacer</Btn>:null}/>:
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>{filtered.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('DebriefDetail',d.id,'DebriefHistory')} showUser={isHOS}/>)}</div>}
   </div>;
 }
+
 function DebriefDetail({debrief,navigate,onDelete,fromPage}){
-  if(!debrief)return<div style={{textAlign:'center',padding:80}}><p style={{color:'#94a3b8'}}>Debrief introuvable</p><Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{marginTop:16}}>Retour</Btn></div>;
+  const isMobile=useIsMobile();
+  if(!debrief)return<div style={{textAlign:'center',padding:60}}><p style={{color:'#94a3b8'}}>Debrief introuvable</p><Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{marginTop:16}}>Retour</Btn></div>;
   const pct=Math.round(debrief.percentage||0);const scores=computeSectionScores(debrief.sections||{});const getBarColor=v=>v>=4?'#059669':v>=3?'#d97706':v>=2?'#6366f1':'#ef4444';
-  return<div style={{display:'flex',flexDirection:'column',gap:24}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
-      <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16}}>←</Btn>
-        <div><h1 style={{fontSize:22,fontWeight:700,color:'#1e293b',margin:0}}>{debrief.prospect_name}</h1><div style={{display:'flex',gap:16,fontSize:12,color:'#94a3b8',marginTop:4}}><span>📅 {formatDate(debrief.call_date)}</span><span>👤 {debrief.closer_name}</span>{debrief.user_name&&<span>par {debrief.user_name}</span>}</div></div>
-      </div>
+  return<div style={{display:'flex',flexDirection:'column',gap:20}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
+        <div>
+          <h1 style={{fontSize:isMobile?18:22,fontWeight:700,color:'#1e293b',margin:0}}>{debrief.prospect_name}</h1>
+          <div style={{display:'flex',gap:12,fontSize:12,color:'#94a3b8',marginTop:4,flexWrap:'wrap'}}>
+            <span>📅 {formatDate(debrief.call_date)}</span><span>👤 {debrief.closer_name}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
         <ClosedBadge isClosed={debrief.is_closed}/>
         {debrief.call_link&&<a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid #e2e8f0',borderRadius:8,background:'white',fontSize:12,textDecoration:'none',color:'#374151'}}>🔗 Écouter</a>}
         <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
       </div>
     </div>
-    <div style={{display:'grid',gridTemplateColumns:'240px 1fr',gap:20,alignItems:'start'}}>
-      <Card style={{padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:14}}><ScoreGauge percentage={pct} size="lg"/><p style={{fontSize:13,color:'#94a3b8',margin:0}}>{debrief.total_score} / {debrief.max_score} points</p><RadarScore scores={scores}/></Card>
-      <Card style={{padding:24}}>
-        <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:20}}>Score par section</h3>
-        <div style={{display:'flex',flexDirection:'column',gap:18}}>
-          {SECTIONS.map(({key,label})=>{const val=scores[key]||0;const sn=debrief.section_notes?.[key];return<div key={key}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:'#374151'}}>{label}</span><span style={{fontSize:12,fontWeight:700,padding:'2px 8px',borderRadius:6,border:'1px solid #e2e8f0',color:getBarColor(val)}}>{val}/5</span></div>
-            <div style={{height:10,background:'#f1f5f9',borderRadius:5,overflow:'hidden'}}><div style={{height:'100%',width:`${(val/5)*100}%`,background:getBarColor(val),borderRadius:5,transition:'width 0.7s ease'}}/></div>
-            {sn&&(sn.strength||sn.weakness||sn.improvement)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:8}}>
-              {sn.strength&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {sn.strength}</div>}
-              {sn.weakness&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {sn.weakness}</div>}
-              {sn.improvement&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fffbeb',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {sn.improvement}</div>}
-            </div>}
-          </div>;})}
-        </div>
-      </Card>
-    </div>
-    {(debrief.strengths||debrief.improvements||debrief.notes)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+
+    {isMobile?(
+      // Mobile: stack vertically
+      <>
+        <Card style={{padding:20,display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
+          <ScoreGauge percentage={pct} size="lg"/>
+          <p style={{fontSize:13,color:'#94a3b8',margin:0}}>{debrief.total_score} / {debrief.max_score} points</p>
+          <RadarScore scores={scores}/>
+        </Card>
+        <Card style={{padding:20}}>
+          <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:16}}>Score par section</h3>
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
+            {SECTIONS.map(({key,label})=>{const val=scores[key]||0;return<div key={key}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}><span style={{fontSize:14,fontWeight:600,color:'#374151'}}>{label}</span><span style={{fontSize:13,fontWeight:700,padding:'2px 8px',borderRadius:6,border:'1px solid #e2e8f0',color:getBarColor(val)}}>{val}/5</span></div>
+              <div style={{height:10,background:'#f1f5f9',borderRadius:5,overflow:'hidden'}}><div style={{height:'100%',width:`${(val/5)*100}%`,background:getBarColor(val),borderRadius:5,transition:'width 0.7s ease'}}/></div>
+            </div>;})}
+          </div>
+        </Card>
+      </>
+    ):(
+      // Desktop: side by side
+      <div style={{display:'grid',gridTemplateColumns:'240px 1fr',gap:20,alignItems:'start'}}>
+        <Card style={{padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
+          <ScoreGauge percentage={pct} size="lg"/>
+          <p style={{fontSize:13,color:'#94a3b8',margin:0}}>{debrief.total_score} / {debrief.max_score} points</p>
+          <RadarScore scores={scores}/>
+        </Card>
+        <Card style={{padding:24}}>
+          <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:20}}>Score par section</h3>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            {SECTIONS.map(({key,label})=>{const val=scores[key]||0;const sn=debrief.section_notes?.[key];return<div key={key}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:'#374151'}}>{label}</span><span style={{fontSize:12,fontWeight:700,padding:'2px 8px',borderRadius:6,border:'1px solid #e2e8f0',color:getBarColor(val)}}>{val}/5</span></div>
+              <div style={{height:10,background:'#f1f5f9',borderRadius:5,overflow:'hidden'}}><div style={{height:'100%',width:`${(val/5)*100}%`,background:getBarColor(val),borderRadius:5,transition:'width 0.7s ease'}}/></div>
+              {sn&&(sn.strength||sn.weakness||sn.improvement)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:8}}>
+                {sn.strength&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {sn.strength}</div>}
+                {sn.weakness&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {sn.weakness}</div>}
+                {sn.improvement&&<div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fffbeb',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {sn.improvement}</div>}
+              </div>}
+            </div>;})}
+          </div>
+        </Card>
+      </div>
+    )}
+
+    {(debrief.strengths||debrief.improvements||debrief.notes)&&<div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:12}}>
       {debrief.strengths&&<Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#059669',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'#64748b',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
       {debrief.improvements&&<Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#d97706',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'#64748b',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
       {debrief.notes&&<Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#6366f1',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'#64748b',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
     </div>}
   </div>;
 }
+
 function NewDebrief({navigate,onSave,toast}){
+  const isMobile=useIsMobile();
   const[form,setForm]=useState({prospect_name:'',call_date:new Date().toISOString().split('T')[0],closer_name:'',call_link:'',is_closed:null,notes:''});
   const[sections,setSections]=useState({decouverte:{},reformulation:{},projection:{},offre:{},closing:{}});
   const[sectionNotes,setSectionNotes]=useState({decouverte:{},reformulation:{},projection:{},offre:{},closing:{}});
@@ -852,27 +789,34 @@ function NewDebrief({navigate,onSave,toast}){
     try{const result=await apiFetch('/debriefs',{method:'POST',body:{...form,sections,section_notes:sectionNotes,total_score:total,max_score:max,percentage,scores:{},criteria_notes:{}}});onSave(result.debrief,result.gamification);toast(`Debrief enregistré ! +${result.gamification.pointsEarned} pts`);navigate('DebriefDetail',result.debrief.id);}
     catch(err){toast(err.message,'error');}finally{setLoading(false);}
   };
-  return<div style={{display:'flex',flexDirection:'column',gap:24}}>
+  return<div style={{display:'flex',flexDirection:'column',gap:20}}>
     <div style={{display:'flex',alignItems:'center',gap:12}}>
-      <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16}}>←</Btn>
-      <div><h1 style={{fontSize:22,fontWeight:700,color:'#1e293b',margin:0}}>Nouveau debrief</h1><p style={{color:'#94a3b8',fontSize:13,marginTop:2}}>Évaluez votre dernier appel</p></div>
+      <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
+      <div><h1 style={{fontSize:20,fontWeight:700,color:'#1e293b',margin:0}}>Nouveau debrief</h1><p style={{color:'#94a3b8',fontSize:13,marginTop:2}}>Évaluez votre dernier appel</p></div>
     </div>
+
+    {/* Score sticky en haut sur mobile */}
+    {isMobile&&<div style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)',borderRadius:12,padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,color:'white'}}>
+      <div><p style={{fontSize:11,opacity:0.8,margin:0,textTransform:'uppercase',letterSpacing:'0.05em'}}>Score en direct</p><p style={{fontSize:28,fontWeight:700,margin:0}}>{Math.round(percentage)}%</p><p style={{fontSize:12,opacity:0.7,margin:0}}>{total} / {max} points</p></div>
+      {form.is_closed!==null&&<ClosedBadge isClosed={form.is_closed}/>}
+    </div>}
+
     <form onSubmit={submit}>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:24,alignItems:'start'}}>
-        <div style={{display:'flex',flexDirection:'column',gap:20}}>
-          <Card style={{padding:20}}>
-            <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:16}}>Informations de l'appel</h3>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:16}}>
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 300px',gap:isMobile?16:24,alignItems:'start'}}>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <Card style={{padding:16}}>
+            <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:14}}>Informations de l'appel</h3>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:12,marginBottom:14}}>
               <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Prospect *</label><Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})}/></div>
               <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Closer *</label><Input required placeholder="Votre nom" value={form.closer_name} onChange={e=>setForm({...form,closer_name:e.target.value})}/></div>
               <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>Date *</label><Input type="date" required value={form.call_date} onChange={e=>setForm({...form,call_date:e.target.value})}/></div>
             </div>
-            <div style={{marginBottom:16}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>🔗 Lien enregistrement</label><Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({...form,call_link:e.target.value})}/></div>
+            <div style={{marginBottom:14}}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:6}}>🔗 Lien enregistrement</label><Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({...form,call_link:e.target.value})}/></div>
             <div>
-              <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:8}}>Résultat de l'appel *</label>
+              <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:8}}>Résultat *</label>
               <div style={{display:'flex',gap:10}}>
                 {[{val:true,label:'✅ Closer',border:'#059669',bg:'#d1fae5',color:'#065f46'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'#fee2e2',color:'#991b1b'}].map(({val,label,border,bg,color})=>(
-                  <button key={String(val)} type="button" onClick={()=>setForm({...form,is_closed:val})} style={{flex:1,padding:'12px 16px',borderRadius:10,border:`2px solid ${form.is_closed===val?border:'#e2e8f0'}`,background:form.is_closed===val?bg:'white',color:form.is_closed===val?color:'#94a3b8',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>{label}</button>
+                  <button key={String(val)} type="button" onClick={()=>setForm({...form,is_closed:val})} style={{flex:1,padding:'12px 14px',borderRadius:10,border:`2px solid ${form.is_closed===val?border:'#e2e8f0'}`,background:form.is_closed===val?bg:'white',color:form.is_closed===val?color:'#94a3b8',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>{label}</button>
                 ))}
               </div>
             </div>
@@ -883,9 +827,13 @@ function NewDebrief({navigate,onSave,toast}){
           <ProjectionSection data={sections.projection} onChange={v=>setSection('projection',v)} notes={sectionNotes.projection} onNotesChange={n=>setNote('projection',n)}/>
           <PresentationOffreSection data={sections.offre} onChange={v=>setSection('offre',v)} notes={sectionNotes.offre} onNotesChange={n=>setNote('offre',n)}/>
           <ClosingSection data={sections.closing} onChange={v=>setSection('closing',v)} notes={sectionNotes.closing} onNotesChange={n=>setNote('closing',n)}/>
-          <Card style={{padding:20}}><h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:12}}>Notes globales</h3><Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></Card>
+          <Card style={{padding:16}}><h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',marginBottom:12}}>Notes globales</h3><Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></Card>
+          {/* Bouton submit visible en bas sur mobile */}
+          {isMobile&&<Btn type="submit" disabled={loading} style={{width:'100%',padding:'14px 20px',fontSize:15}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</Btn>}
         </div>
-        <div style={{position:'sticky',top:80}}>
+
+        {/* Sidebar score — desktop seulement */}
+        {!isMobile&&<div style={{position:'sticky',top:80}}>
           <Card style={{padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
             <h3 style={{fontSize:14,fontWeight:600,color:'#1e293b',margin:0}}>Score en direct</h3>
             <ScoreGauge percentage={percentage} size="lg"/>
@@ -893,7 +841,7 @@ function NewDebrief({navigate,onSave,toast}){
             {form.is_closed!==null&&<ClosedBadge isClosed={form.is_closed}/>}
             <Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</Btn>
           </Card>
-        </div>
+        </div>}
       </div>
     </form>
   </div>;
@@ -908,9 +856,10 @@ export default function App() {
   const[debriefs,setDebriefs]=useState([]);const[loadingData,setLoadingData]=useState(false);
   const[gamification,setGamification]=useState(null);const[resetToken,setResetToken]=useState(null);
   const[burst,setBurst]=useState(null);const[leaderboardKey,setLeaderboardKey]=useState(0);
+  const isMobile=useIsMobile();
 
   useEffect(()=>{const params=new URLSearchParams(window.location.search);const rt=params.get('reset_token');if(rt){setResetToken(rt);window.history.replaceState({},'',window.location.pathname);}},[]);
-  useEffect(()=>{_onSessionExpired=()=>{setUser(null);setDebriefs([]);setGamification(null);setPage('Dashboard');setAuthPage('login');toast('Session expirée, veuillez vous reconnecter','error');};return()=>{_onSessionExpired=null;};},[toast]);
+  useEffect(()=>{_onSessionExpired=()=>{setUser(null);setDebriefs([]);setGamification(null);setPage('Dashboard');setAuthPage('login');toast('Session expirée','error');};return()=>{_onSessionExpired=null;};},[toast]);
   useEffect(()=>{const token=getToken();if(!token){setLoadingAuth(false);return;}apiFetch('/auth/me').then(u=>setUser(u)).catch(()=>clearToken()).finally(()=>setLoadingAuth(false));},[]);
   useEffect(()=>{if(!user)return;setLoadingData(true);Promise.all([apiFetch('/debriefs'),apiFetch('/gamification/me')]).then(([d,g])=>{setDebriefs(d);setGamification(g);}).catch(err=>toast(err.message,'error')).finally(()=>setLoadingData(false));},[user]);
 
@@ -921,37 +870,47 @@ export default function App() {
   const onDelete=async id=>{if(!confirm('Supprimer ce debrief ?'))return;try{const r=await apiFetch(`/debriefs/${id}`,{method:'DELETE'});setDebriefs(prev=>prev.filter(d=>d.id!==id));if(r.gamification)setGamification(r.gamification);setLeaderboardKey(k=>k+1);toast('Debrief supprimé');navigate(fromPage||'Dashboard');}catch(err){toast(err.message,'error');}};
 
   const selectedDebrief=debriefs.find(d=>d.id===selectedId);const isHOS=user?.role==='head_of_sales';
-  const navItems=[{key:'Dashboard',label:'Tableau de bord',icon:'⊞'},{key:'NewDebrief',label:'Nouveau debrief',icon:'+'},{key:'DebriefHistory',label:'Historique',icon:'🕐'},...(isHOS?[{key:'HOSPage',label:'Head of Sales',icon:'👑'}]:[])];
+  const navItems=[{key:'Dashboard',label:'Dashboard',icon:'⊞'},{key:'NewDebrief',label:'Nouveau',icon:'+'},{key:'DebriefHistory',label:'Historique',icon:'🕐'},...(isHOS?[{key:'HOSPage',label:'HOS',icon:'👑'}]:[])];
 
   if(loadingAuth)return<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
   if(resetToken)return<ResetPasswordPage token={resetToken} onDone={()=>{setResetToken(null);setAuthPage('login');toast('Mot de passe modifié !');}} />;
   if(!user){if(authPage==='register')return<RegisterPage onLogin={onLogin} goToLogin={()=>setAuthPage('login')}/>;if(authPage==='forgot')return<ForgotPasswordPage goToLogin={()=>setAuthPage('login')}/>;return<LoginPage onLogin={onLogin} goToRegister={()=>setAuthPage('register')} goToForgot={()=>setAuthPage('forgot')}/>;}
 
   return<div style={{minHeight:'100vh',background:'#f8fafc',fontFamily:"'Inter',system-ui,sans-serif"}}>
-    <style>{`@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box}`}</style>
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box} input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}`}</style>
     {burst&&<PointsBurst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
     <ToastContainer toasts={toasts}/>
-    <header style={{position:'sticky',top:0,zIndex:50,background:'rgba(255,255,255,0.94)',backdropFilter:'blur(16px)',borderBottom:'1px solid #e2e8f0'}}>
-      <div style={{maxWidth:1100,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64}}>
-        <button onClick={()=>navigate('Dashboard')} style={{display:'flex',alignItems:'center',gap:10,background:'none',border:'none',cursor:'pointer',padding:0,fontFamily:'inherit'}}>
-          <div style={{width:36,height:36,borderRadius:10,background:'#6366f1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>📞</div>
-          <span style={{fontSize:16,fontWeight:700,color:'#1e293b',letterSpacing:'-0.02em'}}>CloserDebrief</span>
+
+    {/* Header */}
+    <header style={{position:'sticky',top:0,zIndex:50,background:'rgba(255,255,255,0.96)',backdropFilter:'blur(16px)',borderBottom:'1px solid #e2e8f0'}}>
+      <div style={{maxWidth:1100,margin:'0 auto',padding:`0 ${isMobile?12:24}px`,display:'flex',alignItems:'center',justifyContent:'space-between',height:56}}>
+        <button onClick={()=>navigate('Dashboard')} style={{display:'flex',alignItems:'center',gap:8,background:'none',border:'none',cursor:'pointer',padding:0,fontFamily:'inherit',flexShrink:0}}>
+          <div style={{width:32,height:32,borderRadius:9,background:'#6366f1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15}}>📞</div>
+          {!isMobile&&<span style={{fontSize:15,fontWeight:700,color:'#1e293b',letterSpacing:'-0.02em'}}>CloserDebrief</span>}
         </button>
-        <nav style={{display:'flex',alignItems:'center',gap:4}}>
-          {navItems.map(({key,label,icon})=><button key={key} onClick={()=>navigate(key)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:8,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',transition:'all 0.15s',background:page===key?'#6366f1':'transparent',color:page===key?'white':'#64748b',boxShadow:page===key?'0 2px 8px rgba(99,102,241,0.25)':'none',fontFamily:'inherit'}}><span style={{fontSize:14}}>{icon}</span>{label}</button>)}
+
+        {/* Nav — icônes sur mobile, texte sur desktop */}
+        <nav style={{display:'flex',alignItems:'center',gap:2}}>
+          {navItems.map(({key,label,icon})=>(
+            <button key={key} onClick={()=>navigate(key)} style={{display:'flex',alignItems:'center',gap:isMobile?0:6,padding:isMobile?'8px 10px':'7px 12px',borderRadius:8,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',transition:'all 0.15s',background:page===key?'#6366f1':'transparent',color:page===key?'white':'#64748b',boxShadow:page===key?'0 2px 8px rgba(99,102,241,0.25)':'none',fontFamily:'inherit'}}>
+              <span style={{fontSize:isMobile?18:14}}>{icon}</span>
+              {!isMobile&&<span>{label}</span>}
+            </button>
+          ))}
         </nav>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{width:32,height:32,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'#6366f1',flexShrink:0}}>{user.name.charAt(0).toUpperCase()}</div>
-            <span style={{fontSize:13,fontWeight:500,color:'#374151'}}>{user.name}</span>
-            {isHOS&&<span style={{background:'#fef3c7',color:'#92400e',fontSize:10,fontWeight:700,padding:'2px 6px',borderRadius:4}}>HOS</span>}
-            {gamification&&<span style={{fontSize:14}} title={`${gamification.level.name} · ${gamification.points} pts`}>{gamification.level.icon}</span>}
-          </div>
-          <Btn variant="secondary" onClick={onLogout} style={{padding:'6px 14px',fontSize:12}}>Déconnexion</Btn>
+
+        {/* User */}
+        <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+          <div style={{width:30,height:30,borderRadius:'50%',background:'#ede9fe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#6366f1',flexShrink:0}}>{user.name.charAt(0).toUpperCase()}</div>
+          {!isMobile&&<span style={{fontSize:13,fontWeight:500,color:'#374151'}}>{user.name}</span>}
+          {isHOS&&!isMobile&&<span style={{background:'#fef3c7',color:'#92400e',fontSize:10,fontWeight:700,padding:'2px 6px',borderRadius:4}}>HOS</span>}
+          {gamification&&<span style={{fontSize:14}} title={`${gamification.level.name} · ${gamification.points} pts`}>{gamification.level.icon}</span>}
+          <button onClick={onLogout} style={{background:'none',border:'1px solid #e2e8f0',borderRadius:8,padding:isMobile?'5px 8px':'6px 12px',fontSize:12,cursor:'pointer',color:'#64748b',fontFamily:'inherit'}}>{isMobile?'↩':'Déconnexion'}</button>
         </div>
       </div>
     </header>
-    <main style={{maxWidth:1100,margin:'0 auto',padding:'32px 24px'}}>
+
+    <main style={{maxWidth:1100,margin:'0 auto',padding:isMobile?'16px 12px':'32px 24px'}}>
       {loadingData?<Spinner full/>:<>
         {page==='Dashboard'&&<Dashboard debriefs={debriefs} navigate={navigate} user={user} gamification={gamification} leaderboardKey={leaderboardKey}/>}
         {page==='NewDebrief'&&<NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
@@ -960,5 +919,18 @@ export default function App() {
         {page==='HOSPage'&&isHOS&&<HOSPage toast={toast} leaderboardKey={leaderboardKey}/>}
       </>}
     </main>
+
+    {/* Bottom nav bar sur mobile */}
+    {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'rgba(255,255,255,0.97)',backdropFilter:'blur(16px)',borderTop:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-around',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:40}}>
+      {navItems.map(({key,label,icon})=>(
+        <button key={key} onClick={()=>navigate(key)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,background:'none',border:'none',cursor:'pointer',padding:'4px 16px',fontFamily:'inherit',color:page===key?'#6366f1':'#94a3b8',transition:'color 0.15s'}}>
+          <span style={{fontSize:20}}>{icon}</span>
+          <span style={{fontSize:10,fontWeight:500}}>{label}</span>
+        </button>
+      ))}
+    </nav>}
+
+    {/* Espace pour la bottom nav sur mobile */}
+    {isMobile&&<div style={{height:70}}/>}
   </div>;
 }
