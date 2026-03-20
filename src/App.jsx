@@ -963,6 +963,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
   const [newName, setNewName] = useState('');
   const [editingTeam, setEditingTeam] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [objectiveTarget, setObjectiveTarget] = useState(null);
   const mob = useIsMobile();
 
   const load = useCallback(() => {
@@ -1359,7 +1360,15 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                 ? <div style={{ padding:'32px 16px', textAlign:'center', color:'#94a3b8', fontSize:13 }}>Aucun membre — partagez un code d'invitation !</div>
                 : team.members.map((m,i) => (
                     <div key={m.id} style={{ borderBottom:i<team.members.length-1?'1px solid #f1f5f9':'none' }}>
-                      <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(mid,tid)=>moveMember(mid,tid)} selected={selMember===m.id} onSelect={()=>setSelMember(selMember===m.id?null:m.id)}/>
+                      <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(mid,tid)=>moveMember(mid,tid)} selected={selMember===m.id} onSelect={()=>setSelMember(selMember===m.id?null:m.id)} onObjectives={()=>setObjectiveTarget(m)} onActionPlans={()=>setSelMember(selMember===m.id?null:m.id)}/>
+                      {selMember===m.id && (
+                        <div style={{ padding:'14px 16px 18px', borderTop:'1px solid #f5f3ff', background:'#fafafa', display:'flex', flexDirection:'column', gap:14 }}>
+                          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                            <Btn onClick={e=>{e.stopPropagation();setObjectiveTarget(m);}} style={{ fontSize:12, padding:'7px 14px' }}>🎯 Objectifs</Btn>
+                          </div>
+                          <ActionPlanCard closerId={m.id} isHOS={true} toast={toast}/>
+                        </div>
+                      )}
                     </div>
                   ))
               }
@@ -1367,6 +1376,9 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
           </div>
         );
       })()}
+
+      {/* Objective modal */}
+      {objectiveTarget && <ObjectiveModal closer={objectiveTarget} onClose={()=>setObjectiveTarget(null)} toast={toast}/>}
 
       {/* Modal créer équipe */}
       {showCreate && (
@@ -1386,7 +1398,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
 }
 
 // ─── PAGES ────────────────────────────────────────────────────────────────────
-function Dashboard({ debriefs, navigate, user, gam, lbKey }) {
+function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
   const isHOS = user.role === 'head_of_sales';
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
@@ -1397,6 +1409,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey }) {
         </div>
         <Btn onClick={()=>navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>
+      {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
       <StatsRow debriefs={debriefs}/>
       <Card style={{ padding:20 }}>
@@ -1404,6 +1417,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey }) {
         <Chart debriefs={debriefs}/>
       </Card>
       <Leaderboard refreshKey={lbKey}/>
+      {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <h2 style={{ fontSize:16, fontWeight:600, color:'#1e293b', margin:0 }}>Derniers debriefs</h2>
@@ -1444,7 +1458,7 @@ function History({ debriefs, navigate, user }) {
   );
 }
 
-function Detail({ debrief, navigate, onDelete, fromPage }) {
+function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
   const mob = useIsMobile();
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
@@ -1547,6 +1561,9 @@ function Detail({ debrief, navigate, onDelete, fromPage }) {
           {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#6366f1',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'#64748b',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
         </div>
       )}
+
+      {/* Comments */}
+      <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
 }
@@ -1714,6 +1731,546 @@ function UserMenu({ user, gam, onLogout, onSettings, toast }) {
   );
 }
 
+
+// ─── OBJECTIF BANNER (closer dashboard) ──────────────────────────────────────
+function ObjectiveBanner({ userId }) {
+  const [objectives, setObjectives] = useState([]);
+  useEffect(() => {
+    apiFetch('/objectives/me').then(setObjectives).catch(() => {});
+  }, [userId]);
+  if (!objectives.length) return null;
+
+  const monthly = objectives.find(o => o.period_type === 'monthly');
+  const weekly  = objectives.find(o => o.period_type === 'weekly');
+  if (!monthly && !weekly) return null;
+
+  const ProgBar = ({ label, current, target, color='#6366f1' }) => {
+    if (!target) return null;
+    const pct = Math.min(Math.round((current / target) * 100), 100);
+    const done = current >= target;
+    return (
+      <div style={{ flex:1, minWidth:120 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:600, marginBottom:4 }}>
+          <span style={{ color:'#374151' }}>{label}</span>
+          <span style={{ color:done?'#059669':color }}>{current}/{target}{done?' ✓':''}</span>
+        </div>
+        <div style={{ height:6, background:'#e2e8f0', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${pct}%`, background:done?'#059669':color, borderRadius:3, transition:'width .7s' }}/>
+        </div>
+      </div>
+    );
+  };
+
+  const render = (obj, label) => {
+    if (!obj) return null;
+    const p = obj.progress || {};
+    return (
+      <div style={{ flex:1 }}>
+        <p style={{ fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>{label}</p>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+          {obj.target_debriefs > 0 && <ProgBar label="Debriefs" current={p.debriefs||0} target={obj.target_debriefs} color='#6366f1'/>}
+          {obj.target_score    > 0 && <ProgBar label="Score moy." current={p.score||0} target={obj.target_score} color='#d97706'/>}
+          {obj.target_closings > 0 && <ProgBar label="Closings" current={p.closings||0} target={obj.target_closings} color='#059669'/>}
+          {obj.target_revenue  > 0 && <ProgBar label="CA (€)" current={p.revenue||0} target={obj.target_revenue} color='#8b5cf6'/>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ background:'white', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #6366f1' }}>
+      <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', margin:'0 0 14px' }}>🎯 Mes objectifs</p>
+      <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
+        {render(monthly, 'Ce mois-ci')}
+        {monthly && weekly && <div style={{ width:1, background:'#e2e8f0', alignSelf:'stretch' }}/>}
+        {render(weekly, 'Cette semaine')}
+      </div>
+    </div>
+  );
+}
+
+// ─── OBJECTIVE MODAL (HOS → closer) ──────────────────────────────────────────
+function ObjectiveModal({ closer, onClose, toast }) {
+  const [tab, setTab] = useState('monthly');
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const day = now.getDay() || 7;
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - day + 1);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  const [form, setForm] = useState({ target_debriefs:'', target_score:'', target_closings:'', target_revenue:'' });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await apiFetch('/objectives', { method:'POST', body: {
+        closer_id: closer.id,
+        period_type: tab,
+        period_start: tab === 'monthly' ? monthStart : weekStartStr,
+        target_debriefs: Number(form.target_debriefs) || 0,
+        target_score:    Number(form.target_score) || 0,
+        target_closings: Number(form.target_closings) || 0,
+        target_revenue:  Number(form.target_revenue) || 0,
+      }});
+      toast(`Objectifs de ${closer.name} mis à jour !`);
+      onClose();
+    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
+  };
+
+  return (
+    <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
+      <div style={{ display:'flex', gap:4, background:'#f1f5f9', padding:4, borderRadius:8, marginBottom:20 }}>
+        {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
+          <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
+        {[
+          { key:'target_debriefs', label:'📋 Debriefs', ph:'Ex: 20' },
+          { key:'target_score',    label:'🎯 Score moyen (%)', ph:'Ex: 70' },
+          { key:'target_closings', label:'✅ Closings', ph:'Ex: 5' },
+          { key:'target_revenue',  label:'💶 CA (€)', ph:'Ex: 15000' },
+        ].map(({ key, label, ph }) => (
+          <div key={key}>
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', marginBottom:5 }}>{label}</label>
+            <Input type="number" placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize:12, color:'#94a3b8', margin:'0 0 16px' }}>Laissez 0 pour ne pas suivre un indicateur.</p>
+      <div style={{ display:'flex', gap:10 }}>
+        <Btn onClick={save} disabled={saving} style={{ flex:1 }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Btn>
+        <Btn variant="secondary" onClick={onClose} style={{ flex:1 }}>Annuler</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── ACTION PLANS (closer dashboard + HOS) ───────────────────────────────────
+function ActionPlanCard({ closerId, isHOS, toast }) {
+  const [plans, setPlans]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm]     = useState({ axis:'', description:'' });
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(() => {
+    const path = isHOS ? `/action-plans/closer/${closerId}` : '/action-plans/me';
+    apiFetch(path).then(setPlans).catch(()=>[]).finally(()=>setLoading(false));
+  }, [closerId, isHOS]);
+  useEffect(load, [load]);
+
+  const add = async () => {
+    if (!form.axis.trim()) return;
+    setSaving(true);
+    try {
+      const p = await apiFetch('/action-plans', { method:'POST', body:{ closer_id:closerId, axis:form.axis.trim(), description:form.description.trim() }});
+      setPlans(prev => [p, ...prev]);
+      setForm({ axis:'', description:'' });
+      setShowAdd(false);
+      toast('Plan d'action ajouté !');
+    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
+  };
+
+  const resolve = async (id) => {
+    try {
+      const updated = await apiFetch(`/action-plans/${id}`, { method:'PATCH', body:{ status:'resolved' }});
+      setPlans(prev => prev.map(p => p.id===id ? updated : p));
+      toast('Axe marqué comme résolu ✓');
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  const remove = async (id) => {
+    try {
+      await apiFetch(`/action-plans/${id}`, { method:'DELETE' });
+      setPlans(prev => prev.filter(p => p.id!==id));
+      toast('Plan supprimé');
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  const active   = plans.filter(p => p.status==='active');
+  const resolved = plans.filter(p => p.status==='resolved').slice(0,3);
+
+  return (
+    <Card style={{ overflow:'hidden' }}>
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid #f1f5f9', background:'#f8fafc', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <h3 style={{ fontSize:14, fontWeight:700, color:'#1e293b', margin:0 }}>📌 Plan d'action</h3>
+          <p style={{ fontSize:11, color:'#94a3b8', margin:0 }}>{active.length}/3 axe{active.length!==1?'s':''} actif{active.length!==1?'s':''}</p>
+        </div>
+        {isHOS && active.length < 3 && (
+          <Btn onClick={()=>setShowAdd(true)} style={{ fontSize:12, padding:'6px 12px' }}>+ Ajouter</Btn>
+        )}
+      </div>
+
+      {loading ? (
+        <div style={{ padding:20, display:'flex', justifyContent:'center' }}><Spinner size={24}/></div>
+      ) : (
+        <div style={{ padding:16, display:'flex', flexDirection:'column', gap:10 }}>
+          {active.length === 0 && !showAdd && (
+            <p style={{ color:'#94a3b8', fontSize:13, textAlign:'center', padding:'12px 0' }}>
+              {isHOS ? 'Aucun axe actif. Cliquez "+ Ajouter" pour en définir un.' : 'Aucun axe de travail défini pour l'instant.'}
+            </p>
+          )}
+
+          {active.map(plan => (
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #e2e8f0', alignItems:'flex-start' }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'#6366f1', marginTop:5, flexShrink:0 }}/>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontWeight:600, fontSize:13, color:'#1e293b', margin:'0 0 2px' }}>{plan.axis}</p>
+                {plan.description && <p style={{ fontSize:12, color:'#64748b', margin:0 }}>{plan.description}</p>}
+                <p style={{ fontSize:11, color:'#94a3b8', margin:'4px 0 0' }}>
+                  Ajouté le {fmtDate(plan.created_at)}
+                </p>
+              </div>
+              <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                <button onClick={()=>resolve(plan.id)} title="Marquer comme résolu" style={{ background:'#d1fae5', border:'1px solid #6ee7b7', color:'#065f46', borderRadius:7, padding:'4px 8px', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>✓ Résolu</button>
+                {isHOS && <button onClick={()=>remove(plan.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:14, padding:'2px 4px' }}>✕</button>}
+              </div>
+            </div>
+          ))}
+
+          {showAdd && (
+            <div style={{ padding:'14px', background:'#f5f3ff', borderRadius:10, border:'1px solid #c4b5fd', display:'flex', flexDirection:'column', gap:10 }}>
+              <Input placeholder="Axe de travail (ex: Améliorer le closing)" value={form.axis} onChange={e=>setForm({...form,axis:e.target.value})} autoFocus/>
+              <Textarea placeholder="Description (optionnel)" rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
+              <div style={{ display:'flex', gap:8 }}>
+                <Btn onClick={add} disabled={saving||!form.axis.trim()} style={{ flex:1, fontSize:13, padding:'8px 14px' }}>{saving?'...':'Ajouter'}</Btn>
+                <Btn variant="secondary" onClick={()=>{setShowAdd(false);setForm({axis:'',description:''}); }} style={{ fontSize:13, padding:'8px 14px' }}>Annuler</Btn>
+              </div>
+            </div>
+          )}
+
+          {resolved.length > 0 && (
+            <div style={{ marginTop:4 }}>
+              <p style={{ fontSize:11, color:'#94a3b8', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginBottom:8 }}>Récemment résolus</p>
+              {resolved.map(plan => (
+                <div key={plan.id} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, alignItems:'center', opacity:.65 }}>
+                  <span style={{ color:'#059669', fontSize:12 }}>✓</span>
+                  <span style={{ fontSize:12, color:'#64748b', textDecoration:'line-through', flex:1 }}>{plan.axis}</span>
+                  <span style={{ fontSize:11, color:'#94a3b8' }}>{fmtDate(plan.resolved_at)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ─── COMMENTS SECTION (debrief detail) ───────────────────────────────────────
+function CommentsSection({ debriefId, user, toast }) {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [text, setText]         = useState('');
+  const [sending, setSending]   = useState(false);
+
+  useEffect(() => {
+    apiFetch(`/debriefs/${debriefId}/comments`)
+      .then(setComments).catch(()=>{}).finally(()=>setLoading(false));
+  }, [debriefId]);
+
+  const send = async () => {
+    if (!text.trim()) return;
+    setSending(true);
+    try {
+      const c = await apiFetch(`/debriefs/${debriefId}/comments`, { method:'POST', body:{ content:text.trim() }});
+      setComments(prev => [...prev, c]);
+      setText('');
+    } catch(e) { toast(e.message, 'error'); } finally { setSending(false); }
+  };
+
+  const del = async (id) => {
+    try {
+      await apiFetch(`/comments/${id}`, { method:'DELETE' });
+      setComments(prev => prev.filter(c => c.id!==id));
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  return (
+    <Card style={{ overflow:'hidden' }}>
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid #f1f5f9', background:'#f8fafc' }}>
+        <h3 style={{ fontSize:14, fontWeight:700, color:'#1e293b', margin:0 }}>
+          💬 Commentaires
+          {comments.length > 0 && <span style={{ marginLeft:8, background:'#ede9fe', color:'#4c1d95', fontSize:11, fontWeight:600, padding:'2px 7px', borderRadius:10 }}>{comments.length}</span>}
+        </h3>
+      </div>
+      <div style={{ padding:16, display:'flex', flexDirection:'column', gap:12 }}>
+        {loading ? <Spinner size={24}/> : comments.length === 0 ? (
+          <p style={{ color:'#94a3b8', fontSize:13, textAlign:'center', padding:'8px 0' }}>Aucun commentaire</p>
+        ) : comments.map(c => (
+          <div key={c.id} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+            <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
+            <div style={{ flex:1, background:'#f8fafc', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid #e2e8f0' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                <span style={{ fontWeight:600, fontSize:12, color:'#374151' }}>{c.author_name}</span>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:11, color:'#94a3b8' }}>{fmtDate(c.created_at)}</span>
+                  {(c.author_id === user.id || user.role === 'head_of_sales') && (
+                    <button onClick={()=>del(c.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:12, padding:0 }}>✕</button>
+                  )}
+                </div>
+              </div>
+              <p style={{ fontSize:13, color:'#374151', margin:0, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{c.content}</p>
+            </div>
+          </div>
+        ))}
+
+        {/* Input */}
+        <div style={{ display:'flex', gap:10, alignItems:'flex-end', marginTop:4 }}>
+          <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{user.name?.charAt(0)}</div>
+          <div style={{ flex:1 }}>
+            <Textarea placeholder="Ajouter un commentaire..." rows={2} value={text} onChange={e=>setText(e.target.value)}/>
+          </div>
+          <Btn onClick={send} disabled={sending||!text.trim()} style={{ padding:'10px 16px', fontSize:13, alignSelf:'flex-end' }}>{sending?'...':'Envoyer'}</Btn>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ─── PIPELINE PAGE ────────────────────────────────────────────────────────────
+const PIPELINE_STAGES = [
+  { key:'prospect',     label:'Prospects',    color:'#64748b', bg:'#f1f5f9',  icon:'👤' },
+  { key:'premier_appel',label:'1er appel',    color:'#6366f1', bg:'#ede9fe',  icon:'📞' },
+  { key:'relance',      label:'Relance',      color:'#d97706', bg:'#fef3c7',  icon:'🔄' },
+  { key:'negociation',  label:'Négociation',  color:'#7c3aed', bg:'#f5f3ff',  icon:'🤝' },
+  { key:'signe',        label:'Signés ✓',     color:'#059669', bg:'#d1fae5',  icon:'✅' },
+  { key:'perdu',        label:'Perdus',       color:'#dc2626', bg:'#fee2e2',  icon:'❌' },
+];
+
+function DealCard({ deal, onEdit, onMove, onDelete, stages, mob }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const stage = stages.find(s => s.key === deal.status) || stages[0];
+  const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
+
+  return (
+    <div style={{ background:'white', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)' }} onClick={()=>onEdit(deal)}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
+        <p style={{ fontWeight:600, fontSize:13, color:'#1e293b', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
+        <div ref={ref} style={{ position:'relative' }}>
+          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}} style={{ background:'none', border:'none', color:'#94a3b8', cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
+          {showMenu && (
+            <div style={{ position:'absolute', right:0, top:'100%', background:'white', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
+              {stages.filter(s=>s.key!==deal.status).map(s => (
+                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#374151', textAlign:'left' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                  {s.icon} → {s.label}
+                </button>
+              ))}
+              <div style={{ height:1, background:'#f1f5f9' }}/>
+              <button onClick={e=>{e.stopPropagation();onDelete(deal.id);setShowMenu(false);}} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#dc2626', textAlign:'left' }}
+                onMouseEnter={e=>e.currentTarget.style.background='#fff5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                🗑 Supprimer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+        {deal.value > 0 && <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#d1fae5', padding:'2px 7px', borderRadius:6 }}>{deal.value.toLocaleString('fr-FR')} €</span>}
+        {deal.source && <span style={{ fontSize:11, color:'#64748b', background:'#f1f5f9', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
+        {deal.follow_up_date && (
+          <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#64748b', background:isOverdue?'#fee2e2':'#f1f5f9', padding:'2px 7px', borderRadius:6, fontWeight:isOverdue?600:400 }}>
+            {isOverdue?'⚠️ ':''}{deal.follow_up_date}
+          </span>
+        )}
+        {deal.user_name && <span style={{ fontSize:11, color:'#94a3b8' }}>· {deal.user_name}</span>}
+      </div>
+    </div>
+  );
+}
+
+function DealModal({ deal, onClose, onSave, toast }) {
+  const isEdit = !!deal?.id;
+  const [form, setForm] = useState({
+    prospect_name: deal?.prospect_name || '',
+    source:        deal?.source        || '',
+    value:         deal?.value         || '',
+    status:        deal?.status        || 'prospect',
+    follow_up_date:deal?.follow_up_date|| '',
+    notes:         deal?.notes         || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!form.prospect_name.trim()) return;
+    setSaving(true);
+    try {
+      const body = { ...form, value: Number(form.value)||0 };
+      let result;
+      if (isEdit) { result = await apiFetch(`/deals/${deal.id}`, { method:'PATCH', body }); }
+      else        { result = await apiFetch('/deals', { method:'POST', body }); }
+      onSave(result, isEdit);
+      toast(isEdit ? 'Deal mis à jour !' : 'Deal créé !');
+      onClose();
+    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
+  };
+
+  return (
+    <Modal title={isEdit ? 'Modifier le deal' : 'Nouveau deal'} onClose={onClose}>
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Prospect *</label><Input placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})} autoFocus/></div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Source</label><Input placeholder="LinkedIn, Inbound..." value={form.source} onChange={e=>setForm({...form,source:e.target.value})}/></div>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Valeur (€)</label><Input type="number" placeholder="0" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}/></div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Statut</label>
+            <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'11px 12px', fontSize:14, fontFamily:'inherit', outline:'none', color:'#1e293b', background:'white' }}>
+              {PIPELINE_STAGES.map(s => <option key={s.key} value={s.key}>{s.icon} {s.label}</option>)}
+            </select>
+          </div>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Date de relance</label><Input type="date" value={form.follow_up_date} onChange={e=>setForm({...form,follow_up_date:e.target.value})}/></div>
+        </div>
+        <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Notes</label><Textarea placeholder="Notes libres..." rows={3} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></div>
+        <div style={{ display:'flex', gap:10, marginTop:4 }}>
+          <Btn onClick={save} disabled={saving||!form.prospect_name.trim()} style={{flex:1}}>{saving?'Enregistrement...':isEdit?'Mettre à jour':'Créer le deal'}</Btn>
+          <Btn variant="secondary" onClick={onClose} style={{flex:1}}>Annuler</Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function PipelinePage({ user, toast }) {
+  const [deals, setDeals]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);  // null=closed, {}=new, deal=edit
+  const [filter, setFilter]   = useState('all'); // 'all' or user_id
+  const mob = useIsMobile();
+
+  useEffect(() => {
+    apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
+  }, []);
+
+  const handleSave = (deal, isEdit) => {
+    if (isEdit) setDeals(prev => prev.map(d => d.id===deal.id ? deal : d));
+    else        setDeals(prev => [deal, ...prev]);
+  };
+
+  const handleMove = async (id, status) => {
+    try {
+      const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status }});
+      setDeals(prev => prev.map(d => d.id===id ? updated : d));
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Supprimer ce deal ?')) return;
+    try {
+      await apiFetch(`/deals/${id}`, { method:'DELETE' });
+      setDeals(prev => prev.filter(d => d.id!==id));
+      toast('Deal supprimé');
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  const isHOS = user.role === 'head_of_sales';
+  const closers = [...new Map(deals.map(d => [d.user_id, { id:d.user_id, name:d.user_name }])).values()];
+  const displayDeals = filter==='all' ? deals : deals.filter(d=>d.user_id===filter);
+
+  // KPIs
+  const totalValue  = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
+  const totalPipe   = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
+  const overdueCount= deals.filter(d=>d.follow_up_date&&new Date(d.follow_up_date)<new Date()&&!['signe','perdu'].includes(d.status)).length;
+  const winRate     = deals.filter(d=>['signe','perdu'].includes(d.status)).length > 0
+    ? Math.round((deals.filter(d=>d.status==='signe').length / deals.filter(d=>['signe','perdu'].includes(d.status)).length)*100) : 0;
+
+  if (loading) return <Spinner full/>;
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+        <div>
+          <h1 style={{ fontSize:22, fontWeight:700, color:'#1e293b', margin:0 }}>🎯 Pipeline</h1>
+          <p style={{ color:'#64748b', fontSize:13, marginTop:4 }}>{deals.length} deal{deals.length!==1?'s':''}</p>
+        </div>
+        <Btn onClick={()=>setEditing({})}>+ Nouveau deal</Btn>
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
+        {[
+          { label:'CA Signé',    value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
+          { label:'Pipeline',   value:`${totalPipe.toLocaleString('fr-FR')} €`,  icon:'🔮', bg:'#ede9fe', c:'#6366f1' },
+          { label:'Taux win',   value:`${winRate}%`,                              icon:'🏆', bg:'#fef3c7', c:'#d97706' },
+          { label:'En retard',  value:overdueCount,                               icon:'⚠️', bg:overdueCount>0?'#fee2e2':'#f1f5f9', c:overdueCount>0?'#dc2626':'#64748b' },
+        ].map(({ label, value, icon, bg, c }) => (
+          <Card key={label} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
+            <div>
+              <p style={{ fontSize:10, color:'#64748b', margin:0, fontWeight:500, textTransform:'uppercase', letterSpacing:'.04em' }}>{label}</p>
+              <p style={{ fontSize:20, fontWeight:700, color:c, margin:0 }}>{value}</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Filtre par closer (HOS) */}
+      {isHOS && closers.length > 1 && (
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          <button onClick={()=>setFilter('all')} style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${filter==='all'?'#6366f1':'#e2e8f0'}`, background:filter==='all'?'#ede9fe':'white', color:filter==='all'?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>Tous</button>
+          {closers.map(c => (
+            <button key={c.id} onClick={()=>setFilter(c.id)} style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${filter===c.id?'#6366f1':'#e2e8f0'}`, background:filter===c.id?'#ede9fe':'white', color:filter===c.id?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>👤 {c.name}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Kanban */}
+      {deals.length === 0 ? (
+        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier deal ou soumettez un debrief" action={<Btn onClick={()=>setEditing({})}>+ Créer un deal</Btn>}/>
+      ) : (
+        <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
+          <div style={{ display:'flex', gap:14, minWidth: mob ? `${PIPELINE_STAGES.length*260}px` : 'auto' }}>
+            {PIPELINE_STAGES.map(stage => {
+              const stageDeals = displayDeals.filter(d => d.status===stage.key);
+              const stageValue = stageDeals.reduce((s,d)=>s+(d.value||0),0);
+              return (
+                <div key={stage.key} style={{ flex:1, minWidth:mob?240:0, display:'flex', flexDirection:'column', gap:10 }}>
+                  {/* Header colonne */}
+                  <div style={{ padding:'10px 14px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <span style={{ fontSize:14 }}>{stage.icon}</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:stage.color }}>{stage.label}</span>
+                      <span style={{ background:'white', color:stage.color, fontSize:11, fontWeight:700, padding:'1px 7px', borderRadius:10 }}>{stageDeals.length}</span>
+                    </div>
+                    {stageValue > 0 && <span style={{ fontSize:11, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
+                  </div>
+                  {/* Deals */}
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, minHeight:60 }}>
+                    {stageDeals.map(deal => (
+                      <DealCard key={deal.id} deal={deal} onEdit={setEditing} onMove={handleMove} onDelete={handleDelete} stages={PIPELINE_STAGES} mob={mob}/>
+                    ))}
+                    {stageDeals.length === 0 && (
+                      <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'20px 12px', textAlign:'center', color:'#cbd5e1', fontSize:12 }}>
+                        Vide
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {editing !== null && <DealModal deal={editing?.id?editing:null} onClose={()=>setEditing(null)} onSave={handleSave} toast={toast}/>}
+    </div>
+  );
+}
+
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
   const { list: toasts, toast } = useToast();
@@ -1796,6 +2353,7 @@ export default function App() {
     { key:'Dashboard', label:'Dashboard', icon:'⊞' },
     { key:'NewDebrief', label:'Nouveau',  icon:'+' },
     { key:'History',    label:'Historique', icon:'🕐' },
+    { key:'Pipeline', label:'Pipeline', icon:'🎯' },
     ...(isHOS ? [{ key:'HOSPage', label:'HOS', icon:'👑' }] : []),
   ];
 
@@ -1845,10 +2403,11 @@ export default function App() {
       <main style={{ maxWidth:1100, margin:'0 auto', padding:mob?'16px 12px':'32px 24px' }}>
         {dataLoading ? <Spinner full/> : (
           <>
-            {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey}/>}
+            {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
             {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
             {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-            {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from}/>}
+            {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
+            {page==='Pipeline'  && <PipelinePage user={user} toast={toast}/>}
             {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
           </>
         )}
