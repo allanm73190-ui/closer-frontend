@@ -1869,7 +1869,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
       setPlans(prev => [p, ...prev]);
       setForm({ axis:'', description:'' });
       setShowAdd(false);
-      toast('Plan d'action ajouté !');
+      toast("Plan d'action ajouté !");
     } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
   };
 
@@ -1910,7 +1910,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
         <div style={{ padding:16, display:'flex', flexDirection:'column', gap:10 }}>
           {active.length === 0 && !showAdd && (
             <p style={{ color:'#94a3b8', fontSize:13, textAlign:'center', padding:'12px 0' }}>
-              {isHOS ? 'Aucun axe actif. Cliquez "+ Ajouter" pour en définir un.' : 'Aucun axe de travail défini pour l'instant.'}
+              {isHOS ? 'Aucun axe actif. Cliquez "+ Ajouter" pour en définir un.' : "Aucun axe de travail défini pour l'instant."}
             </p>
           )}
 
