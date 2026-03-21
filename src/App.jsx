@@ -2041,7 +2041,182 @@ const PIPELINE_STAGES = [
   { key:'perdu',        label:'Perdus',       color:'#dc2626', bg:'#fee2e2',  icon:'❌' },
 ];
 
-function DealCard({ deal, onEdit, onMove, onDelete, stages, mob }) {
+function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
+  const [form, setForm] = useState({
+    prospect_name: deal?.prospect_name || '',
+    source:        deal?.source        || '',
+    value:         deal?.value != null ? String(deal.value) : '',
+    status:        deal?.status        || 'prospect',
+    follow_up_date:deal?.follow_up_date|| '',
+    notes:         deal?.notes         || '',
+    debrief_id:    deal?.debrief_id    || '',
+  });
+  const [saving, setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isNew = !deal?.id;
+
+  const linkedDebrief = debriefs.find(d => d.id === form.debrief_id);
+
+  const save = async () => {
+    if (!form.prospect_name.trim()) return;
+    setSaving(true);
+    try {
+      const body = { ...form, value: Number(form.value) || 0, debrief_id: form.debrief_id || null };
+      const result = isNew
+        ? await apiFetch('/deals', { method:'POST', body })
+        : await apiFetch(`/deals/${deal.id}`, { method:'PATCH', body });
+      onSave(result, !isNew);
+      toast(isNew ? 'Lead créé !' : 'Lead mis à jour !');
+      onClose();
+    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
+  };
+
+  const del = async () => {
+    if (!confirm('Supprimer ce lead ?')) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/deals/${deal.id}`, { method:'DELETE' });
+      onDelete(deal.id);
+      toast('Lead supprimé');
+      onClose();
+    } catch(e) { toast(e.message, 'error'); } finally { setDeleting(false); }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,.4)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:'white', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:560, maxHeight:'92vh', overflowY:'auto', boxShadow:'0 -8px 40px rgba(0,0,0,.15)' }}>
+
+        {/* Header */}
+        <div style={{ padding:'20px 20px 0', position:'sticky', top:0, background:'white', zIndex:1 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              {(() => {
+                const stage = PIPELINE_STAGES.find(s => s.key === form.status) || PIPELINE_STAGES[0];
+                return <span style={{ background:stage.bg, color:stage.color, fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:20 }}>{stage.icon} {stage.label}</span>;
+              })()}
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              {!isNew && <button onClick={del} disabled={deleting} style={{ background:'#fee2e2', border:'none', color:'#dc2626', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>🗑 Supprimer</button>}
+              <button onClick={onClose} style={{ background:'none', border:'none', color:'#94a3b8', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+            </div>
+          </div>
+          {/* Nom prospect */}
+          <input
+            placeholder="Nom du prospect *"
+            value={form.prospect_name}
+            onChange={e=>setForm({...form,prospect_name:e.target.value})}
+            style={{ width:'100%', fontSize:20, fontWeight:700, color:'#1e293b', border:'none', outline:'none', borderBottom:'2px solid #e2e8f0', paddingBottom:10, marginBottom:16, fontFamily:'inherit', boxSizing:'border-box', background:'transparent' }}
+            onFocus={e=>e.target.style.borderBottomColor='#6366f1'}
+            onBlur={e=>e.target.style.borderBottomColor='#e2e8f0'}
+          />
+        </div>
+
+        <div style={{ padding:'0 20px 24px', display:'flex', flexDirection:'column', gap:20 }}>
+
+          {/* Statut */}
+          <div>
+            <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>Statut</label>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {PIPELINE_STAGES.map(s => (
+                <button key={s.key} onClick={()=>setForm({...form,status:s.key})}
+                  style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${form.status===s.key?s.color:'#e2e8f0'}`, background:form.status===s.key?s.bg:'white', color:form.status===s.key?s.color:'#64748b', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:'inherit', transition:'all .15s' }}>
+                  {s.icon} {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Infos clés */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div>
+              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>💶 CA (€)</label>
+              <input type="number" placeholder="0" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}
+                style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#1e293b' }}
+                onFocus={e=>e.target.style.borderColor='#6366f1'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📅 Relance</label>
+              <input type="date" value={form.follow_up_date} onChange={e=>setForm({...form,follow_up_date:e.target.value})}
+                style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#1e293b' }}
+                onFocus={e=>e.target.style.borderColor='#6366f1'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📥 Source</label>
+              <input placeholder="LinkedIn, Inbound..." value={form.source} onChange={e=>setForm({...form,source:e.target.value})}
+                style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#1e293b' }}
+                onFocus={e=>e.target.style.borderColor='#6366f1'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📝 Notes</label>
+            <textarea placeholder="Notes libres sur ce lead..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3}
+              style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:'#1e293b' }}
+              onFocus={e=>e.target.style.borderColor='#6366f1'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
+          </div>
+
+          {/* Debrief lié */}
+          <div>
+            <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>📞 Debrief lié</label>
+            <select value={form.debrief_id} onChange={e=>setForm({...form,debrief_id:e.target.value})}
+              style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', color:'#1e293b', background:'white', boxSizing:'border-box' }}>
+              <option value="">— Aucun debrief lié</option>
+              {debriefs.map(d => (
+                <option key={d.id} value={d.id}>{d.prospect_name} — {fmtDate(d.call_date)} ({d.percentage}%)</option>
+              ))}
+            </select>
+
+            {/* Aperçu du debrief lié */}
+            {linkedDebrief && (
+              <div style={{ marginTop:12, padding:'14px 16px', background:'#f5f3ff', borderRadius:10, border:'1px solid #c4b5fd' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                  <div>
+                    <p style={{ fontWeight:700, fontSize:14, color:'#1e293b', margin:0 }}>{linkedDebrief.prospect_name}</p>
+                    <p style={{ fontSize:12, color:'#64748b', margin:'2px 0 0' }}>📅 {fmtDate(linkedDebrief.call_date)} · 👤 {linkedDebrief.closer_name}</p>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+                    <ScoreBadge pct={Math.round(linkedDebrief.percentage||0)}/>
+                    <ClosedBadge isClosed={linkedDebrief.is_closed}/>
+                  </div>
+                </div>
+                {/* Mini barres sections */}
+                {(() => {
+                  const scores = computeSectionScores(linkedDebrief.sections || {});
+                  const LABELS = {decouverte:'Déc.',reformulation:'Ref.',projection:'Proj.',presentation_offre:'Offre',closing:'Closing'};
+                  const col = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#6366f1':'#ef4444';
+                  return (
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                      {SECTIONS.map(({key}) => (
+                        <div key={key} style={{ flex:1, minWidth:50 }}>
+                          <p style={{ fontSize:10, color:'#64748b', margin:'0 0 3px', textAlign:'center' }}>{LABELS[key]}</p>
+                          <div style={{ height:5, background:'#e2e8f0', borderRadius:3, overflow:'hidden' }}>
+                            <div style={{ height:'100%', width:`${(scores[key]/5)*100}%`, background:col(scores[key]), borderRadius:3 }}/>
+                          </div>
+                          <p style={{ fontSize:10, color:col(scores[key]), fontWeight:700, margin:'2px 0 0', textAlign:'center' }}>{scores[key]}/5</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {linkedDebrief.notes && <p style={{ fontSize:12, color:'#64748b', margin:'10px 0 0', fontStyle:'italic' }}>"{linkedDebrief.notes}"</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Bouton save */}
+          <button onClick={save} disabled={saving||!form.prospect_name.trim()}
+            style={{ width:'100%', padding:'14px', borderRadius:12, background:'#6366f1', color:'white', border:'none', fontSize:15, fontWeight:700, cursor:saving||!form.prospect_name.trim()?'not-allowed':'pointer', opacity:saving||!form.prospect_name.trim()?.55:1, fontFamily:'inherit', transition:'opacity .15s' }}>
+            {saving ? 'Enregistrement...' : isNew ? 'Créer le lead' : 'Enregistrer les modifications'}
+          </button>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DealCard({ deal, onOpen, onMove, stages }) {
   const [showMenu, setShowMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -2050,104 +2225,52 @@ function DealCard({ deal, onEdit, onMove, onDelete, stages, mob }) {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const stage = stages.find(s => s.key === deal.status) || stages[0];
   const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
 
   return (
-    <div style={{ background:'white', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)' }} onClick={()=>onEdit(deal)}>
+    <div onClick={()=>onOpen(deal)}
+      style={{ background:'white', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)', transition:'box-shadow .15s' }}
+      onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 12px rgba(99,102,241,.12)'}
+      onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
         <p style={{ fontWeight:600, fontSize:13, color:'#1e293b', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
         <div ref={ref} style={{ position:'relative' }}>
-          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}} style={{ background:'none', border:'none', color:'#94a3b8', cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
+          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}}
+            style={{ background:'none', border:'none', color:'#94a3b8', cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
           {showMenu && (
             <div style={{ position:'absolute', right:0, top:'100%', background:'white', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
               {stages.filter(s=>s.key!==deal.status).map(s => (
-                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#374151', textAlign:'left' }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}}
+                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#374151', textAlign:'left' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                  onMouseLeave={e=>e.currentTarget.style.background='none'}>
                   {s.icon} → {s.label}
                 </button>
               ))}
-              <div style={{ height:1, background:'#f1f5f9' }}/>
-              <button onClick={e=>{e.stopPropagation();onDelete(deal.id);setShowMenu(false);}} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#dc2626', textAlign:'left' }}
-                onMouseEnter={e=>e.currentTarget.style.background='#fff5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
-                🗑 Supprimer
-              </button>
             </div>
           )}
         </div>
       </div>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
         {deal.value > 0 && <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#d1fae5', padding:'2px 7px', borderRadius:6 }}>{deal.value.toLocaleString('fr-FR')} €</span>}
         {deal.source && <span style={{ fontSize:11, color:'#64748b', background:'#f1f5f9', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
         {deal.follow_up_date && (
-          <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#64748b', background:isOverdue?'#fee2e2':'#f1f5f9', padding:'2px 7px', borderRadius:6, fontWeight:isOverdue?600:400 }}>
+          <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#94a3b8', background:isOverdue?'#fee2e2':'transparent', padding:'2px 4px', borderRadius:4, fontWeight:isOverdue?600:400 }}>
             {isOverdue?'⚠️ ':''}{deal.follow_up_date}
           </span>
         )}
-        {deal.user_name && <span style={{ fontSize:11, color:'#94a3b8' }}>· {deal.user_name}</span>}
+        {deal.debrief_id && <span style={{ fontSize:11, color:'#6366f1', background:'#ede9fe', padding:'2px 7px', borderRadius:6 }}>📞 debrief</span>}
       </div>
+      {deal.user_name && <p style={{ fontSize:11, color:'#94a3b8', margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
     </div>
   );
 }
 
-function DealModal({ deal, onClose, onSave, toast }) {
-  const isEdit = !!deal?.id;
-  const [form, setForm] = useState({
-    prospect_name: deal?.prospect_name || '',
-    source:        deal?.source        || '',
-    value:         deal?.value         || '',
-    status:        deal?.status        || 'prospect',
-    follow_up_date:deal?.follow_up_date|| '',
-    notes:         deal?.notes         || '',
-  });
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (!form.prospect_name.trim()) return;
-    setSaving(true);
-    try {
-      const body = { ...form, value: Number(form.value)||0 };
-      let result;
-      if (isEdit) { result = await apiFetch(`/deals/${deal.id}`, { method:'PATCH', body }); }
-      else        { result = await apiFetch('/deals', { method:'POST', body }); }
-      onSave(result, isEdit);
-      toast(isEdit ? 'Deal mis à jour !' : 'Deal créé !');
-      onClose();
-    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
-  };
-
-  return (
-    <Modal title={isEdit ? 'Modifier le deal' : 'Nouveau deal'} onClose={onClose}>
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Prospect *</label><Input placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})} autoFocus/></div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Source</label><Input placeholder="LinkedIn, Inbound..." value={form.source} onChange={e=>setForm({...form,source:e.target.value})}/></div>
-          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Valeur (€)</label><Input type="number" placeholder="0" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}/></div>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <div>
-            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Statut</label>
-            <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} style={{ width:'100%', borderRadius:8, border:'1px solid #e2e8f0', padding:'11px 12px', fontSize:14, fontFamily:'inherit', outline:'none', color:'#1e293b', background:'white' }}>
-              {PIPELINE_STAGES.map(s => <option key={s.key} value={s.key}>{s.icon} {s.label}</option>)}
-            </select>
-          </div>
-          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Date de relance</label><Input type="date" value={form.follow_up_date} onChange={e=>setForm({...form,follow_up_date:e.target.value})}/></div>
-        </div>
-        <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:5}}>Notes</label><Textarea placeholder="Notes libres..." rows={3} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></div>
-        <div style={{ display:'flex', gap:10, marginTop:4 }}>
-          <Btn onClick={save} disabled={saving||!form.prospect_name.trim()} style={{flex:1}}>{saving?'Enregistrement...':isEdit?'Mettre à jour':'Créer le deal'}</Btn>
-          <Btn variant="secondary" onClick={onClose} style={{flex:1}}>Annuler</Btn>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function PipelinePage({ user, toast }) {
-  const [deals, setDeals]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(null);  // null=closed, {}=new, deal=edit
-  const [filter, setFilter]   = useState('all'); // 'all' or user_id
+function PipelinePage({ user, toast, debriefs }) {
+  const [deals, setDeals]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [openLead, setOpenLead] = useState(null); // null | {} (new) | deal (edit)
+  const [filter, setFilter]     = useState('all');
   const mob = useIsMobile();
 
   useEffect(() => {
@@ -2155,36 +2278,27 @@ function PipelinePage({ user, toast }) {
   }, []);
 
   const handleSave = (deal, isEdit) => {
-    if (isEdit) setDeals(prev => prev.map(d => d.id===deal.id ? deal : d));
-    else        setDeals(prev => [deal, ...prev]);
+    setDeals(prev => isEdit ? prev.map(d=>d.id===deal.id?deal:d) : [deal,...prev]);
   };
-
   const handleMove = async (id, status) => {
     try {
       const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status }});
       setDeals(prev => prev.map(d => d.id===id ? updated : d));
     } catch(e) { toast(e.message, 'error'); }
   };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Supprimer ce deal ?')) return;
-    try {
-      await apiFetch(`/deals/${id}`, { method:'DELETE' });
-      setDeals(prev => prev.filter(d => d.id!==id));
-      toast('Deal supprimé');
-    } catch(e) { toast(e.message, 'error'); }
+  const handleDelete = (id) => {
+    setDeals(prev => prev.filter(d => d.id!==id));
   };
 
   const isHOS = user.role === 'head_of_sales';
-  const closers = [...new Map(deals.map(d => [d.user_id, { id:d.user_id, name:d.user_name }])).values()];
+  const closers = [...new Map(deals.map(d=>[d.user_id,{id:d.user_id,name:d.user_name}])).values()];
   const displayDeals = filter==='all' ? deals : deals.filter(d=>d.user_id===filter);
 
-  // KPIs
-  const totalValue  = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
-  const totalPipe   = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
-  const overdueCount= deals.filter(d=>d.follow_up_date&&new Date(d.follow_up_date)<new Date()&&!['signe','perdu'].includes(d.status)).length;
-  const winRate     = deals.filter(d=>['signe','perdu'].includes(d.status)).length > 0
-    ? Math.round((deals.filter(d=>d.status==='signe').length / deals.filter(d=>['signe','perdu'].includes(d.status)).length)*100) : 0;
+  const totalValue   = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
+  const totalPipe    = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
+  const overdueCount = deals.filter(d=>d.follow_up_date&&new Date(d.follow_up_date)<new Date()&&!['signe','perdu'].includes(d.status)).length;
+  const closed       = deals.filter(d=>['signe','perdu'].includes(d.status));
+  const winRate      = closed.length > 0 ? Math.round((deals.filter(d=>d.status==='signe').length/closed.length)*100) : 0;
 
   if (loading) return <Spinner full/>;
 
@@ -2195,18 +2309,18 @@ function PipelinePage({ user, toast }) {
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:700, color:'#1e293b', margin:0 }}>🎯 Pipeline</h1>
-          <p style={{ color:'#64748b', fontSize:13, marginTop:4 }}>{deals.length} deal{deals.length!==1?'s':''}</p>
+          <p style={{ color:'#64748b', fontSize:13, marginTop:4 }}>{deals.length} lead{deals.length!==1?'s':''}</p>
         </div>
-        <Btn onClick={()=>setEditing({})}>+ Nouveau deal</Btn>
+        <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
       </div>
 
       {/* KPIs */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
         {[
-          { label:'CA Signé',    value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
+          { label:'CA Signé',   value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
           { label:'Pipeline',   value:`${totalPipe.toLocaleString('fr-FR')} €`,  icon:'🔮', bg:'#ede9fe', c:'#6366f1' },
-          { label:'Taux win',   value:`${winRate}%`,                              icon:'🏆', bg:'#fef3c7', c:'#d97706' },
-          { label:'En retard',  value:overdueCount,                               icon:'⚠️', bg:overdueCount>0?'#fee2e2':'#f1f5f9', c:overdueCount>0?'#dc2626':'#64748b' },
+          { label:'Taux win',   value:`${winRate}%`,                             icon:'🏆', bg:'#fef3c7', c:'#d97706' },
+          { label:'En retard',  value:overdueCount,                              icon:'⚠️', bg:overdueCount>0?'#fee2e2':'#f1f5f9', c:overdueCount>0?'#dc2626':'#64748b' },
         ].map(({ label, value, icon, bg, c }) => (
           <Card key={label} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
             <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
@@ -2218,7 +2332,7 @@ function PipelinePage({ user, toast }) {
         ))}
       </div>
 
-      {/* Filtre par closer (HOS) */}
+      {/* Filtre closer (HOS) */}
       {isHOS && closers.length > 1 && (
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           <button onClick={()=>setFilter('all')} style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${filter==='all'?'#6366f1':'#e2e8f0'}`, background:filter==='all'?'#ede9fe':'white', color:filter==='all'?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>Tous</button>
@@ -2230,33 +2344,29 @@ function PipelinePage({ user, toast }) {
 
       {/* Kanban */}
       {deals.length === 0 ? (
-        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier deal ou soumettez un debrief" action={<Btn onClick={()=>setEditing({})}>+ Créer un deal</Btn>}/>
+        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead ou soumettez un debrief" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}/>
       ) : (
         <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
-          <div style={{ display:'flex', gap:14, minWidth: mob ? `${PIPELINE_STAGES.length*260}px` : 'auto' }}>
+          <div style={{ display:'flex', gap:12, minWidth:mob?`${PIPELINE_STAGES.length*220}px`:'auto' }}>
             {PIPELINE_STAGES.map(stage => {
               const stageDeals = displayDeals.filter(d => d.status===stage.key);
               const stageValue = stageDeals.reduce((s,d)=>s+(d.value||0),0);
               return (
-                <div key={stage.key} style={{ flex:1, minWidth:mob?240:0, display:'flex', flexDirection:'column', gap:10 }}>
-                  {/* Header colonne */}
-                  <div style={{ padding:'10px 14px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                      <span style={{ fontSize:14 }}>{stage.icon}</span>
-                      <span style={{ fontSize:13, fontWeight:700, color:stage.color }}>{stage.label}</span>
-                      <span style={{ background:'white', color:stage.color, fontSize:11, fontWeight:700, padding:'1px 7px', borderRadius:10 }}>{stageDeals.length}</span>
+                <div key={stage.key} style={{ flex:1, minWidth:mob?210:0, display:'flex', flexDirection:'column', gap:8 }}>
+                  <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ fontSize:13 }}>{stage.icon}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
+                      <span style={{ background:'white', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{stageDeals.length}</span>
                     </div>
-                    {stageValue > 0 && <span style={{ fontSize:11, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
+                    {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
                   </div>
-                  {/* Deals */}
-                  <div style={{ display:'flex', flexDirection:'column', gap:8, minHeight:60 }}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:50 }}>
                     {stageDeals.map(deal => (
-                      <DealCard key={deal.id} deal={deal} onEdit={setEditing} onMove={handleMove} onDelete={handleDelete} stages={PIPELINE_STAGES} mob={mob}/>
+                      <DealCard key={deal.id} deal={deal} onOpen={setOpenLead} onMove={handleMove} stages={PIPELINE_STAGES}/>
                     ))}
                     {stageDeals.length === 0 && (
-                      <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'20px 12px', textAlign:'center', color:'#cbd5e1', fontSize:12 }}>
-                        Vide
-                      </div>
+                      <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'16px 10px', textAlign:'center', color:'#cbd5e1', fontSize:11 }}>Vide</div>
                     )}
                   </div>
                 </div>
@@ -2266,7 +2376,17 @@ function PipelinePage({ user, toast }) {
         </div>
       )}
 
-      {editing !== null && <DealModal deal={editing?.id?editing:null} onClose={()=>setEditing(null)} onSave={handleSave} toast={toast}/>}
+      {/* Fiche lead */}
+      {openLead !== null && (
+        <LeadSheet
+          deal={openLead?.id ? openLead : null}
+          debriefs={debriefs || []}
+          onClose={()=>setOpenLead(null)}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          toast={toast}
+        />
+      )}
     </div>
   );
 }
@@ -2407,7 +2527,7 @@ export default function App() {
             {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
             {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
             {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
-            {page==='Pipeline'  && <PipelinePage user={user} toast={toast}/>}
+            {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
             {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
           </>
         )}
