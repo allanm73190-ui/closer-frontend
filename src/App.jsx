@@ -859,7 +859,7 @@ function DebriefCard({ debrief, onClick, showUser }) {
 }
 
 // ─── MEMBER ROW ───────────────────────────────────────────────────────────────
-function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, onSelect }) {
+function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, onSelect, onObjectives }) {
   const [movingTo, setMovingTo] = useState('');
   const mob = useIsMobile();
   const otherTeams = teams.filter(t => t.id !== currentTeamId);
@@ -1732,34 +1732,34 @@ function UserMenu({ user, gam, onLogout, onSettings, toast }) {
 }
 
 
+// ─── PROG BAR ─────────────────────────────────────────────────────────────────
+function ProgBar({ label, current, target, color='#6366f1' }) {
+  if (!target) return null;
+  const pct = Math.min(Math.round((current / target) * 100), 100);
+  const done = current >= target;
+  return (
+    <div style={{ flex:1, minWidth:120 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:600, marginBottom:4 }}>
+        <span style={{ color:'#374151' }}>{label}</span>
+        <span style={{ color:done?'#059669':color }}>{current}/{target}{done?' ✓':''}</span>
+      </div>
+      <div style={{ height:6, background:'#e2e8f0', borderRadius:3, overflow:'hidden' }}>
+        <div style={{ height:'100%', width:`${pct}%`, background:done?'#059669':color, borderRadius:3, transition:'width .7s' }}/>
+      </div>
+    </div>
+  );
+}
+
 // ─── OBJECTIF BANNER (closer dashboard) ──────────────────────────────────────
 function ObjectiveBanner({ userId }) {
   const [objectives, setObjectives] = useState([]);
   useEffect(() => {
     apiFetch('/objectives/me').then(setObjectives).catch(() => {});
   }, [userId]);
-  if (!objectives.length) return null;
 
   const monthly = objectives.find(o => o.period_type === 'monthly');
   const weekly  = objectives.find(o => o.period_type === 'weekly');
   if (!monthly && !weekly) return null;
-
-  const ProgBar = ({ label, current, target, color='#6366f1' }) => {
-    if (!target) return null;
-    const pct = Math.min(Math.round((current / target) * 100), 100);
-    const done = current >= target;
-    return (
-      <div style={{ flex:1, minWidth:120 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:600, marginBottom:4 }}>
-          <span style={{ color:'#374151' }}>{label}</span>
-          <span style={{ color:done?'#059669':color }}>{current}/{target}{done?' ✓':''}</span>
-        </div>
-        <div style={{ height:6, background:'#e2e8f0', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:`${pct}%`, background:done?'#059669':color, borderRadius:3, transition:'width .7s' }}/>
-        </div>
-      </div>
-    );
-  };
 
   const render = (obj, label) => {
     if (!obj) return null;
