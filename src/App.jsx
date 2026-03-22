@@ -47,6 +47,22 @@ function useIsMobile(bp = 768) {
   return v;
 }
 
+function useBreakpoint() {
+  const [bp, setBp] = useState(() => {
+    const w = window.innerWidth;
+    return w < 768 ? 'mobile' : w < 1200 ? 'tablet' : 'desktop';
+  });
+  useEffect(() => {
+    const h = () => {
+      const w = window.innerWidth;
+      setBp(w < 768 ? 'mobile' : w < 1200 ? 'tablet' : 'desktop');
+    };
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return bp;
+}
+
 // ─── SCORES ───────────────────────────────────────────────────────────────────
 function computeScore(sections) {
   let pts = 0, max = 0;
@@ -468,7 +484,7 @@ function StatsRow({ debriefs }) {
     { label:'Tendance',       value:`${trend>=0?'+':''}${trend}%`, icon:trend>=0?'📈':'📉', bg:trend>=0?'#d1fae5':'#fee2e2', c:trend>=0?'#059669':'#dc2626' },
   ];
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
+    <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:16 }}>
       {items.map(({ label, value, icon, bg, c }) => (
         <Card key={label} style={{ padding:mob?'12px 14px':'16px 20px', display:'flex', alignItems:'center', gap:mob?10:14 }}>
           <div style={{ width:mob?36:44, height:mob?36:44, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:mob?16:20, flexShrink:0 }}>{icon}</div>
@@ -1085,7 +1101,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
               {/* KPIs */}
               <div>
                 <p style={{ fontSize:13, fontWeight:600, color:'#64748b', margin:'0 0 10px' }}>📊 {scopeLabel} · {fTotal} debrief{fTotal!==1?'s':''}</p>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
+                <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:16 }}>
                   {[{l:'Debriefs',value:fTotal,icon:'📋',bg:'#ede9fe',c:'#6366f1'},{l:'Score moyen',value:`${fAvg}%`,icon:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',value:`${fRate}%`,icon:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',value:fCls,icon:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,value,icon,bg,c})=>(
                     <Card key={l} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
                       <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
@@ -1313,7 +1329,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
             </div>
 
             {/* KPIs équipe */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:16 }}>
               {[{l:'Debriefs',v:td.length,i:'📋',bg:'#ede9fe',c:'#6366f1'},{l:'Score moyen',v:`${tAvg}%`,i:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',v:`${tRate}%`,i:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',v:tCls,i:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,v,i,bg,c})=>(
                 <Card key={l} style={{padding:'12px 14px',display:'flex',alignItems:'center',gap:12}}>
                   <div style={{width:38,height:38,borderRadius:10,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{i}</div>
@@ -1518,7 +1534,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
           </Card>
         </>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', gap:20, alignItems:'start' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap:20, alignItems:'start' }}>
           <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:'#94a3b8', margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
@@ -2315,7 +2331,7 @@ function PipelinePage({ user, toast, debriefs }) {
       </div>
 
       {/* KPIs */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:mob?10:16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:16 }}>
         {[
           { label:'CA Signé',   value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
           { label:'Pipeline',   value:`${totalPipe.toLocaleString('fr-FR')} €`,  icon:'🔮', bg:'#ede9fe', c:'#6366f1' },
@@ -2497,22 +2513,24 @@ export default function App() {
 
       {/* Header */}
       <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,255,255,.96)', backdropFilter:'blur(16px)', borderBottom:'1px solid #e2e8f0' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', padding:`0 ${mob?12:24}px`, display:'flex', alignItems:'center', justifyContent:'space-between', height:56 }}>
+        <div style={{ maxWidth:1400, margin:'0 auto', padding:`0 ${mob?12:24}px`, display:'flex', alignItems:'center', justifyContent:'space-between', height:56 }}>
           {/* Logo */}
           <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit', flexShrink:0 }}>
             <div style={{ width:32, height:32, borderRadius:9, background:'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15 }}>📞</div>
             {!mob && <span style={{ fontSize:15, fontWeight:700, color:'#1e293b', letterSpacing:'-.02em' }}>CloserDebrief</span>}
           </button>
 
-          {/* Nav */}
-          <nav style={{ display:'flex', alignItems:'center', gap:2 }}>
-            {navItems.map(({ key, label, icon }) => (
-              <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', alignItems:'center', gap:mob?0:6, padding:mob?'8px 10px':'7px 12px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .15s', background:page===key?'#6366f1':'transparent', color:page===key?'white':'#64748b', boxShadow:page===key?'0 2px 8px rgba(99,102,241,.25)':'none', fontFamily:'inherit' }}>
-                <span style={{ fontSize:mob?18:14 }}>{icon}</span>
-                {!mob && <span>{label}</span>}
-              </button>
-            ))}
-          </nav>
+          {/* Nav — desktop uniquement */}
+          {!mob && (
+            <nav style={{ display:'flex', alignItems:'center', gap:2 }}>
+              {navItems.map(({ key, label, icon }) => (
+                <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .15s', background:page===key?'#6366f1':'transparent', color:page===key?'white':'#64748b', boxShadow:page===key?'0 2px 8px rgba(99,102,241,.25)':'none', fontFamily:'inherit' }}>
+                  <span style={{ fontSize:14 }}>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+          )}
 
           {/* User menu */}
           <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast}/>
@@ -2520,7 +2538,7 @@ export default function App() {
       </header>
 
       {/* Main content */}
-      <main style={{ maxWidth:1100, margin:'0 auto', padding:mob?'16px 12px':'32px 24px' }}>
+      <main style={{ maxWidth:1400, margin:'0 auto', padding:mob?'16px 12px':'40px 32px' }}>
         {dataLoading ? <Spinner full/> : (
           <>
             {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
