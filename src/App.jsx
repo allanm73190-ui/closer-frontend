@@ -65,70 +65,49 @@ function useBreakpoint() {
 
 
 // ─── DESIGN SYSTEM — Soft Pastel 3D ─────────────────────────────────────────
+// Couleurs
+const P  = '#e87d6a';   // primaire corail
+const P2 = '#d4604e';   // primaire foncé
+const A  = '#6aacce';   // accent bleu ciel
+const BG = 'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)';
+const WHITE = '#ffffff';
+const TXT  = '#5a4a3a';  // texte principal
+const TXT2 = '#b09080';  // texte secondaire
+const TXT3 = '#c8b8a8';  // texte muted
+const SAND = '#f5ede6';  // fond inputs
+
+// Ombres neumorphiques
+const SH_CARD = '5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9)';
+const SH_SM   = '3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85)';
+const SH_BTN  = '0 6px 18px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.25)';
+const SH_IN   = 'inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9)';
+const SH_HOVERED = '6px 6px 20px rgba(174,130,100,.22), -3px -3px 10px rgba(255,255,255,.9)';
+
+// Radius
+const R_SM = 10; const R_MD = 14; const R_LG = 18; const R_XL = 24; const R_FULL = 50;
+
 const DS = {
-  bgApp:     'linear-gradient(160deg, #f5ede6 0%, #e8f0f5 100%)',
-  bgCard:    '#ffffff',
-  bgInput:   '#f5ede6',
-  bgNav:     'rgba(255,255,255,.88)',
-  bgNavItem: 'linear-gradient(135deg,#e87d6a,#d4604e)',
-  bgModal:   '#ffffff',
-  bgSection: 'linear-gradient(135deg,#fde8e4,#fdf0ee)',
-
-  border:      '1px solid rgba(255,255,255,.95)',
-  borderInput: '1px solid rgba(232,125,106,.2)',
-
-  shadowCard:    '4px 4px 14px rgba(180,150,120,.18), -2px -2px 8px rgba(255,255,255,.95)',
-  shadowCardHov: '6px 6px 20px rgba(180,150,120,.25), -2px -2px 8px rgba(255,255,255,.95)',
-  shadowSm:      '3px 3px 8px rgba(180,150,120,.15), -1px -1px 5px rgba(255,255,255,.9)',
-  shadowInset:   'inset 2px 2px 6px rgba(180,150,120,.15), inset -1px -1px 4px rgba(255,255,255,.9)',
-  shadowBtn:     '0 6px 20px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.25)',
-  shadowBtnAccent:'0 6px 20px rgba(106,172,206,.3), inset 0 1px 0 rgba(255,255,255,.25)',
-  shadowNav:     '4px 4px 12px rgba(180,150,120,.12), -2px -2px 6px rgba(255,255,255,.9)',
-
-  primary:   '#e87d6a',
-  primary2:  '#d4604e',
-  accent:    '#6aacce',
-  accent2:   '#5090b2',
-
-  textPrimary:   '#5a4a3a',
-  textSecondary: '#b09080',
-  textMuted:     '#c8b8a8',
-  textOnPrimary: '#ffffff',
-
-  success:       '#5a9858', successBg: 'rgba(218,240,216,.8)', successBorder: 'rgba(90,152,88,.3)',
-  warning:       '#c07830', warningBg: 'rgba(254,243,224,.8)', warningBorder: 'rgba(192,120,48,.3)',
-  danger:        '#c05040', dangerBg:  'rgba(253,232,228,.8)', dangerBorder:  'rgba(192,80,64,.3)',
-  info:          '#3a7a9a', infoBg:    'rgba(218,237,245,.8)', infoBorder:    'rgba(58,122,154,.3)',
-
-  radiusSm:   10,
-  radiusMd:   14,
-  radiusLg:   20,
-  radiusXl:   26,
-  radiusFull: 50,
+  bgApp: BG, bgCard: WHITE, bgInput: SAND,
+  primary: P, primary2: P2, accent: A,
+  textPrimary: TXT, textSecondary: TXT2, textMuted: TXT3,
+  success:'#5a9858', successBg:'rgba(218,240,216,.8)', successBorder:'rgba(90,152,88,.3)',
+  warning:'#c07830', warningBg:'rgba(254,243,224,.8)', warningBorder:'rgba(192,120,48,.3)',
+  danger:'#c05040',  dangerBg:'rgba(253,232,228,.8)',  dangerBorder:'rgba(192,80,64,.3)',
+  info:'#3a7a9a',    infoBg:'rgba(218,237,245,.8)',    infoBorder:'rgba(58,122,154,.3)',
+  shadowCard: SH_CARD, shadowCardHov: SH_HOVERED, shadowSm: SH_SM,
+  shadowBtn: SH_BTN, shadowInset: SH_IN,
+  radiusSm:R_SM, radiusMd:R_MD, radiusLg:R_LG, radiusXl:R_XL, radiusFull:R_FULL,
+  border: 'none',
+  bgNavItem: `linear-gradient(135deg,${P},${P2})`,
 };
 
-const glassCard = (extra={}) => ({
-  background: DS.bgCard,
-  border: DS.border,
-  borderRadius: DS.radiusLg,
-  boxShadow: DS.shadowCard,
-  ...extra,
-});
-
-const glassInput = (extra={}) => ({
-  width: '100%',
-  background: DS.bgInput,
-  border: DS.borderInput,
-  borderRadius: DS.radiusMd,
-  padding: '11px 14px',
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-  boxSizing: 'border-box',
-  color: DS.textPrimary,
-  transition: 'border-color .15s, box-shadow .15s',
-  boxShadow: DS.shadowInset,
-  ...extra,
+// ─── HELPERS STYLE ────────────────────────────────────────────────────────────
+const card = (extra={}) => ({ background:WHITE, borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
+const cardSm = (extra={}) => ({ background:WHITE, borderRadius:R_MD, boxShadow:SH_SM, ...extra });
+const inp = (extra={}) => ({
+  width:'100%', background:SAND, border:'1px solid rgba(232,125,106,.15)',
+  borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit',
+  outline:'none', boxSizing:'border-box', color:TXT, boxShadow:SH_IN, ...extra
 });
 
 // ─── SCORES ───────────────────────────────────────────────────────────────────
@@ -278,77 +257,79 @@ function Burst({ points, levelUp, newLevel, onDone }) {
 }
 
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
+
 function Input({ placeholder, value, onChange, type='text', required, autoFocus, style={} }) {
+  const [focus, setFocus] = React.useState(false);
   return (
     <input type={type} placeholder={placeholder} value={value} onChange={onChange}
       required={required} autoFocus={autoFocus}
-      style={{ width:'100%', borderRadius:DS.radiusMd, border:'1px solid rgba(232,125,106,.15)', background:DS.bgInput, padding:'11px 14px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:DS.textPrimary, transition:'all .15s', boxShadow:DS.shadowInset, ...style }}
-      onFocus={e => { e.target.style.borderColor = DS.primary; e.target.style.boxShadow = DS.shadowInset+', 0 0 0 3px rgba(232,125,106,.1)'; }}
-      onBlur={e  => { e.target.style.borderColor = 'rgba(232,125,106,.15)'; e.target.style.boxShadow = DS.shadowInset; }}
-    />
-  );
-}
-function Textarea({ placeholder, value, onChange, rows=3 }) {
-  return (
-    <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
-      style={{ width:'100%', borderRadius:DS.radiusMd, border:'1px solid rgba(232,125,106,.15)', background:DS.bgInput, padding:'10px 14px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:DS.textPrimary, boxShadow:DS.shadowInset }}
+      style={{ ...inp(), borderColor: focus?P:'rgba(232,125,106,.15)',
+        boxShadow: focus ? SH_IN+', 0 0 0 3px rgba(232,125,106,.1)' : SH_IN, ...style }}
+      onFocus={()=>setFocus(true)} onBlur={()=>setFocus(false)}
     />
   );
 }
 
-const BTN_VARIANTS = {
-  primary:   { background:'linear-gradient(135deg,#e87d6a,#d4604e)', color:'white', border:'none', boxShadow:'0 6px 20px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.25)' },
-  secondary: { background:'white', color:DS.textPrimary, border:'none', boxShadow:'4px 4px 10px rgba(180,150,120,.15), -2px -2px 6px rgba(255,255,255,.9)' },
-  danger:    { background:DS.dangerBg, color:DS.danger, border:`1px solid ${DS.dangerBorder}`, boxShadow:'none' },
-  ghost:     { background:'transparent', color:DS.textSecondary, border:'none', boxShadow:'none' },
-  green:     { background:DS.successBg, color:DS.success, border:`1px solid ${DS.successBorder}`, boxShadow:'none' },
+function Textarea({ placeholder, value, onChange, rows=3 }) {
+  return (
+    <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
+      style={{ ...inp(), resize:'vertical' }}
+    />
+  );
+}
+
+const BTN = {
+  primary:   { background:`linear-gradient(135deg,${P},${P2})`, color:'white', border:'none', boxShadow:SH_BTN },
+  secondary: { background:WHITE, color:TXT, border:'none', boxShadow:SH_SM },
+  danger:    { background:'rgba(253,232,228,.8)', color:'#c05040', border:'1px solid rgba(192,80,64,.3)', boxShadow:'none' },
+  ghost:     { background:'transparent', color:TXT2, border:'none', boxShadow:'none' },
+  green:     { background:'rgba(218,240,216,.8)', color:'#5a9858', border:'1px solid rgba(90,152,88,.3)', boxShadow:'none' },
 };
 function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
   return (
-    <button type={type} onClick={onClick} disabled={disabled}
-      style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px 20px', borderRadius:DS.radiusFull, fontSize:14, fontWeight:600, cursor:disabled?'not-allowed':'pointer', transition:'all .15s', opacity:disabled?.55:1, fontFamily:'inherit', ...BTN_VARIANTS[variant], ...style }}>
-      {children}
-    </button>
+    <button type={type} onClick={onClick} disabled={disabled} style={{
+      display:'inline-flex', alignItems:'center', justifyContent:'center',
+      gap:8, padding:'10px 20px', borderRadius:R_FULL, fontSize:14, fontWeight:600,
+      cursor:disabled?'not-allowed':'pointer', transition:'all .15s',
+      opacity:disabled?.55:1, fontFamily:'inherit', ...BTN[variant], ...style
+    }}>{children}</button>
   );
 }
+
 function AlertBox({ type, message }) {
   if (!message) return null;
-  const styles = {
-    error:   { background:DS.dangerBg,  border:`1px solid ${DS.dangerBorder}`,  color:DS.danger  },
-    success: { background:DS.successBg, border:`1px solid ${DS.successBorder}`, color:DS.success },
-    info:    { background:DS.infoBg,    border:`1px solid ${DS.infoBorder}`,    color:DS.info    },
-  };
-  return <div style={{ ...styles[type||'info'], padding:'12px 14px', borderRadius:DS.radiusSm, fontSize:14, marginBottom:16 }}>{message}</div>;
+  const s = { error:{bg:DS.dangerBg,b:DS.dangerBorder,c:DS.danger}, success:{bg:DS.successBg,b:DS.successBorder,c:DS.success}, info:{bg:DS.infoBg,b:DS.infoBorder,c:DS.info} }[type||'info'];
+  return <div style={{ background:s.bg, border:`1px solid ${s.b}`, color:s.c, padding:'12px 14px', borderRadius:R_SM, fontSize:14, marginBottom:16 }}>{message}</div>;
 }
+
 function Spinner({ full=false, size=32 }) {
-  const el = (
-    <>
-      <div style={{ width:size, height:size, border:`${size>20?4:3}px solid rgba(232,125,106,.15)`, borderTopColor:DS.primary, borderRadius:'50%', animation:'spin .75s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </>
-  );
+  const el = <><div style={{ width:size, height:size, border:`${size>20?4:3}px solid rgba(232,125,106,.15)`, borderTopColor:P, borderRadius:'50%', animation:'spin .75s linear infinite' }}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></>;
   return full ? <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'50vh' }}>{el}</div> : el;
 }
+
 function Empty({ icon, title, subtitle, action }) {
   return (
-    <div style={{ background:DS.bgCard, borderRadius:DS.radiusLg, padding:'40px 24px', textAlign:'center', boxShadow:DS.shadowCard }}>
+    <div style={{ ...card(), padding:'40px 24px', textAlign:'center' }}>
       <div style={{ fontSize:40, marginBottom:12 }}>{icon}</div>
-      <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:'0 0 6px' }}>{title}</p>
-      <p style={{ color:DS.textMuted, fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
+      <p style={{ fontWeight:700, fontSize:16, color:TXT, margin:'0 0 6px' }}>{title}</p>
+      <p style={{ color:TXT3, fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
       {action}
     </div>
   );
 }
+
 function Card({ children, style={} }) {
-  return <div style={{ background:DS.bgCard, borderRadius:DS.radiusLg, boxShadow:DS.shadowCard, ...style }}>{children}</div>;
+  return <div style={{ ...card(), ...style }}>{children}</div>;
 }
+
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.25)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'#ffffff', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(180,150,120,.2), inset 0 1px 0 rgba(255,255,255,.9)' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.2)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+      onClick={e => e.target===e.currentTarget && onClose()}>
+      <div style={{ background:WHITE, borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(174,130,100,.2)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontSize:17, fontWeight:700, color:DS.textPrimary, margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+          <h2 style={{ fontSize:17, fontWeight:700, color:TXT, margin:0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:TXT3, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
         {children}
       </div>
@@ -665,18 +646,22 @@ function SectionNotes({ notes={}, onChange }) {
   );
 }
 function CatCard({ number, title, children }) {
+  const [open, setOpen] = React.useState(false);
   return (
-    <div style={{ borderRadius:12, border:'1px solid rgba(232,125,106,.12)', background:'#ffffff', overflow:'hidden', marginBottom:16 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:'linear-gradient(135deg,rgba(253,232,228,.6),rgba(253,240,238,.4))', borderBottom:'1px solid rgba(232,125,106,.1)' }}>
-        <span style={{ width:28, height:28, borderRadius:'50%', background:'#e87d6a', color:'white', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
-        <h3 style={{ fontWeight:600, fontSize:14, margin:0, color:'#5a4a3a' }}>{title}</h3>
-      </div>
-      <div style={{ padding:16 }}>{children}</div>
+    <div style={{ ...cardSm(), overflow:'hidden', marginBottom:10 }}>
+      <button type="button" onClick={()=>setOpen(v=>!v)} style={{
+        display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+        background: open ? `linear-gradient(135deg,${P},${P2})` : `linear-gradient(135deg,rgba(253,232,228,.4),rgba(253,240,238,.2))`,
+        width:'100%', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all .2s'
+      }}>
+        <span style={{ width:26, height:26, borderRadius:'50%', background:open?'rgba(255,255,255,.25)':P, color:'white', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
+        <span style={{ fontWeight:700, fontSize:14, color:open?'white':TXT, flex:1, textAlign:'left' }}>{title}</span>
+        <span style={{ fontSize:13, color:open?'rgba(255,255,255,.8)':TXT3, transition:'transform .2s', display:'inline-block', transform:open?'rotate(180deg)':'none' }}>▾</span>
+      </button>
+      {open && <div style={{ padding:16, borderTop:`1px solid rgba(232,125,106,.1)` }}>{children}</div>}
     </div>
   );
 }
-
-// ─── SECTIONS D'ÉVALUATION ────────────────────────────────────────────────────
 function S1({ data={}, onChange, notes, onNotes }) {
   const set = (k,v) => onChange({...data,[k]:v});
   return (
@@ -744,19 +729,20 @@ function S5({ data={}, onChange, notes, onNotes }) {
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({ subtitle, icon, children }) {
   return (
-    <div style={{ minHeight:'100vh', background:DS.bgApp, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#f5ede6,#e8f0f5)`, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ width:'100%', maxWidth:460 }}>
         <div style={{ textAlign:'center', marginBottom:28 }}>
-          <div style={{ width:56, height:56, borderRadius:16, background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:'0 4px 16px rgba(232,125,106,.35)' }}>{icon}</div>
-          <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>CloserDebrief</h1>
-          <p style={{ color:'#6b7280', fontSize:14, marginTop:6 }}>{subtitle}</p>
+          <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:SH_BTN }}>
+            {icon}
+          </div>
+          <h1 style={{ fontSize:24, fontWeight:700, color:TXT, margin:0 }}>CloserDebrief</h1>
+          <p style={{ color:TXT2, fontSize:14, marginTop:6 }}>{subtitle}</p>
         </div>
-        <div style={{ background:'#ffffff', borderRadius:20, padding:24, boxShadow:'0 8px 32px rgba(232,125,106,.12), inset 0 1px 0 rgba(255,255,255,.95)', border:'none' }}>{children}</div>
+        <div style={{ ...card(), padding:28 }}>{children}</div>
       </div>
     </div>
   );
 }
-
 function LoginPage({ onLogin, goRegister, goForgot }) {
   const [f, setF] = useState({ email:'', password:'' });
   const [err, setErr] = useState('');
@@ -1750,62 +1736,75 @@ function NewDebrief({ navigate, onSave, toast }) {
 
 // ─── USER MENU ────────────────────────────────────────────────────────────────
 function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
-  const [open, setOpen] = useState(false);
-  const mob = useIsMobile();
-  const ref = useRef(null);
-
-  // Fermer sur clic extérieur
-  useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
   }, []);
-
   return (
-    <div ref={ref} style={{ position:'relative', flexShrink:0 }}>
-      <button onClick={()=>setOpen(o=>!o)} style={{ display:'flex', alignItems:'center', gap:8, border:`1px solid ${open?'#c4b5fd':'#e2e8f0'}`, borderRadius:10, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit', transition:'all .15s', background:open?'rgba(255,248,245,.8)':'white' }}>
-        <div style={{ width:28, height:28, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'white', flexShrink:0 }}>{user.name.charAt(0).toUpperCase()}</div>
-        {!mob && <span style={{ fontSize:13, fontWeight:500, color:'#5a4a3a' }}>{user.name}</span>}
-        {user.role==='head_of_sales' && !mob && <span style={{ background:'#fef3c7', color:'#92400e', fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4 }}>HOS</span>}
-        {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
-        <span style={{ fontSize:10, color:DS.textMuted }}>{open?'▲':'▼'}</span>
+    <div ref={ref} style={{ position:'relative', flexShrink:0, width:sidebar?'100%':'auto' }}>
+      <button onClick={()=>setOpen(v=>!v)} style={{
+        display:'flex', alignItems:'center', gap:8,
+        background:open?`rgba(232,125,106,.08)`:WHITE,
+        border:'none', borderRadius:R_MD,
+        padding: sidebar?'8px 10px':'5px 10px',
+        cursor:'pointer', fontFamily:'inherit', transition:'all .15s',
+        boxShadow:SH_SM, width:sidebar?'100%':'auto'
+      }}>
+        <div style={{ width:30, height:30, borderRadius:'50%', background:`linear-gradient(135deg,${P},${A})`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>
+          {user.name?.charAt(0).toUpperCase()}
+        </div>
+        {(sidebar || !useIsMobile()) && <>
+          <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
+            <p style={{ fontSize:13, fontWeight:600, color:TXT, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
+            <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
+          </div>
+          {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
+          <span style={{ fontSize:10, color:TXT3 }}>{open?'▲':'▼'}</span>
+        </>}
       </button>
-
       {open && (
-        <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', background:'#ffffff', border:'none', borderRadius:16, boxShadow:'0 8px 32px rgba(232,125,106,.15), inset 0 1px 0 rgba(255,255,255,.95)', minWidth:220, zIndex:200, overflow:'hidden' }}>
-          {/* Profil */}
-          <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)' }}>
+        <div style={{
+          position:'absolute', right:0,
+          bottom: sidebar ? 'auto' : 'calc(100% + 8px)',
+          top: sidebar ? 'calc(100% + 6px)' : 'auto',
+          background:WHITE, borderRadius:R_LG, boxShadow:SH_HOVERED,
+          minWidth:220, zIndex:200, overflow:'hidden'
+        }}>
+          {/* Header */}
+          <div style={{ padding:'14px 16px', borderBottom:`1px solid rgba(232,125,106,.1)`, background:`rgba(253,232,228,.2)` }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <div style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color:'white', flexShrink:0 }}>{user.name.charAt(0)}</div>
+              <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color:'white', flexShrink:0 }}>
+                {user.name?.charAt(0)}
+              </div>
               <div>
-                <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0 }}>{user.name}</p>
-                <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{user.email}</p>
+                <p style={{ fontWeight:600, fontSize:13, color:TXT, margin:0 }}>{user.name}</p>
+                <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.email}</p>
               </div>
             </div>
             {gam && (
-              <div style={{ marginTop:10, padding:'8px 10px', background:'linear-gradient(135deg,#e87d6a,#d4604e)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ marginTop:10, padding:'7px 10px', background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_SM, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <span style={{ fontSize:12, color:'white', fontWeight:500 }}>{gam.level.icon} {gam.level.name}</span>
                 <span style={{ fontSize:12, color:'rgba(255,255,255,.85)', fontWeight:600 }}>{gam.points} pts</span>
               </div>
             )}
           </div>
-
-          {/* Actions */}
+          {/* Items */}
           {[
             { icon:'⚙️', label:'Paramètres du compte', action:()=>{ onSettings(); setOpen(false); } },
             { icon:'🔔', label:'Notifications',         action:()=>{ toast('Bientôt disponible !','info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
-            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#5a4a3a', textAlign:'left', transition:'background .1s' }}
-              onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:TXT, textAlign:'left', transition:'background .1s' }}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>{icon}</span>{label}
             </button>
           ))}
-
-          <div style={{ height:1, background:'rgba(253,232,228,.2)', margin:'4px 0' }}/>
-
-          <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#dc2626', textAlign:'left', transition:'background .1s' }}
-            onMouseEnter={e=>e.currentTarget.style.background='#fff5f5'}
+          <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
+          <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#c05040', textAlign:'left', transition:'background .1s' }}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
             onMouseLeave={e=>e.currentTarget.style.background='none'}>
             <span style={{ fontSize:16, width:20, textAlign:'center' }}>↩</span>Déconnexion
           </button>
@@ -1814,9 +1813,6 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
     </div>
   );
 }
-
-
-// ─── PROG BAR ─────────────────────────────────────────────────────────────────
 function ProgBar({ label, current, target, color='#e87d6a' }) {
   if (!target) return null;
   const pct = Math.min(Math.round((current / target) * 100), 100);
@@ -2582,8 +2578,9 @@ export default function App() {
     return <LoginPage onLogin={onLogin} goRegister={()=>setAuthView('register')} goForgot={()=>setAuthView('forgot')}/>;
   }
 
+
   // ─── Main app ──────────────────────────────────────────────────────────────
-  const PageContent = () => (
+  const Content = () => (
     <>
       {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
       {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
@@ -2595,15 +2592,15 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:DS.bgApp, fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)`, fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
-        ::placeholder{color:rgba(100,116,139,.5)!important}
-        ::-webkit-scrollbar{width:6px;height:6px}
+        ::placeholder{color:rgba(180,150,120,.5)!important}
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
         ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.25);border-radius:3px}
       `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
@@ -2611,54 +2608,44 @@ export default function App() {
       {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
 
       {mob ? (
-        /* ── MOBILE : header compact + bottom nav ── */
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.92)', borderBottom:'1px solid rgba(255,255,255,.95)', boxShadow:'0 2px 10px rgba(180,150,120,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
-                <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'2px 2px 6px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
-                <span style={{ fontSize:14, fontWeight:700, color:DS.textPrimary }}>CloserDebrief</span>
+                <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
+                <span style={{ fontSize:14, fontWeight:700, color:TXT }}>CloserDebrief</span>
               </button>
               <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast}/>
             </div>
           </header>
-
-          <main style={{ padding:'16px 14px', paddingBottom:80, minHeight:'calc(100vh - 52px)' }}>
-            {dataLoading ? <Spinner full/> : <PageContent/>}
+          <main style={{ padding:'16px 14px 90px' }}>
+            {dataLoading ? <Spinner full/> : <Content/>}
           </main>
-
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.94)', borderTop:'1px solid rgba(255,255,255,.95)', boxShadow:'0 -3px 12px rgba(180,150,120,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 0 max(8px,env(safe-area-inset-bottom))', zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
-                <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', boxShadow:page===key?DS.shadowBtn:'none', transition:'all .2s' }}>{icon}</div>
-                <span style={{ fontSize:10, fontWeight:600, color:page===key?DS.primary:DS.textMuted }}>{label}</span>
+                <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
+                <span style={{ fontSize:10, fontWeight:600, color:page===key?P:TXT3 }}>{label}</span>
               </button>
             ))}
           </nav>
         </>
       ) : (
-        /* ── DESKTOP : sidebar gauche + contenu ── */
         <div style={{ display:'flex', minHeight:'100vh' }}>
-
-          {/* Sidebar */}
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.98)', borderRight:'1px solid rgba(232,125,106,.08)', boxShadow:'4px 0 16px rgba(180,150,120,.07)', padding:'18px 10px', zIndex:40 }}>
-
-            {/* Logo */}
-            <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:DS.radiusMd, marginBottom:20, fontFamily:'inherit', transition:'background .15s', width:'100%' }}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.06)'}
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
+            <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
-              <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'3px 3px 8px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📞</div>
-              <div style={{ textAlign:'left' }}>
-                <div style={{ fontSize:13, fontWeight:700, color:DS.textPrimary, letterSpacing:'-.01em' }}>CloserDebrief</div>
-                <div style={{ fontSize:10, color:DS.textMuted }}>Sales OS</div>
+              <div style={{ width:34, height:34, borderRadius:10, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📞</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:TXT }}>CloserDebrief</div>
+                <div style={{ fontSize:10, color:TXT3 }}>Sales OS</div>
               </div>
             </button>
-
-            {/* Nav items */}
             <div style={{ display:'flex', flexDirection:'column', gap:3, flex:1 }}>
               {navItems.map(({ key, label, icon }) => (
                 <button key={key} onClick={()=>navigate(key)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:DS.radiusMd, border:'none', fontSize:13, fontWeight:page===key?700:500, cursor:'pointer', transition:'all .18s', background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', color:page===key?'white':DS.textSecondary, boxShadow:page===key?DS.shadowBtn:'none', fontFamily:'inherit', textAlign:'left', width:'100%' }}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:R_MD, border:'none', fontSize:13, fontWeight:page===key?700:500, cursor:'pointer', transition:'all .18s', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', fontFamily:'inherit', textAlign:'left', width:'100%' }}
                   onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(232,125,106,.08)'; }}
                   onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}>
                   <span style={{ fontSize:16, width:22, textAlign:'center' }}>{icon}</span>
@@ -2666,16 +2653,12 @@ export default function App() {
                 </button>
               ))}
             </div>
-
-            {/* User menu en bas */}
             <div style={{ borderTop:'1px solid rgba(232,125,106,.1)', paddingTop:12, marginTop:8 }}>
               <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
             </div>
           </aside>
-
-          {/* Contenu principal */}
           <main style={{ flex:1, minWidth:0, padding:'32px 36px', overflowX:'hidden' }}>
-            {dataLoading ? <Spinner full/> : <PageContent/>}
+            {dataLoading ? <Spinner full/> : <Content/>}
           </main>
         </div>
       )}
