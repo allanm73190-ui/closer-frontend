@@ -344,8 +344,8 @@ function Card({ children, style={} }) {
 }
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.25)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'rgba(255,250,247,.98)', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(180,150,120,.2), inset 0 1px 0 rgba(255,255,255,.9)' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.25)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'#ffffff', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(180,150,120,.2), inset 0 1px 0 rgba(255,255,255,.9)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
           <h2 style={{ fontSize:17, fontWeight:700, color:DS.textPrimary, margin:0 }}>{title}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
@@ -451,7 +451,7 @@ function SectionBars({ scores, globalScores }) {
                 {diff !== null && diff !== 0 && <span style={{ fontSize:11, fontWeight:600, color:diff>0?'#059669':'#ef4444' }}>{diff>0?'+':''}{diff}</span>}
               </div>
             </div>
-            <div style={{ position:'relative', height:10, background:'rgba(253,232,228,.3)', borderRadius:5, overflow:'visible' }}>
+            <div style={{ position:'relative', height:10, background:'rgba(253,232,228,.2)', borderRadius:5, overflow:'visible' }}>
               <div style={{ height:'100%', width:`${(val/5)*100}%`, background:col(val), borderRadius:5, transition:'width .7s ease' }}/>
               {globalScores && glob > 0 && <div style={{ position:'absolute', top:-2, left:`${(glob/5)*100}%`, width:2, height:14, background:'#94a3b8', borderRadius:2 }} title={`Global: ${glob}/5`}/>}
             </div>
@@ -487,7 +487,7 @@ function GamCard({ gam }) {
             <span>{level.next - points} pts avant {computeLevel(level.next).name}</span>
           </div>
           <div style={{ height:8, background:'rgba(255,255,255,.2)', borderRadius:4 }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:'rgba(255,255,255,.9)', borderRadius:4, transition:'width .7s' }}/>
+            <div style={{ height:'100%', width:`${pct}%`, background:DS.bgCard, borderRadius:4, transition:'width .7s' }}/>
           </div>
         </div>
       )}
@@ -666,7 +666,7 @@ function SectionNotes({ notes={}, onChange }) {
 }
 function CatCard({ number, title, children }) {
   return (
-    <div style={{ borderRadius:12, border:'1px solid rgba(232,125,106,.12)', background:'rgba(255,255,255,.75)', overflow:'hidden', marginBottom:16 }}>
+    <div style={{ borderRadius:12, border:'1px solid rgba(232,125,106,.12)', background:'#ffffff', overflow:'hidden', marginBottom:16 }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:'linear-gradient(135deg,rgba(253,232,228,.6),rgba(253,240,238,.4))', borderBottom:'1px solid rgba(232,125,106,.1)' }}>
         <span style={{ width:28, height:28, borderRadius:'50%', background:'#e87d6a', color:'white', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
         <h3 style={{ fontWeight:600, fontSize:14, margin:0, color:'#5a4a3a' }}>{title}</h3>
@@ -751,7 +751,7 @@ function AuthShell({ subtitle, icon, children }) {
           <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>CloserDebrief</h1>
           <p style={{ color:'#6b7280', fontSize:14, marginTop:6 }}>{subtitle}</p>
         </div>
-        <div style={{ background:'rgba(255,255,255,.75)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', borderRadius:20, padding:24, boxShadow:'0 8px 32px rgba(232,125,106,.12), inset 0 1px 0 rgba(255,255,255,.95)', border:'1px solid rgba(255,255,255,.85)' }}>{children}</div>
+        <div style={{ background:'#ffffff', borderRadius:20, padding:24, boxShadow:'0 8px 32px rgba(232,125,106,.12), inset 0 1px 0 rgba(255,255,255,.95)', border:'none' }}>{children}</div>
       </div>
     </div>
   );
@@ -882,14 +882,14 @@ function AccountSettings({ user, onClose, toast }) {
   };
   return (
     <Modal title="Paramètres du compte" onClose={onClose}>
-      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.3)',padding:4,borderRadius:8,marginBottom:20}}>
+      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20}}>
         {[{key:'profil',label:'👤 Profil'},{key:'securite',label:'🔒 Sécurité'}].map(({key,label})=>(
           <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?'#1e293b':'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit'}}>{label}</button>
         ))}
       </div>
       {tab==='profil'&&(
         <div>
-          <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.3)',borderRadius:12,marginBottom:20}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.2)',borderRadius:12,marginBottom:20}}>
             <div style={{width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#e87d6a,#d4604e)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
             <div>
               <p style={{fontWeight:700,fontSize:16,color:'#5a4a3a',margin:0}}>{user.name}</p>
@@ -930,7 +930,7 @@ function DebriefCard({ debrief, onClick, showUser }) {
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:DS.textMuted, flexWrap:'wrap' }}>
           <span>📅 {fmtDate(debrief.call_date)}</span>
           <span>👤 {debrief.closer_name}</span>
-          {showUser&&debrief.user_name&&<span style={{background:'rgba(253,232,228,.3)',padding:'1px 6px',borderRadius:4}}>par {debrief.user_name}</span>}
+          {showUser&&debrief.user_name&&<span style={{background:'rgba(253,232,228,.2)',padding:'1px 6px',borderRadius:4}}>par {debrief.user_name}</span>}
         </div>
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
@@ -958,7 +958,7 @@ function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, o
         <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
           {!mob && otherTeams.length > 0 && (
             <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} onClick={e=>e.stopPropagation()}
-              style={{ fontSize:12, border:'1px solid rgba(232,125,106,.12)', borderRadius:6, padding:'4px 8px', fontFamily:'inherit', color:'#5a4a3a', background:'rgba(255,255,255,.75)', cursor:'pointer' }}>
+              style={{ fontSize:12, border:'1px solid rgba(232,125,106,.12)', borderRadius:6, padding:'4px 8px', fontFamily:'inherit', color:'#5a4a3a', background:'#ffffff', cursor:'pointer' }}>
               <option value="">Déplacer...</option>
               {otherTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -969,10 +969,10 @@ function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, o
         </div>
       </div>
       {selected && (
-        <div style={{ padding:'14px 16px 18px', background:'rgba(250,245,240,.5)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
+        <div style={{ padding:'14px 16px 18px', background:'rgba(253,232,228,.15)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
           {mob && otherTeams.length > 0 && (
             <div style={{ marginBottom:12, display:'flex', gap:8 }}>
-              <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} style={{ flex:1, fontSize:13, border:'1px solid rgba(232,125,106,.12)', borderRadius:8, padding:'8px 10px', fontFamily:'inherit', color:'#5a4a3a', background:'rgba(255,255,255,.75)' }}>
+              <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} style={{ flex:1, fontSize:13, border:'1px solid rgba(232,125,106,.12)', borderRadius:8, padding:'8px 10px', fontFamily:'inherit', color:'#5a4a3a', background:'#ffffff' }}>
                 <option value="">Déplacer vers une autre équipe...</option>
                 {otherTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -999,7 +999,7 @@ function TeamCard({ team, allDebriefs, onClick }) {
   const rate = td.length > 0 ? Math.round((cls/td.length)*100) : 0;
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClick}
-      style={{ background:'rgba(255,255,255,.75)', border:`2px solid ${hov?'#e87d6a':'rgba(255,255,255,.9)'}`, borderRadius:16, padding:20, cursor:'pointer', transition:'all .2s', boxShadow:hov?'0 12px 40px rgba(232,125,106,.2), 0 2px 10px rgba(232,125,106,.1)':'0 6px 24px rgba(100,80,200,.1), 0 2px 8px rgba(100,80,200,.06)', position:'relative', overflow:'hidden' }}>
+      style={{ background:'#ffffff', border:`2px solid ${hov?'#e87d6a':'rgba(255,255,255,.9)'}`, borderRadius:16, padding:20, cursor:'pointer', transition:'all .2s', boxShadow:hov?'0 12px 40px rgba(232,125,106,.2), 0 2px 10px rgba(232,125,106,.1)':'0 6px 24px rgba(100,80,200,.1), 0 2px 8px rgba(100,80,200,.06)', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:4, background:'linear-gradient(90deg,#e87d6a,#6aacce)' }}/>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16, marginTop:4 }}>
         <div>
@@ -1013,7 +1013,7 @@ function TeamCard({ team, allDebriefs, onClick }) {
           { l:'Closings',   v:cls,         c:'#059669' },
           { l:'Taux',       v:`${rate}%`,  c:rate>=40?'#059669':'#d97706' },
         ].map(({ l, v, c }) => (
-          <div key={l} style={{ background:'rgba(253,232,228,.3)', borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
+          <div key={l} style={{ background:'rgba(253,232,228,.2)', borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
             <p style={{ fontSize:10, color:DS.textMuted, margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'.04em' }}>{l}</p>
             <p style={{ fontWeight:700, fontSize:15, color:c, margin:0 }}>{v}</p>
           </div>
@@ -1254,10 +1254,10 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                 <span style={{ color:isSel?'#e87d6a':'#d1d5db', fontSize:14 }}>{isSel?'▲':'▼'}</span>
                               </div>
                               {isSel && (
-                                <div style={{ padding:'12px 16px 16px', background:'rgba(250,245,240,.5)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
+                                <div style={{ padding:'12px 16px 16px', background:'rgba(253,232,228,.15)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
                                   <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:14 }}>
                                     {[{l:'Debriefs',v:m.totalDebriefs},{l:'Closings',v:m.closed},{l:'Taux',v:`${cr}%`}].map(({l,v})=>(
-                                      <div key={l} style={{ background:'rgba(255,255,255,.75)', borderRadius:8, padding:'8px 10px', textAlign:'center', border:'1px solid rgba(232,125,106,.12)' }}>
+                                      <div key={l} style={{ background:'#ffffff', borderRadius:8, padding:'8px 10px', textAlign:'center', border:'1px solid rgba(232,125,106,.12)' }}>
                                         <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{l}</p>
                                         <p style={{ fontWeight:700, color:'#5a4a3a', margin:0, fontSize:14 }}>{v}</p>
                                       </div>
@@ -1275,7 +1275,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                       <div style={{ overflowX:'auto' }}>
                         <table style={{ width:'100%', borderCollapse:'collapse' }}>
                           <thead>
-                            <tr style={{ background:'rgba(253,232,228,.3)' }}>
+                            <tr style={{ background:'rgba(253,232,228,.2)' }}>
                               {['Closer','Équipe','Debriefs','Score','Découv.','Reform.','Proj.','Offre','Closing','Closings','Taux'].map(h=>(
                                 <th key={h} style={{ padding:'10px 12px', fontSize:11, fontWeight:600, color:'#6b7280', textAlign:'left', textTransform:'uppercase', letterSpacing:'.04em', borderBottom:'1px solid rgba(232,125,106,.12)', whiteSpace:'nowrap' }}>{h}</th>
                               ))}
@@ -1297,7 +1297,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                         <span style={{ fontWeight:600, fontSize:13, color:'#5a4a3a' }}>{m.name}</span>
                                       </div>
                                     </td>
-                                    <td style={{ padding:'10px 12px' }}><span style={{ fontSize:11, background:'rgba(253,232,228,.3)', padding:'2px 6px', borderRadius:5, color:'#6b7280' }}>{mTeam?.name||'—'}</span></td>
+                                    <td style={{ padding:'10px 12px' }}><span style={{ fontSize:11, background:'rgba(253,232,228,.2)', padding:'2px 6px', borderRadius:5, color:'#6b7280' }}>{mTeam?.name||'—'}</span></td>
                                     <td style={{ padding:'10px 12px', fontSize:13, fontWeight:600, color:'#5a4a3a' }}>{m.totalDebriefs}</td>
                                     <td style={{ padding:'10px 12px' }}><span style={{ fontWeight:700, fontSize:13, color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':'#ef4444' }}>{m.avgScore}%</span></td>
                                     {ms ? ['decouverte','reformulation','projection','presentation_offre','closing'].map(k=>(
@@ -1306,7 +1306,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                     <td style={{ padding:'10px 12px', fontSize:13, fontWeight:600, color:'#059669' }}>{m.closed}</td>
                                     <td style={{ padding:'10px 12px' }}>
                                       <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                                        <div style={{ width:44, height:5, background:'rgba(253,232,228,.3)', borderRadius:3, overflow:'hidden' }}>
+                                        <div style={{ width:44, height:5, background:'rgba(253,232,228,.2)', borderRadius:3, overflow:'hidden' }}>
                                           <div style={{ height:'100%', width:`${cr}%`, background:cr>=50?'#059669':cr>=30?'#d97706':'#ef4444', borderRadius:3 }}/>
                                         </div>
                                         <span style={{ fontSize:11, fontWeight:600, color:'#5a4a3a' }}>{cr}%</span>
@@ -1315,7 +1315,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                   </tr>
                                   {isSel && (
                                     <tr>
-                                      <td colSpan={11} style={{ padding:0, background:'rgba(250,245,240,.5)', borderBottom:'1px solid rgba(232,125,106,.08)' }}>
+                                      <td colSpan={11} style={{ padding:0, background:'rgba(253,232,228,.15)', borderBottom:'1px solid rgba(232,125,106,.08)' }}>
                                         <div style={{ padding:'20px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
                                           <div>
                                             <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Scores par section</p>
@@ -1413,7 +1413,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                 ? <p style={{ color:DS.textMuted, fontSize:13, margin:0 }}>Aucun code actif — cliquez sur "Générer un code" ci-dessus</p>
                 : <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {team.inviteCodes.map(inv => (
-                      <div key={inv.id} style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(253,232,228,.3)', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'8px 12px' }}>
+                      <div key={inv.id} style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(253,232,228,.2)', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'8px 12px' }}>
                         <span style={{ fontFamily:'monospace', fontSize:16, fontWeight:700, color:'#e87d6a', letterSpacing:'.12em' }}>{inv.code}</span>
                         <button onClick={()=>doCopy(inv.code)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:copied===inv.code?'#059669':'#94a3b8', padding:2 }}>{copied===inv.code?'✓':'📋'}</button>
                         <button onClick={()=>delCode(team.id,inv.id)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'#dc2626', padding:2 }}>✕</button>
@@ -1446,7 +1446,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                     <div key={m.id} style={{ borderBottom:i<team.members.length-1?'1px solid rgba(232,125,106,.08)':'none' }}>
                       <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(mid,tid)=>moveMember(mid,tid)} selected={selMember===m.id} onSelect={()=>setSelMember(selMember===m.id?null:m.id)} onObjectives={()=>setObjectiveTarget(m)} onActionPlans={()=>setSelMember(selMember===m.id?null:m.id)}/>
                       {selMember===m.id && (
-                        <div style={{ padding:'14px 16px 18px', borderTop:'1px solid #f5f3ff', background:'rgba(250,245,240,.5)', display:'flex', flexDirection:'column', gap:14 }}>
+                        <div style={{ padding:'14px 16px 18px', borderTop:'1px solid #f5f3ff', background:'rgba(253,232,228,.15)', display:'flex', flexDirection:'column', gap:14 }}>
                           <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
                             <Btn onClick={e=>{e.stopPropagation();setObjectiveTarget(m);}} style={{ fontSize:12, padding:'7px 14px' }}>🎯 Objectifs</Btn>
                           </div>
@@ -1569,7 +1569,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
           <ClosedBadge isClosed={debrief.is_closed}/>
-          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid rgba(232,125,106,.12)',borderRadius:8,background:'rgba(255,255,255,.75)',fontSize:12,textDecoration:'none',color:'#5a4a3a'}}>🔗 Écouter</a>}
+          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid rgba(232,125,106,.12)',borderRadius:8,background:'#ffffff',fontSize:12,textDecoration:'none',color:'#5a4a3a'}}>🔗 Écouter</a>}
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
         </div>
       </div>
@@ -1772,7 +1772,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
       </button>
 
       {open && (
-        <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', background:'rgba(245,242,255,.92)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,.85)', borderRadius:16, boxShadow:'0 8px 32px rgba(232,125,106,.15), inset 0 1px 0 rgba(255,255,255,.95)', minWidth:220, zIndex:200, overflow:'hidden' }}>
+        <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', background:'#ffffff', border:'none', borderRadius:16, boxShadow:'0 8px 32px rgba(232,125,106,.15), inset 0 1px 0 rgba(255,255,255,.95)', minWidth:220, zIndex:200, overflow:'hidden' }}>
           {/* Profil */}
           <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -1802,7 +1802,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
             </button>
           ))}
 
-          <div style={{ height:1, background:'rgba(253,232,228,.3)', margin:'4px 0' }}/>
+          <div style={{ height:1, background:'rgba(253,232,228,.2)', margin:'4px 0' }}/>
 
           <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#dc2626', textAlign:'left', transition:'background .1s' }}
             onMouseEnter={e=>e.currentTarget.style.background='#fff5f5'}
@@ -1862,7 +1862,7 @@ function ObjectiveBanner({ userId }) {
   };
 
   return (
-    <div style={{ background:'rgba(255,255,255,.75)', border:'1px solid rgba(232,125,106,.12)', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #e87d6a' }}>
+    <div style={{ background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #e87d6a' }}>
       <p style={{ fontSize:13, fontWeight:700, color:'#5a4a3a', margin:'0 0 14px' }}>🎯 Mes objectifs</p>
       <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
         {render(monthly, 'Ce mois-ci')}
@@ -1999,7 +1999,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.3)', borderRadius:10, border:'1px solid rgba(232,125,106,.12)', alignItems:'flex-start' }}>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#e87d6a', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:'0 0 2px' }}>{plan.axis}</p>
@@ -2016,7 +2016,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           ))}
 
           {showAdd && (
-            <div style={{ padding:'14px', background:'rgba(255,248,245,.85)', borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ padding:'14px', background:DS.bgCard, borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
               <Input placeholder="Axe de travail (ex: Améliorer le closing)" value={form.axis} onChange={e=>setForm({...form,axis:e.target.value})} autoFocus/>
               <Textarea placeholder="Description (optionnel)" rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
               <div style={{ display:'flex', gap:8 }}>
@@ -2087,7 +2087,7 @@ function CommentsSection({ debriefId, user, toast }) {
         ) : comments.map(c => (
           <div key={c.id} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
             <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
-            <div style={{ flex:1, background:'rgba(253,232,228,.3)', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid rgba(232,125,106,.12)' }}>
+            <div style={{ flex:1, background:'rgba(253,232,228,.2)', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid rgba(232,125,106,.12)' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
                 <span style={{ fontWeight:600, fontSize:12, color:'#5a4a3a' }}>{c.author_name}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -2167,11 +2167,11 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
   };
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(30,27,75,.35)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:'rgba(255,255,255,.75)', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:560, maxHeight:'92vh', overflowY:'auto', boxShadow:'0 -8px 40px rgba(0,0,0,.15)' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.2)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:'#ffffff', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:560, maxHeight:'92vh', overflowY:'auto', boxShadow:'0 -8px 40px rgba(0,0,0,.15)' }}>
 
         {/* Header */}
-        <div style={{ padding:'20px 20px 0', position:'sticky', top:0, background:'rgba(255,255,255,.75)', zIndex:1 }}>
+        <div style={{ padding:'20px 20px 0', position:'sticky', top:0, background:'#ffffff', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               {(() => {
@@ -2236,7 +2236,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
           <div>
             <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📝 Notes</label>
             <textarea placeholder="Notes libres sur ce lead..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3}
-              style={{ width:'100%', borderRadius:10, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.7)', padding:'10px 14px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:'#5a4a3a', boxShadow:'inset 0 1px 4px rgba(100,80,200,.06)' }}
+              style={{ width:'100%', borderRadius:10, border:'1px solid rgba(232,125,106,.2)', background:'#ffffff', padding:'10px 14px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:'#5a4a3a', boxShadow:'inset 0 1px 4px rgba(100,80,200,.06)' }}
               onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
           </div>
 
@@ -2244,7 +2244,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
           <div>
             <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>📞 Debrief lié</label>
             <select value={form.debrief_id} onChange={e=>setForm({...form,debrief_id:e.target.value})}
-              style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', color:'#5a4a3a', background:'rgba(255,255,255,.75)', boxSizing:'border-box' }}>
+              style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', color:'#5a4a3a', background:'#ffffff', boxSizing:'border-box' }}>
               <option value="">— Aucun debrief lié</option>
               {debriefs.map(d => (
                 <option key={d.id} value={d.id}>{d.prospect_name} — {fmtDate(d.call_date)} ({d.percentage}%)</option>
@@ -2253,7 +2253,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 
             {/* Aperçu du debrief lié */}
             {linkedDebrief && (
-              <div style={{ marginTop:12, padding:'14px 16px', background:'rgba(255,248,245,.85)', borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
+              <div style={{ marginTop:12, padding:'14px 16px', background:DS.bgCard, borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                   <div>
                     <p style={{ fontWeight:700, fontSize:14, color:'#5a4a3a', margin:0 }}>{linkedDebrief.prospect_name}</p>
@@ -2325,7 +2325,7 @@ function DealCard({ deal, onOpen, onMove, stages }) {
 
   return (
     <div onClick={()=>onOpen(deal)}
-      style={{ background:'rgba(255,255,255,.75)', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)', transition:'box-shadow .15s' }}
+      style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)', transition:'box-shadow .15s' }}
       onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.12)'}
       onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
@@ -2334,7 +2334,7 @@ function DealCard({ deal, onOpen, onMove, stages }) {
           <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}}
             style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
           {showMenu && (
-            <div style={{ position:'absolute', right:0, top:'100%', background:'rgba(255,255,255,.75)', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
+            <div style={{ position:'absolute', right:0, top:'100%', background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
               {stages.filter(s=>s.key!==deal.status).map(s => (
                 <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}}
                   style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#5a4a3a', textAlign:'left' }}
@@ -2349,7 +2349,7 @@ function DealCard({ deal, onOpen, onMove, stages }) {
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
         {deal.value > 0 && <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#d1fae5', padding:'2px 7px', borderRadius:6 }}>{deal.value.toLocaleString('fr-FR')} €</span>}
-        {deal.source && <span style={{ fontSize:11, color:'#6b7280', background:'rgba(253,232,228,.3)', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
+        {deal.source && <span style={{ fontSize:11, color:'#6b7280', background:'rgba(253,232,228,.2)', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
         {deal.follow_up_date && (
           <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#94a3b8', background:isOverdue?'#fee2e2':'transparent', padding:'2px 4px', borderRadius:4, fontWeight:isOverdue?600:400 }}>
             {isOverdue?'⚠️ ':''}{deal.follow_up_date}
@@ -2453,7 +2453,7 @@ function PipelinePage({ user, toast, debriefs }) {
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <span style={{ fontSize:13 }}>{stage.icon}</span>
                       <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
-                      <span style={{ background:'rgba(255,255,255,.75)', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{stageDeals.length}</span>
+                      <span style={{ background:'#ffffff', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{stageDeals.length}</span>
                     </div>
                     {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
                   </div>
@@ -2613,7 +2613,7 @@ export default function App() {
       {mob ? (
         /* ── MOBILE : header compact + bottom nav ── */
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.92)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.95)', boxShadow:'0 2px 10px rgba(180,150,120,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.92)', borderBottom:'1px solid rgba(255,255,255,.95)', boxShadow:'0 2px 10px rgba(180,150,120,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'2px 2px 6px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
@@ -2627,7 +2627,7 @@ export default function App() {
             {dataLoading ? <Spinner full/> : <PageContent/>}
           </main>
 
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.94)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderTop:'1px solid rgba(255,255,255,.95)', boxShadow:'0 -3px 12px rgba(180,150,120,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 0 max(8px,env(safe-area-inset-bottom))', zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.94)', borderTop:'1px solid rgba(255,255,255,.95)', boxShadow:'0 -3px 12px rgba(180,150,120,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 0 max(8px,env(safe-area-inset-bottom))', zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', boxShadow:page===key?DS.shadowBtn:'none', transition:'all .2s' }}>{icon}</div>
@@ -2641,7 +2641,7 @@ export default function App() {
         <div style={{ display:'flex', minHeight:'100vh' }}>
 
           {/* Sidebar */}
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.88)', backdropFilter:'blur(20px)', borderRight:'1px solid rgba(255,255,255,.95)', boxShadow:'4px 0 16px rgba(180,150,120,.07)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.98)', borderRight:'1px solid rgba(232,125,106,.08)', boxShadow:'4px 0 16px rgba(180,150,120,.07)', padding:'18px 10px', zIndex:40 }}>
 
             {/* Logo */}
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:DS.radiusMd, marginBottom:20, fontFamily:'inherit', transition:'background .15s', width:'100%' }}
