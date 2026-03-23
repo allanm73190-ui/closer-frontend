@@ -359,7 +359,7 @@ function ScoreGauge({ percentage, size='lg' }) {
   );
 }
 function ScoreBadge({ pct }) {
-  const s = pct>=80?{bg:'rgba(209,250,229,.85)',c:'#065f46',b:'rgba(110,231,183,.6)'}:pct>=60?{bg:'rgba(254,243,199,.85)',c:'#92400e',b:'rgba(252,211,77,.6)'}:pct>=40?{bg:'rgba(237,233,254,.85)',c:'#4c1d95',b:'rgba(196,181,253,.6)'}:{bg:'rgba(254,226,226,.85)',c:'#991b1b',b:'rgba(252,165,165,.6)'};
+  const s = pct>=80?{bg:'rgba(209,250,229,.85)',c:'#065f46',b:'rgba(110,231,183,.6)'}:pct>=60?{bg:'rgba(254,243,199,.85)',c:'#92400e',b:'rgba(252,211,77,.6)'}:pct>=40?{bg:'rgba(218,237,245,.8)',c:'#3a7a9a',b:'rgba(58,122,154,.3)'}:{bg:'rgba(254,226,226,.85)',c:'#991b1b',b:'rgba(252,165,165,.6)'};
   return <span style={{ background:s.bg, color:s.c, border:`1px solid ${s.b}`, padding:'3px 10px', borderRadius:8, fontWeight:700, fontSize:13, whiteSpace:'nowrap' }}>{pct}%</span>;
 }
 function ClosedBadge({ isClosed }) {
@@ -1716,6 +1716,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
       )}
 
       {/* Comments */}
+      {user.role !== 'head_of_sales' && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
@@ -2394,6 +2395,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 function DealCard({ deal, onOpen, onMove, stages }) {
   const [showMenu, setShowMenu] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const draggedRef = useRef(false);
   const ref = useRef(null);
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setShowMenu(false); };
@@ -2406,9 +2408,9 @@ function DealCard({ deal, onOpen, onMove, stages }) {
   return (
     <div
       draggable
-      onDragStart={e => { e.dataTransfer.setData('dealId', deal.id); setDragging(true); e.dataTransfer.effectAllowed='move'; }}
-      onDragEnd={() => setDragging(false)}
-      onClick={()=>onOpen(deal)}
+      onDragStart={e => { e.dataTransfer.setData('dealId', deal.id); setDragging(true); draggedRef.current = true; e.dataTransfer.effectAllowed='move'; }}
+      onDragEnd={() => { setDragging(false); setTimeout(()=>{ draggedRef.current = false; }, 100); }}
+      onClick={()=>{ if (!draggedRef.current) onOpen(deal); }}
       style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'grab', position:'relative', boxShadow:dragging?'0 8px 24px rgba(232,125,106,.25)':'0 1px 3px rgba(0,0,0,.05)', transition:'all .15s', opacity:dragging?.5:1, transform:dragging?'rotate(2deg)':'none' }}
       onMouseEnter={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.15)'; }}
       onMouseLeave={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'; }}>
@@ -2491,6 +2493,13 @@ function PipelinePage({ user, toast, debriefs }) {
 
   useEffect(() => {
     apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
+  }, []);
+
+  // Recharger quand la fenêtre reprend le focus
+  useEffect(() => {
+    const onFocus = () => apiFetch('/deals').then(setDeals).catch(()=>{});
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const handleSave = (deal, isEdit) => {
