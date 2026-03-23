@@ -446,42 +446,40 @@ function SectionBars({ scores, globalScores }) {
 function GamCard({ gam }) {
   if (!gam) return null;
   const { points, level, badges } = gam;
-  const pct = level.next ? Math.min(Math.round(((points-level.min)/(level.next-level.min))*100), 100) : 100;
+  const pct = level.next ? Math.min(Math.round((points - level.min) / (level.next - level.min) * 100), 100) : 100;
   return (
-    <div style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', borderRadius:16, padding:20, color:'white' }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+    <div style={{ background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_LG, padding:'16px 20px', color:'white' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <div>
-          <p style={{ fontSize:11, opacity:.75, margin:0, textTransform:'uppercase', letterSpacing:'.06em' }}>Niveau</p>
-          <h2 style={{ fontSize:20, fontWeight:700, margin:'4px 0 0' }}>{level.icon} {level.name}</h2>
+          <p style={{ fontSize:10, opacity:.75, margin:0, textTransform:'uppercase', letterSpacing:'.06em' }}>Niveau</p>
+          <h2 style={{ fontSize:17, fontWeight:700, margin:'3px 0 0' }}>{level.icon} {level.name}</h2>
         </div>
         <div style={{ textAlign:'right' }}>
-          <p style={{ fontSize:11, opacity:.75, margin:0 }}>Points</p>
-          <p style={{ fontSize:26, fontWeight:700, margin:0 }}>{points}</p>
+          <p style={{ fontSize:10, opacity:.75, margin:0 }}>Points</p>
+          <p style={{ fontSize:22, fontWeight:700, margin:0 }}>{points}</p>
         </div>
       </div>
       {level.next && (
-        <div style={{ marginBottom:badges.length>0?14:0 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, opacity:.75, marginBottom:5 }}>
+        <div style={{ marginBottom: badges.length > 0 ? 10 : 0 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, opacity:.75, marginBottom:4 }}>
             <span>{points} pts</span>
             <span>{level.next - points} pts avant {computeLevel(level.next).name}</span>
           </div>
-          <div style={{ height:8, background:'rgba(255,255,255,.2)', borderRadius:4 }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:'#ffffff', borderRadius:4, transition:'width .7s' }}/>
+          <div style={{ height:6, background:'rgba(255,255,255,.2)', borderRadius:3 }}>
+            <div style={{ height:'100%', width:`${pct}%`, background:'rgba(255,255,255,.9)', borderRadius:3, transition:'width .7s' }}/>
           </div>
         </div>
       )}
       {badges.length > 0 && (
-        <div>
-          <p style={{ fontSize:11, opacity:.75, marginBottom:8, textTransform:'uppercase', letterSpacing:'.06em' }}>Badges</p>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {badges.map(b => <span key={b.id} style={{ background:'rgba(255,255,255,.2)', padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:500 }}>{b.icon} {b.label}</span>)}
-          </div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+          {badges.map(b => (
+            <span key={b.id} style={{ background:'rgba(255,255,255,.2)', padding:'3px 10px', borderRadius:20, fontSize:11 }}>{b.icon} {b.label}</span>
+          ))}
         </div>
       )}
     </div>
   );
 }
-
 function Leaderboard({ refreshKey }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1470,7 +1468,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
   const isHOS = user.role === 'head_of_sales';
   const mob = useIsMobile();
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
           <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>Tableau de bord</h1>
@@ -2395,6 +2393,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 
 function DealCard({ deal, onOpen, onMove, stages }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setShowMenu(false); };
@@ -2405,10 +2404,14 @@ function DealCard({ deal, onOpen, onMove, stages }) {
   const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
 
   return (
-    <div onClick={()=>onOpen(deal)}
-      style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)', transition:'box-shadow .15s' }}
-      onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.12)'}
-      onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'}>
+    <div
+      draggable
+      onDragStart={e => { e.dataTransfer.setData('dealId', deal.id); setDragging(true); e.dataTransfer.effectAllowed='move'; }}
+      onDragEnd={() => setDragging(false)}
+      onClick={()=>onOpen(deal)}
+      style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'grab', position:'relative', boxShadow:dragging?'0 8px 24px rgba(232,125,106,.25)':'0 1px 3px rgba(0,0,0,.05)', transition:'all .15s', opacity:dragging?.5:1, transform:dragging?'rotate(2deg)':'none' }}
+      onMouseEnter={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.15)'; }}
+      onMouseLeave={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'; }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
         <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
         <div ref={ref} style={{ position:'relative' }}>
@@ -2439,6 +2442,42 @@ function DealCard({ deal, onOpen, onMove, stages }) {
         {deal.debrief_id && <span style={{ fontSize:11, color:'#e87d6a', background:'rgba(255,245,242,.85)', padding:'2px 7px', borderRadius:6 }}>📞 debrief</span>}
       </div>
       {deal.user_name && <p style={{ fontSize:11, color:'#c8b8a8', margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
+    </div>
+  );
+}
+
+// ─── DROP ZONE (colonne kanban avec drag & drop) ──────────────────────────────
+function DropColumn({ stage, deals, onOpen, onMove, onDrop }) {
+  const [over, setOver] = useState(false);
+  const stageValue = deals.reduce((s,d)=>s+(d.value||0),0);
+
+  return (
+    <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:8 }}>
+      {/* Header colonne */}
+      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:13 }}>{stage.icon}</span>
+          <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
+          <span style={{ background:'#ffffff', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{deals.length}</span>
+        </div>
+        {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
+      </div>
+
+      {/* Zone de drop */}
+      <div
+        onDragOver={e=>{ e.preventDefault(); setOver(true); }}
+        onDragLeave={()=>setOver(false)}
+        onDrop={e=>{ e.preventDefault(); setOver(false); const id=e.dataTransfer.getData('dealId'); if(id) onDrop(id, stage.key); }}
+        style={{ display:'flex', flexDirection:'column', gap:7, minHeight:80, padding:over?'6px':'0', background:over?`${stage.bg}`:'transparent', borderRadius:10, border:over?`2px dashed ${stage.color}`:'2px dashed transparent', transition:'all .15s' }}>
+        {deals.map(deal => (
+          <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove} stages={PIPELINE_STAGES}/>
+        ))}
+        {deals.length === 0 && !over && (
+          <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'16px 10px', textAlign:'center', color:'#cbd5e1', fontSize:11 }}>
+            Déposez ici
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2525,30 +2564,16 @@ function PipelinePage({ user, toast, debriefs }) {
       ) : (
         <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
           <div style={{ display:'flex', gap:12, minWidth:mob?`${PIPELINE_STAGES.length*220}px`:'auto' }}>
-            {PIPELINE_STAGES.map(stage => {
-              const stageDeals = displayDeals.filter(d => d.status===stage.key);
-              const stageValue = stageDeals.reduce((s,d)=>s+(d.value||0),0);
-              return (
-                <div key={stage.key} style={{ flex:1, minWidth:mob?210:0, display:'flex', flexDirection:'column', gap:8 }}>
-                  <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <span style={{ fontSize:13 }}>{stage.icon}</span>
-                      <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
-                      <span style={{ background:'#ffffff', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{stageDeals.length}</span>
-                    </div>
-                    {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:50 }}>
-                    {stageDeals.map(deal => (
-                      <DealCard key={deal.id} deal={deal} onOpen={setOpenLead} onMove={handleMove} stages={PIPELINE_STAGES}/>
-                    ))}
-                    {stageDeals.length === 0 && (
-                      <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'16px 10px', textAlign:'center', color:'#cbd5e1', fontSize:11 }}>Vide</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {PIPELINE_STAGES.map(stage => (
+              <DropColumn
+                key={stage.key}
+                stage={stage}
+                deals={displayDeals.filter(d=>d.status===stage.key)}
+                onOpen={setOpenLead}
+                onMove={handleMove}
+                onDrop={(dealId, newStatus) => handleMove(dealId, newStatus)}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -2599,6 +2624,12 @@ export default function App() {
     _onExpired = () => { setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login'); toast('Session expirée, veuillez vous reconnecter', 'error'); };
     return () => { _onExpired = null; };
   }, [toast]);
+
+  // Clean dark mode residue
+  useEffect(() => {
+    localStorage.removeItem('cd_dark');
+    document.documentElement.removeAttribute('data-theme');
+  }, []);
 
   // Restore session
   useEffect(() => {
@@ -2681,6 +2712,7 @@ export default function App() {
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
+        html,body,#root{background:linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)!important;min-height:100vh}
         input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
         ::placeholder{color:rgba(180,150,120,.5)!important}
         ::-webkit-scrollbar{width:5px;height:5px}
@@ -2694,7 +2726,7 @@ export default function App() {
 
       {mob ? (
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'#fff8f4', borderBottom:'1px solid rgba(232,125,106,.12)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
@@ -2706,7 +2738,7 @@ export default function App() {
           <main style={{ padding:'16px 14px 90px' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff8f4', borderTop:'1px solid rgba(232,125,106,.12)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
@@ -2717,7 +2749,7 @@ export default function App() {
         </>
       ) : (
         <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'#fff8f4', borderRight:'1px solid rgba(232,125,106,.12)', boxShadow:'4px 0 14px rgba(174,130,100,.08)', padding:'18px 10px', zIndex:40 }}>
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
