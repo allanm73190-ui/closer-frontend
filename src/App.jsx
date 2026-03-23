@@ -282,31 +282,31 @@ function Input({ placeholder, value, onChange, type='text', required, autoFocus,
   return (
     <input type={type} placeholder={placeholder} value={value} onChange={onChange}
       required={required} autoFocus={autoFocus}
-      style={{ width:'100%', borderRadius:10, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.7)', padding:'11px 14px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a', transition:'all .15s', boxShadow:'inset 0 1px 4px rgba(100,80,200,.06)', ...style }}
-      onFocus={e => { e.target.style.borderColor = '#e87d6a'; e.target.style.boxShadow = '0 0 0 3px rgba(232,125,106,.12)'; }}
-      onBlur={e  => { e.target.style.borderColor = 'rgba(232,125,106,.2)'; e.target.style.boxShadow = DS.shadowInset; }}
+      style={{ width:'100%', borderRadius:DS.radiusMd, border:'1px solid rgba(232,125,106,.15)', background:DS.bgInput, padding:'11px 14px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:DS.textPrimary, transition:'all .15s', boxShadow:DS.shadowInset, ...style }}
+      onFocus={e => { e.target.style.borderColor = DS.primary; e.target.style.boxShadow = DS.shadowInset+', 0 0 0 3px rgba(232,125,106,.1)'; }}
+      onBlur={e  => { e.target.style.borderColor = 'rgba(232,125,106,.15)'; e.target.style.boxShadow = DS.shadowInset; }}
     />
   );
 }
 function Textarea({ placeholder, value, onChange, rows=3 }) {
   return (
     <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
-      style={{ width:'100%', borderRadius:10, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.7)', padding:'10px 14px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:'#5a4a3a', boxShadow:'inset 0 1px 4px rgba(100,80,200,.06)' }}
+      style={{ width:'100%', borderRadius:DS.radiusMd, border:'1px solid rgba(232,125,106,.15)', background:DS.bgInput, padding:'10px 14px', fontSize:14, fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box', color:DS.textPrimary, boxShadow:DS.shadowInset }}
     />
   );
 }
 
 const BTN_VARIANTS = {
-  primary:   { background:'linear-gradient(135deg,#e87d6a,#d4604e)', color:'white', border:'none', boxShadow:'0 4px 16px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.2)' },
-  secondary: { background:'rgba(255,255,255,.7)', color:'#5a4a3a', border:'1px solid rgba(232,125,106,.15)', boxShadow:'0 2px 8px rgba(100,80,200,.08), inset 0 1px 0 rgba(255,255,255,.9)' },
-  danger:    { background:'rgba(254,242,242,.8)', color:'#dc2626', border:'1px solid rgba(252,165,165,.5)', boxShadow:'0 2px 8px rgba(220,38,38,.08)' },
-  ghost:     { background:'transparent', color:'#6b7280', border:'none', boxShadow:'none' },
-  green:     { background:'rgba(209,250,229,.8)', color:'#065f46', border:'1px solid rgba(110,231,183,.6)', boxShadow:'0 2px 8px rgba(5,150,105,.08)' },
+  primary:   { background:'linear-gradient(135deg,#e87d6a,#d4604e)', color:'white', border:'none', boxShadow:'0 6px 20px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.25)' },
+  secondary: { background:'white', color:DS.textPrimary, border:'none', boxShadow:'4px 4px 10px rgba(180,150,120,.15), -2px -2px 6px rgba(255,255,255,.9)' },
+  danger:    { background:DS.dangerBg, color:DS.danger, border:`1px solid ${DS.dangerBorder}`, boxShadow:'none' },
+  ghost:     { background:'transparent', color:DS.textSecondary, border:'none', boxShadow:'none' },
+  green:     { background:DS.successBg, color:DS.success, border:`1px solid ${DS.successBorder}`, boxShadow:'none' },
 };
 function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled}
-      style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8, padding:'11px 20px', borderRadius:12, fontSize:14, fontWeight:600, cursor:disabled?'not-allowed':'pointer', transition:'all .15s', opacity:disabled?.55:1, fontFamily:'inherit', ...BTN_VARIANTS[variant], ...style }}>
+      style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px 20px', borderRadius:DS.radiusFull, fontSize:14, fontWeight:600, cursor:disabled?'not-allowed':'pointer', transition:'all .15s', opacity:disabled?.55:1, fontFamily:'inherit', ...BTN_VARIANTS[variant], ...style }}>
       {children}
     </button>
   );
@@ -314,16 +314,16 @@ function Btn({ children, onClick, type='button', variant='primary', disabled, st
 function AlertBox({ type, message }) {
   if (!message) return null;
   const styles = {
-    error:   { background:'rgba(254,242,242,.85)', border:'1px solid rgba(252,165,165,.5)', color:'#991b1b', backdropFilter:'blur(8px)' },
-    success: { background:'rgba(209,250,229,.85)', border:'1px solid rgba(110,231,183,.5)', color:'#065f46', backdropFilter:'blur(8px)' },
-    info:    { background:'rgba(255,245,242,.85)', border:'1px solid rgba(196,181,253,.5)', color:'#5a4a3a', backdropFilter:'blur(8px)' },
+    error:   { background:DS.dangerBg,  border:`1px solid ${DS.dangerBorder}`,  color:DS.danger  },
+    success: { background:DS.successBg, border:`1px solid ${DS.successBorder}`, color:DS.success },
+    info:    { background:DS.infoBg,    border:`1px solid ${DS.infoBorder}`,    color:DS.info    },
   };
-  return <div style={{ ...styles[type||'info'], padding:'12px 14px', borderRadius:8, fontSize:14, marginBottom:16 }}>{message}</div>;
+  return <div style={{ ...styles[type||'info'], padding:'12px 14px', borderRadius:DS.radiusSm, fontSize:14, marginBottom:16 }}>{message}</div>;
 }
 function Spinner({ full=false, size=32 }) {
   const el = (
     <>
-      <div style={{ width:size, height:size, border:`${size>20?4:3}px solid rgba(232,125,106,.15)`, borderTopColor:'#e87d6a', borderRadius:'50%', animation:'spin .75s linear infinite' }}/>
+      <div style={{ width:size, height:size, border:`${size>20?4:3}px solid rgba(232,125,106,.15)`, borderTopColor:DS.primary, borderRadius:'50%', animation:'spin .75s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </>
   );
@@ -331,23 +331,23 @@ function Spinner({ full=false, size=32 }) {
 }
 function Empty({ icon, title, subtitle, action }) {
   return (
-    <div style={{ background:'rgba(255,255,255,.65)', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,.85)', borderRadius:16, padding:'40px 24px', textAlign:'center', boxShadow:'0 4px 20px rgba(100,80,200,.08)' }}>
+    <div style={{ background:DS.bgCard, borderRadius:DS.radiusLg, padding:'40px 24px', textAlign:'center', boxShadow:DS.shadowCard }}>
       <div style={{ fontSize:40, marginBottom:12 }}>{icon}</div>
-      <p style={{ fontWeight:600, fontSize:16, color:'#5a4a3a', margin:'0 0 6px' }}>{title}</p>
+      <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:'0 0 6px' }}>{title}</p>
       <p style={{ color:DS.textMuted, fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
       {action}
     </div>
   );
 }
 function Card({ children, style={} }) {
-  return <div style={{ background:'rgba(255,255,255,.72)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,.9)', borderTop:'1px solid rgba(255,255,255,1)', borderRadius:16, boxShadow:'0 8px 28px rgba(100,80,200,.1), 0 2px 6px rgba(100,80,200,.07), inset 0 1px 0 rgba(255,255,255,.95)', ...style }}>{children}</div>;
+  return <div style={{ background:DS.bgCard, borderRadius:DS.radiusLg, boxShadow:DS.shadowCard, ...style }}>{children}</div>;
 }
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(30,27,75,.35)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'rgba(245,242,255,.92)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', borderRadius:'20px 20px 0 0', border:'1px solid rgba(255,255,255,.85)', borderBottom:'none', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -12px 48px rgba(100,80,200,.18), inset 0 1px 0 rgba(255,255,255,.95)' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.25)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'rgba(255,250,247,.98)', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(180,150,120,.2), inset 0 1px 0 rgba(255,255,255,.9)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontSize:17, fontWeight:700, color:'#5a4a3a', margin:0 }}>{title}</h2>
+          <h2 style={{ fontSize:17, fontWeight:700, color:DS.textPrimary, margin:0 }}>{title}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
         {children}
@@ -667,7 +667,7 @@ function SectionNotes({ notes={}, onChange }) {
 function CatCard({ number, title, children }) {
   return (
     <div style={{ borderRadius:12, border:'1px solid rgba(232,125,106,.12)', background:'rgba(255,255,255,.75)', overflow:'hidden', marginBottom:16 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:'rgba(255,248,245,.85)', borderBottom:'1px solid rgba(232,125,106,.12)' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:'linear-gradient(135deg,rgba(253,232,228,.6),rgba(253,240,238,.4))', borderBottom:'1px solid rgba(232,125,106,.1)' }}>
         <span style={{ width:28, height:28, borderRadius:'50%', background:'#e87d6a', color:'white', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
         <h3 style={{ fontWeight:600, fontSize:14, margin:0, color:'#5a4a3a' }}>{title}</h3>
       </div>
@@ -924,7 +924,7 @@ function DebriefCard({ debrief, onClick, showUser }) {
   const pct = Math.round(debrief.percentage || 0);
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{ background:'rgba(255,255,255,.75)', border:`1px solid ${hov?'rgba(232,125,106,.35)':'rgba(255,255,255,.85)'}`, borderRadius:12, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+      style={{ background:DS.bgCard, border:`1px solid ${hov?'rgba(232,125,106,.2)':'rgba(255,255,255,.9)'}`, borderRadius:DS.radiusLg, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{debrief.prospect_name}</p>
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:DS.textMuted, flexWrap:'wrap' }}>
@@ -1142,7 +1142,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
           <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>👑 Head of Sales</h1>
           <p style={{ color:'#6b7280', fontSize:13, marginTop:4 }}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p>
         </div>
-        <div style={{ display:'flex', gap:4, background:'rgba(253,232,228,.3)', padding:4, borderRadius:10 }}>
+        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusMd }}>
           {[{key:'dashboard',label:'📊'},{key:'equipes',label:'👥'}].map(({key,label})=>(
             <button key={key} onClick={()=>setTab(key)} style={{ padding:'8px 16px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .2s', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', boxShadow:tab===key?'0 1px 4px rgba(0,0,0,.08)':'none', fontFamily:'inherit' }}>
               {label}{!mob&&<span> {key==='dashboard'?'Dashboard':'Équipes'}</span>}
@@ -1904,7 +1904,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
 
   return (
     <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
-      <div style={{ display:'flex', gap:4, background:'rgba(253,232,228,.3)', padding:4, borderRadius:8, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusSm, marginBottom:20 }}>
         {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
           <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
@@ -2583,66 +2583,102 @@ export default function App() {
   }
 
   // ─── Main app ──────────────────────────────────────────────────────────────
+  const PageContent = () => (
+    <>
+      {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
+      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
+      {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
+      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
+      {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
+      {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
+    </>
+  );
+
   return (
-    <div style={{ minHeight:'100vh', background:DS.bgApp, backgroundAttachment:'fixed', fontFamily:"'Inter',system-ui,sans-serif" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box} input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation} ::placeholder{color:rgba(100,116,139,.5)!important}`}</style>
+    <div style={{ minHeight:'100vh', background:DS.bgApp, fontFamily:"'Inter',system-ui,sans-serif" }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        *{box-sizing:border-box}
+        input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
+        ::placeholder{color:rgba(100,116,139,.5)!important}
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.25);border-radius:3px}
+      `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
       <Toasts list={toasts}/>
       {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
 
-      {/* Header */}
-      <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.88)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,.95)', boxShadow:'3px 3px 12px rgba(180,150,120,.1), -1px -1px 6px rgba(255,255,255,.8)' }}>
-        <div style={{ maxWidth:1400, margin:'0 auto', padding:`0 ${mob?12:24}px`, display:'flex', alignItems:'center', justifyContent:'space-between', height:56 }}>
-          {/* Logo */}
-          <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit', flexShrink:0 }}>
-            <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'3px 3px 8px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15 }}>📞</div>
-            {!mob && <span style={{ fontSize:15, fontWeight:700, color:'#5a4a3a', letterSpacing:'-.02em' }}>CloserDebrief</span>}
-          </button>
+      {mob ? (
+        /* ── MOBILE : header compact + bottom nav ── */
+        <>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.92)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.95)', boxShadow:'0 2px 10px rgba(180,150,120,.08)' }}>
+            <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
+              <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'2px 2px 6px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
+                <span style={{ fontSize:14, fontWeight:700, color:DS.textPrimary }}>CloserDebrief</span>
+              </button>
+              <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast}/>
+            </div>
+          </header>
 
-          {/* Nav — desktop uniquement */}
-          {!mob && (
-            <nav style={{ display:'flex', alignItems:'center', gap:2 }}>
+          <main style={{ padding:'16px 14px', paddingBottom:80, minHeight:'calc(100vh - 52px)' }}>
+            {dataLoading ? <Spinner full/> : <PageContent/>}
+          </main>
+
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.94)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderTop:'1px solid rgba(255,255,255,.95)', boxShadow:'0 -3px 12px rgba(180,150,120,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 0 max(8px,env(safe-area-inset-bottom))', zIndex:40 }}>
+            {navItems.map(({ key, label, icon }) => (
+              <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
+                <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', boxShadow:page===key?DS.shadowBtn:'none', transition:'all .2s' }}>{icon}</div>
+                <span style={{ fontSize:10, fontWeight:600, color:page===key?DS.primary:DS.textMuted }}>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </>
+      ) : (
+        /* ── DESKTOP : sidebar gauche + contenu ── */
+        <div style={{ display:'flex', minHeight:'100vh' }}>
+
+          {/* Sidebar */}
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.88)', backdropFilter:'blur(20px)', borderRight:'1px solid rgba(255,255,255,.95)', boxShadow:'4px 0 16px rgba(180,150,120,.07)', padding:'18px 10px', zIndex:40 }}>
+
+            {/* Logo */}
+            <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:DS.radiusMd, marginBottom:20, fontFamily:'inherit', transition:'background .15s', width:'100%' }}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.06)'}
+              onMouseLeave={e=>e.currentTarget.style.background='none'}>
+              <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#e87d6a,#d4604e)', boxShadow:'3px 3px 8px rgba(232,125,106,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📞</div>
+              <div style={{ textAlign:'left' }}>
+                <div style={{ fontSize:13, fontWeight:700, color:DS.textPrimary, letterSpacing:'-.01em' }}>CloserDebrief</div>
+                <div style={{ fontSize:10, color:DS.textMuted }}>Sales OS</div>
+              </div>
+            </button>
+
+            {/* Nav items */}
+            <div style={{ display:'flex', flexDirection:'column', gap:3, flex:1 }}>
               {navItems.map(({ key, label, icon }) => (
-                <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .15s', background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', color:page===key?'white':'#4c3a8a', boxShadow:page===key?'0 3px 12px rgba(232,125,106,.35)':'none', fontFamily:'inherit' }}>
-                  <span style={{ fontSize:14 }}>{icon}</span>
+                <button key={key} onClick={()=>navigate(key)}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:DS.radiusMd, border:'none', fontSize:13, fontWeight:page===key?700:500, cursor:'pointer', transition:'all .18s', background:page===key?'linear-gradient(135deg,#e87d6a,#d4604e)':'transparent', color:page===key?'white':DS.textSecondary, boxShadow:page===key?DS.shadowBtn:'none', fontFamily:'inherit', textAlign:'left', width:'100%' }}
+                  onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(232,125,106,.08)'; }}
+                  onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}>
+                  <span style={{ fontSize:16, width:22, textAlign:'center' }}>{icon}</span>
                   <span>{label}</span>
                 </button>
               ))}
-            </nav>
-          )}
+            </div>
 
-          {/* User menu */}
-          <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast}/>
+            {/* User menu en bas */}
+            <div style={{ borderTop:'1px solid rgba(232,125,106,.1)', paddingTop:12, marginTop:8 }}>
+              <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
+            </div>
+          </aside>
+
+          {/* Contenu principal */}
+          <main style={{ flex:1, minWidth:0, padding:'32px 36px', overflowX:'hidden' }}>
+            {dataLoading ? <Spinner full/> : <PageContent/>}
+          </main>
         </div>
-      </header>
-
-      {/* Main content */}
-      <main style={{ maxWidth:1400, margin:'0 auto', padding:mob?'16px 12px':'40px 32px' }}>
-        {dataLoading ? <Spinner full/> : (
-          <>
-            {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
-            {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
-            {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-            {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
-            {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
-            {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
-          </>
-        )}
-      </main>
-
-      {/* Bottom nav — mobile */}
-      {mob && (
-        <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.92)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderTop:'1px solid rgba(255,255,255,.95)', boxShadow:'0 -3px 12px rgba(180,150,120,.1)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'8px 0 max(8px,env(safe-area-inset-bottom))', zIndex:40 }}>
-          {navItems.map(({ key, label, icon }) => (
-            <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', cursor:'pointer', padding:'4px 16px', fontFamily:'inherit', color:page===key?'#e87d6a':'#8b7abc', transition:'color .15s' }}>
-              <span style={{ fontSize:20 }}>{icon}</span>
-              <span style={{ fontSize:10, fontWeight:500 }}>{label}</span>
-            </button>
-          ))}
-        </nav>
       )}
-      {mob && <div style={{ height:70 }}/>}
     </div>
   );
 }
