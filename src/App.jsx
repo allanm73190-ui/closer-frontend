@@ -64,6 +64,17 @@ function useBreakpoint() {
 }
 
 
+
+// ─── DARK MODE ────────────────────────────────────────────────────────────────
+function useDarkMode() {
+  const [dark, setDark] = React.useState(() => localStorage.getItem('cd_dark') === '1');
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    localStorage.setItem('cd_dark', dark ? '1' : '0');
+  }, [dark]);
+  return [dark, setDark];
+}
+
 // ─── DESIGN SYSTEM — Soft Pastel 3D ─────────────────────────────────────────
 // Couleurs
 const P  = '#e87d6a';   // primaire corail
@@ -102,12 +113,11 @@ const DS = {
 };
 
 // ─── HELPERS STYLE ────────────────────────────────────────────────────────────
-const card = (extra={}) => ({ background:WHITE, borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
-const cardSm = (extra={}) => ({ background:WHITE, borderRadius:R_MD, boxShadow:SH_SM, ...extra });
-const inp = (extra={}) => ({
-  width:'100%', background:SAND, border:'1px solid rgba(232,125,106,.15)',
+const card = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:'var(--sh-card,'+SH_CARD+')', ...extra });
+const cardSm = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:'var(--sh-sm,'+SH_SM+')', ...extra });
+const inp = (extra={}) => ({ width:'100%', background:'var(--input,#f5ede6)', border:'1px solid rgba(232,125,106,.15)',
   borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit',
-  outline:'none', boxSizing:'border-box', color:TXT, boxShadow:SH_IN, ...extra
+  outline:'none', boxSizing:'border-box', color:'var(--txt,#5a4a3a)', boxShadow:SH_IN, ...extra
 });
 
 // ─── SCORES ───────────────────────────────────────────────────────────────────
@@ -280,9 +290,9 @@ function Textarea({ placeholder, value, onChange, rows=3 }) {
 
 const BTN = {
   primary:   { background:`linear-gradient(135deg,${P},${P2})`, color:'white', border:'none', boxShadow:SH_BTN },
-  secondary: { background:WHITE, color:TXT, border:'none', boxShadow:SH_SM },
+  secondary: { background:WHITE, color:'var(--txt,#5a4a3a)', border:'none', boxShadow:SH_SM },
   danger:    { background:'rgba(253,232,228,.8)', color:'#c05040', border:'1px solid rgba(192,80,64,.3)', boxShadow:'none' },
-  ghost:     { background:'transparent', color:TXT2, border:'none', boxShadow:'none' },
+  ghost:     { background:'transparent', color:'var(--txt2,#b09080)', border:'none', boxShadow:'none' },
   green:     { background:'rgba(218,240,216,.8)', color:'#5a9858', border:'1px solid rgba(90,152,88,.3)', boxShadow:'none' },
 };
 function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
@@ -311,8 +321,8 @@ function Empty({ icon, title, subtitle, action }) {
   return (
     <div style={{ ...card(), padding:'40px 24px', textAlign:'center' }}>
       <div style={{ fontSize:40, marginBottom:12 }}>{icon}</div>
-      <p style={{ fontWeight:700, fontSize:16, color:TXT, margin:'0 0 6px' }}>{title}</p>
-      <p style={{ color:TXT3, fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
+      <p style={{ fontWeight:700, fontSize:16, color:'var(--txt,#5a4a3a)', margin:'0 0 6px' }}>{title}</p>
+      <p style={{ color:'var(--txt3,#c8b8a8)', fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
       {action}
     </div>
   );
@@ -328,8 +338,8 @@ function Modal({ title, onClose, children }) {
       onClick={e => e.target===e.currentTarget && onClose()}>
       <div style={{ background:WHITE, borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(174,130,100,.2)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontSize:17, fontWeight:700, color:TXT, margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:TXT3, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+          <h2 style={{ fontSize:17, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--txt3,#c8b8a8)', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
         {children}
       </div>
@@ -533,7 +543,7 @@ function StatsRow({ debriefs }) {
     { label:'Tendance',       value:`${trend>=0?'+':''}${trend}%`, icon:trend>=0?'📈':'📉', bg:trend>=0?'#d1fae5':'#fee2e2', c:trend>=0?'#059669':'#dc2626' },
   ];
   return (
-    <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:14 }}>
+    <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
       {items.map(({ label, value, icon, bg, c }) => (
         <Card key={label} style={{ padding:mob?'12px 14px':'16px 20px', display:'flex', alignItems:'center', gap:mob?10:14 }}>
           <div style={{ width:mob?36:44, height:mob?36:44, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:mob?16:20, flexShrink:0 }}>{icon}</div>
@@ -735,8 +745,8 @@ function AuthShell({ subtitle, icon, children }) {
           <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:SH_BTN }}>
             {icon}
           </div>
-          <h1 style={{ fontSize:24, fontWeight:700, color:TXT, margin:0 }}>CloserDebrief</h1>
-          <p style={{ color:TXT2, fontSize:14, marginTop:6 }}>{subtitle}</p>
+          <h1 style={{ fontSize:24, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>CloserDebrief</h1>
+          <p style={{ color:'var(--txt2,#b09080)', fontSize:14, marginTop:6 }}>{subtitle}</p>
         </div>
         <div style={{ ...card(), padding:28 }}>{children}</div>
       </div>
@@ -1155,7 +1165,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
               {/* KPIs */}
               <div>
                 <p style={{ fontSize:13, fontWeight:600, color:'#6b7280', margin:'0 0 10px' }}>📊 {scopeLabel} · {fTotal} debrief{fTotal!==1?'s':''}</p>
-                <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:14 }}>
+                <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
                   {[{l:'Debriefs',value:fTotal,icon:'📋',bg:'rgba(253,232,228,.6)',c:'#e87d6a'},{l:'Score moyen',value:`${fAvg}%`,icon:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',value:`${fRate}%`,icon:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',value:fCls,icon:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,value,icon,bg,c})=>(
                     <Card key={l} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
                       <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
@@ -1383,7 +1393,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
             </div>
 
             {/* KPIs équipe */}
-            <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
               {[{l:'Debriefs',v:td.length,i:'📋',bg:'rgba(253,232,228,.6)',c:'#e87d6a'},{l:'Score moyen',v:`${tAvg}%`,i:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',v:`${tRate}%`,i:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',v:tCls,i:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,v,i,bg,c})=>(
                 <Card key={l} style={{padding:'12px 14px',display:'flex',alignItems:'center',gap:12}}>
                   <div style={{width:38,height:38,borderRadius:10,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{i}</div>
@@ -1482,11 +1492,21 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
       <StatsRow debriefs={debriefs}/>
-      <Card style={{ padding:20 }}>
-        <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Évolution du score</h2>
-        <Chart debriefs={debriefs}/>
-      </Card>
-      <Leaderboard refreshKey={lbKey}/>
+      <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
+        <Card style={{ padding:20 }}>
+          <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>
+          <Chart debriefs={debriefs}/>
+        </Card>
+        <Leaderboard refreshKey={lbKey}/>
+      </div>
+
+    {/* Mini Pipeline */}
+    <div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
+      </div>
+      <MiniPipeline navigate={navigate}/>
+    </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
@@ -1498,6 +1518,82 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
           : <div style={{display:'flex',flexDirection:'column',gap:10}}>{debriefs.slice(0,5).map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('Detail',d.id)} showUser={isHOS}/>)}</div>
         }
       </div>
+    </div>
+  );
+}
+
+
+// ─── MINI PIPELINE (Dashboard) ────────────────────────────────────────────────
+function MiniPipeline({ navigate }) {
+  const [deals, setDeals] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
+  }, []);
+
+  if (loading) return <Spinner/>;
+
+  const signed   = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
+  const pipeline = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
+  const closed   = deals.filter(d=>['signe','perdu'].includes(d.status));
+  const winRate  = closed.length ? Math.round(deals.filter(d=>d.status==='signe').length/closed.length*100) : 0;
+  const late     = deals.filter(d=>d.follow_up_date && new Date(d.follow_up_date)<new Date() && !['signe','perdu'].includes(d.status)).length;
+
+  const stages = [
+    { key:'prospect',     label:'Prospect',   color:'#a09080', bg:'rgba(245,237,230,.6)' },
+    { key:'premier_appel',label:'1er appel',  color:'#e87d6a', bg:'rgba(253,232,228,.6)' },
+    { key:'relance',      label:'Relance',    color:'#c07830', bg:'rgba(254,243,224,.6)' },
+    { key:'negociation',  label:'Négo.',      color:'#3a7a9a', bg:'rgba(218,237,245,.6)' },
+    { key:'signe',        label:'Signés ✓',   color:'#5a9858', bg:'rgba(218,240,216,.6)' },
+    { key:'perdu',        label:'Perdus',     color:'#c05040', bg:'rgba(253,232,228,.6)' },
+  ];
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      {/* KPIs */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+        {[
+          { label:'CA Signé',  value:`${signed.toLocaleString('fr-FR')} €`,  color:'#5a9858' },
+          { label:'Pipeline',  value:`${pipeline.toLocaleString('fr-FR')} €`, color:'#e87d6a' },
+          { label:'Taux win',  value:`${winRate}%`,                           color:'#6aacce' },
+          { label:'En retard', value:late,                                    color:late>0?'#c05040':'#c8b8a8' },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ ...cardSm(), padding:'12px 14px' }}>
+            <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
+            <p style={{ fontSize:18, fontWeight:700, color, margin:0 }}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Mini Kanban */}
+      {deals.length > 0 && (
+        <div style={{ overflowX:'auto', paddingBottom:4 }}>
+          <div style={{ display:'flex', gap:8, minWidth:'max-content' }}>
+            {stages.map(st => {
+              const cols = deals.filter(d=>d.status===st.key);
+              if (!cols.length) return null;
+              return (
+                <div key={st.key} style={{ minWidth:140, display:'flex', flexDirection:'column', gap:6 }}>
+                  <div style={{ background:st.bg, borderRadius:8, padding:'5px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{st.label}</span>
+                    <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{cols.length}</span>
+                  </div>
+                  {cols.slice(0,3).map(d => (
+                    <div key={d.id} style={{ ...cardSm(), padding:'8px 10px' }}>
+                      <p style={{ fontWeight:600, fontSize:12, color:'var(--txt,#5a4a3a)', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
+                      {d.value>0 && <p style={{ fontSize:11, color:'#5a9858', fontWeight:700, margin:0 }}>{d.value.toLocaleString('fr-FR')} €</p>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <button onClick={()=>navigate('Pipeline')} style={{ ...BTN.secondary, padding:'8px 16px', fontSize:13, borderRadius:R_FULL, alignSelf:'flex-end', cursor:'pointer', fontFamily:'inherit' }}>
+        Voir tout le pipeline →
+      </button>
     </div>
   );
 }
@@ -1758,8 +1854,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
         </div>
         {(sidebar || !useIsMobile()) && <>
           <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
-            <p style={{ fontSize:13, fontWeight:600, color:TXT, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
-            <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
+            <p style={{ fontSize:13, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
+            <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
           </div>
           {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
           <span style={{ fontSize:10, color:TXT3 }}>{open?'▲':'▼'}</span>
@@ -1768,8 +1864,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
       {open && (
         <div style={{
           position:'absolute', right:0,
-          bottom: sidebar ? 'auto' : 'calc(100% + 8px)',
-          top: sidebar ? 'calc(100% + 6px)' : 'auto',
+          bottom: sidebar ? 'calc(100% + 8px)' : 'auto',
+          top: sidebar ? 'auto' : 'calc(100% + 6px)',
           background:WHITE, borderRadius:R_LG, boxShadow:SH_HOVERED,
           minWidth:220, zIndex:200, overflow:'hidden'
         }}>
@@ -1780,8 +1876,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
                 {user.name?.charAt(0)}
               </div>
               <div>
-                <p style={{ fontWeight:600, fontSize:13, color:TXT, margin:0 }}>{user.name}</p>
-                <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.email}</p>
+                <p style={{ fontWeight:600, fontSize:13, color:'var(--txt,#5a4a3a)', margin:0 }}>{user.name}</p>
+                <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{user.email}</p>
               </div>
             </div>
             {gam && (
@@ -1796,12 +1892,24 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
             { icon:'⚙️', label:'Paramètres du compte', action:()=>{ onSettings(); setOpen(false); } },
             { icon:'🔔', label:'Notifications',         action:()=>{ toast('Bientôt disponible !','info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
-            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:TXT, textAlign:'left', transition:'background .1s' }}
+            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', textAlign:'left', transition:'background .1s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>{icon}</span>{label}
             </button>
           ))}
+          <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
+          <button onClick={()=>{ const d=document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'light':'dark'); localStorage.setItem('cd_dark',d?'0':'1'); }} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', transition:'background .1s' }}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.1)'}
+            onMouseLeave={e=>e.currentTarget.style.background='none'}>
+            <span style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:16, width:20, textAlign:'center' }}>🌙</span>
+              Mode nuit
+            </span>
+            <div style={{ width:36, height:20, borderRadius:10, background:document.documentElement.getAttribute('data-theme')==='dark'?'linear-gradient(135deg,#e87d6a,#d4604e)':'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
+              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:document.documentElement.getAttribute('data-theme')==='dark'?18:2, transition:'left .2s', boxShadow:'0 1px 3px rgba(0,0,0,.2)' }}/>
+            </div>
+          </button>
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
           <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#c05040', textAlign:'left', transition:'background .1s' }}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
@@ -2407,7 +2515,7 @@ function PipelinePage({ user, toast, debriefs }) {
       </div>
 
       {/* KPIs */}
-      <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:14 }}>
+      <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
         {[
           { label:'CA Signé',   value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
           { label:'Pipeline',   value:`${totalPipe.toLocaleString('fr-FR')} €`,  icon:'🔮', bg:'rgba(253,232,228,.6)', c:'#e87d6a' },
@@ -2563,10 +2671,10 @@ export default function App() {
   const isHOS = user?.role === 'head_of_sales';
   const navItems = [
     { key:'Dashboard', label:'Dashboard', icon:'⊞' },
-    { key:'NewDebrief', label:'Nouveau',  icon:'+' },
-    { key:'History',    label:'Historique', icon:'🕐' },
-    { key:'Pipeline', label:'Pipeline', icon:'🎯' },
-    ...(isHOS ? [{ key:'HOSPage', label:'HOS', icon:'👑' }] : []),
+    { key:'Pipeline',  label:'Pipeline',  icon:'🎯' },
+    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'👥' }] : []),
+    { key:'NewDebrief', label:'Debrief',  icon:'📞' },
+    { key:'History',   label:'Historique', icon:'🕐' },
   ];
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
@@ -2592,7 +2700,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)`, fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:`var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))`, fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
@@ -2601,6 +2709,35 @@ export default function App() {
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
         ::-webkit-scrollbar-track{background:transparent}
+
+        /* ── Dark mode ── */
+        :root { color-scheme: light; }
+        [data-theme='dark'] {
+          --bg: linear-gradient(160deg,#1a1410 0%,#0f1a22 100%);
+          --card: #1e1a16;
+          --input: #2a2218;
+          --txt: #e8d8c8;
+          --txt2: #a89080;
+          --txt3: #705848;
+          --border: rgba(232,125,106,.15);
+          --sh-card: 5px 5px 15px rgba(0,0,0,.35), -2px -2px 8px rgba(255,255,255,.04);
+          --sh-sm: 3px 3px 8px rgba(0,0,0,.3), -1px -1px 5px rgba(255,255,255,.03);
+          --sh-in: inset 2px 2px 6px rgba(0,0,0,.3), inset -1px -1px 4px rgba(255,255,255,.04);
+          --sidebar: #1a1510;
+        }
+        [data-theme='light'] {
+          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
+          --card: #ffffff;
+          --input: #f5ede6;
+          --txt: #5a4a3a;
+          --txt2: #b09080;
+          --txt3: #c8b8a8;
+          --border: rgba(232,125,106,.1);
+          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
+          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
+          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
+          --sidebar: rgba(255,248,244,.97);
+        }
       `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
@@ -2609,7 +2746,7 @@ export default function App() {
 
       {mob ? (
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar, rgba(255,248,244,.97))', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
@@ -2621,7 +2758,7 @@ export default function App() {
           <main style={{ padding:'16px 14px 90px' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'var(--sidebar, rgba(255,248,244,.97))', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
@@ -2632,7 +2769,7 @@ export default function App() {
         </>
       ) : (
         <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar, rgba(255,248,244,.97))', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
@@ -2657,7 +2794,7 @@ export default function App() {
               <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
             </div>
           </aside>
-          <main style={{ flex:1, minWidth:0, padding:'32px 36px', overflowX:'hidden' }}>
+          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
         </div>
