@@ -65,6 +65,7 @@ function useBreakpoint() {
 
 
 
+const P  = '#e87d6a';   // primaire corail
 const P2 = '#d4604e';   // primaire foncé
 const A  = '#6aacce';   // accent bleu ciel
 const BG = 'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)';
