@@ -65,27 +65,6 @@ function useBreakpoint() {
 
 
 
-// ─── DARK MODE ────────────────────────────────────────────────────────────────
-function useDarkMode() {
-  const [dark, setDark] = React.useState(() => {
-    const saved = localStorage.getItem('cd_dark');
-    return saved === '1'; // défaut = light
-  });
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    localStorage.setItem('cd_dark', dark ? '1' : '0');
-  }, [dark]);
-  // Initialiser immédiatement au chargement
-  React.useEffect(() => {
-    const saved = localStorage.getItem('cd_dark');
-    document.documentElement.setAttribute('data-theme', saved === '1' ? 'dark' : 'light');
-  }, []);
-  return [dark, setDark];
-}
-
-// ─── DESIGN SYSTEM — Soft Pastel 3D ─────────────────────────────────────────
-// Couleurs
-const P  = '#e87d6a';   // primaire corail
 const P2 = '#d4604e';   // primaire foncé
 const A  = '#6aacce';   // accent bleu ciel
 const BG = 'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)';
@@ -121,11 +100,11 @@ const DS = {
 };
 
 // ─── HELPERS STYLE ────────────────────────────────────────────────────────────
-const card = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
-const cardSm = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:SH_SM, ...extra });
-const inp = (extra={}) => ({ width:'100%', background:'var(--input,#f5ede6)', border:'1px solid rgba(232,125,106,.15)',
+const card = (extra={}) => ({ background:'#ffffff', borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
+const cardSm = (extra={}) => ({ background:'#ffffff', borderRadius:R_MD, boxShadow:SH_SM, ...extra });
+const inp = (extra={}) => ({ width:'100%', background:'#f5ede6', border:'1px solid rgba(232,125,106,.15)',
   borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit',
-  outline:'none', boxSizing:'border-box', color:'var(--txt,#5a4a3a)', boxShadow:SH_IN, ...extra
+  outline:'none', boxSizing:'border-box', color:'#5a4a3a', boxShadow:SH_IN, ...extra
 });
 
 // ─── SCORES ───────────────────────────────────────────────────────────────────
@@ -298,9 +277,9 @@ function Textarea({ placeholder, value, onChange, rows=3 }) {
 
 const BTN = {
   primary:   { background:`linear-gradient(135deg,${P},${P2})`, color:'white', border:'none', boxShadow:SH_BTN },
-  secondary: { background:WHITE, color:'var(--txt,#5a4a3a)', border:'none', boxShadow:SH_SM },
+  secondary: { background:WHITE, color:'#5a4a3a', border:'none', boxShadow:SH_SM },
   danger:    { background:'rgba(253,232,228,.8)', color:'#c05040', border:'1px solid rgba(192,80,64,.3)', boxShadow:'none' },
-  ghost:     { background:'transparent', color:'var(--txt2,#b09080)', border:'none', boxShadow:'none' },
+  ghost:     { background:'transparent', color:'#b09080', border:'none', boxShadow:'none' },
   green:     { background:'rgba(218,240,216,.8)', color:'#5a9858', border:'1px solid rgba(90,152,88,.3)', boxShadow:'none' },
 };
 function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
@@ -316,7 +295,7 @@ function Btn({ children, onClick, type='button', variant='primary', disabled, st
 
 function AlertBox({ type, message }) {
   if (!message) return null;
-  const s = { error:{bg:DS.dangerBg,b:DS.dangerBorder,c:DS.danger}, success:{bg:DS.successBg,b:DS.successBorder,c:DS.success}, info:{bg:DS.infoBg,b:DS.infoBorder,c:DS.info} }[type||'info'];
+  const s = { error:{bg:'rgba(253,232,228,.8)',b:'rgba(192,80,64,.3)',c:'#c05040'}, success:{bg:'rgba(218,240,216,.8)',b:'rgba(90,152,88,.3)',c:'#5a9858'}, info:{bg:'rgba(218,237,245,.8)',b:'rgba(58,122,154,.3)',c:'#3a7a9a'} }[type||'info'];
   return <div style={{ background:s.bg, border:`1px solid ${s.b}`, color:s.c, padding:'12px 14px', borderRadius:R_SM, fontSize:14, marginBottom:16 }}>{message}</div>;
 }
 
@@ -329,8 +308,8 @@ function Empty({ icon, title, subtitle, action }) {
   return (
     <div style={{ ...card(), padding:'40px 24px', textAlign:'center' }}>
       <div style={{ fontSize:40, marginBottom:12 }}>{icon}</div>
-      <p style={{ fontWeight:700, fontSize:16, color:'var(--txt,#5a4a3a)', margin:'0 0 6px' }}>{title}</p>
-      <p style={{ color:'var(--txt3,#c8b8a8)', fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
+      <p style={{ fontWeight:700, fontSize:16, color:'#5a4a3a', margin:'0 0 6px' }}>{title}</p>
+      <p style={{ color:'#c8b8a8', fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
       {action}
     </div>
   );
@@ -346,8 +325,8 @@ function Modal({ title, onClose, children }) {
       onClick={e => e.target===e.currentTarget && onClose()}>
       <div style={{ background:WHITE, borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(174,130,100,.2)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontSize:17, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--txt3,#c8b8a8)', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+          <h2 style={{ fontSize:17, fontWeight:700, color:'#5a4a3a', margin:0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
         {children}
       </div>
@@ -445,7 +424,7 @@ function SectionBars({ scores, globalScores }) {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
               <span style={{ fontSize:13, fontWeight:600, color:'#5a4a3a' }}>{LABELS[key]}</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                {globalScores && <span style={{ fontSize:11, color:DS.textMuted }}>{glob}/5 global</span>}
+                {globalScores && <span style={{ fontSize:11, color:'#c8b8a8' }}>{glob}/5 global</span>}
                 <span style={{ fontSize:13, fontWeight:700, padding:'2px 8px', borderRadius:6, border:'1px solid rgba(232,125,106,.12)', color:col(val) }}>{val}/5</span>
                 {diff !== null && diff !== 0 && <span style={{ fontSize:11, fontWeight:600, color:diff>0?'#059669':'#ef4444' }}>{diff>0?'+':''}{diff}</span>}
               </div>
@@ -457,7 +436,7 @@ function SectionBars({ scores, globalScores }) {
           </div>
         );
       })}
-      {globalScores && <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>— trait gris = moyenne globale</p>}
+      {globalScores && <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>— trait gris = moyenne globale</p>}
     </div>
   );
 }
@@ -486,7 +465,7 @@ function GamCard({ gam }) {
             <span>{level.next - points} pts avant {computeLevel(level.next).name}</span>
           </div>
           <div style={{ height:8, background:'rgba(255,255,255,.2)', borderRadius:4 }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:DS.bgCard, borderRadius:4, transition:'width .7s' }}/>
+            <div style={{ height:'100%', width:`${pct}%`, background:'#ffffff', borderRadius:4, transition:'width .7s' }}/>
           </div>
         </div>
       )}
@@ -522,11 +501,11 @@ function Leaderboard({ refreshKey }) {
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</p>
-            <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs</p>
+            <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs</p>
           </div>
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <p style={{ fontWeight:700, fontSize:14, color:'#e87d6a', margin:0 }}>{c.points} pts</p>
-            <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{c.avgScore}%</p>
+            <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{c.avgScore}%</p>
           </div>
         </div>
       ))}
@@ -572,7 +551,7 @@ function Chart({ debriefs }) {
     .sort((a,b) => new Date(a.call_date||a.date) - new Date(b.call_date||b.date))
     .map(d => ({ date:fmtShort(d.call_date||d.date), score:Math.round(d.percentage||d.score||0), prospect:d.prospect_name||d.prospect||'' }));
   if (!data.length) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:200, color:DS.textMuted, fontSize:14 }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:200, color:'#c8b8a8', fontSize:14 }}>
       Aucune donnée — créez votre premier debrief !
     </div>
   );
@@ -747,14 +726,14 @@ function S5({ data={}, onChange, notes, onNotes }) {
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({ subtitle, icon, children }) {
   return (
-    <div style={{ minHeight:'100vh', background:"var(--bg, linear-gradient(160deg,#f5ede6,#e8f0f5))", display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <div style={{ minHeight:'100vh', background:"linear-gradient(160deg,#f5ede6,#e8f0f5)", display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ width:'100%', maxWidth:460 }}>
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:SH_BTN }}>
             {icon}
           </div>
-          <h1 style={{ fontSize:24, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>CloserDebrief</h1>
-          <p style={{ color:'var(--txt2,#b09080)', fontSize:14, marginTop:6 }}>{subtitle}</p>
+          <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>CloserDebrief</h1>
+          <p style={{ color:'#b09080', fontSize:14, marginTop:6 }}>{subtitle}</p>
         </div>
         <div style={{ ...card(), padding:28 }}>{children}</div>
       </div>
@@ -806,7 +785,7 @@ function RegisterPage({ onLogin, goLogin }) {
           {[{value:'closer',label:'🎯 Closer',desc:'Je fais des appels'},{value:'head_of_sales',label:'👑 Head of Sales',desc:'Je gère une équipe'}].map(({value,label,desc})=>(
             <button key={value} type="button" onClick={()=>setF({...f,role:value})} style={{padding:'12px 14px',borderRadius:10,border:`2px solid ${f.role===value?'#e87d6a':'#e2e8f0'}`,background:f.role===value?'rgba(255,248,245,.8)':'white',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}>
               <p style={{fontWeight:600,fontSize:13,color:f.role===value?'#4c1d95':'#374151',margin:0}}>{label}</p>
-              <p style={{fontSize:11,color:DS.textMuted,margin:'2px 0 0'}}>{desc}</p>
+              <p style={{fontSize:11,color:'#c8b8a8',margin:'2px 0 0'}}>{desc}</p>
             </button>
           ))}
         </div>
@@ -819,7 +798,7 @@ function RegisterPage({ onLogin, goLogin }) {
           <div style={{marginBottom:14}}>
             <label style={{display:'block',fontSize:13,fontWeight:600,color:'#5a4a3a',marginBottom:6}}>🔑 Code d'invitation</label>
             <Input placeholder="Ex: ABC12345" value={f.invite_code} onChange={e=>setF({...f,invite_code:e.target.value.toUpperCase()})} required/>
-            <p style={{fontSize:12,color:DS.textMuted,marginTop:4}}>Demandez ce code à votre Head of Sales</p>
+            <p style={{fontSize:12,color:'#c8b8a8',marginTop:4}}>Demandez ce code à votre Head of Sales</p>
           </div>
         )}
         <Btn type="submit" disabled={loading} style={{width:'100%',marginTop:8}}>{loading?'Création...':'Créer mon compte'}</Btn>
@@ -903,7 +882,7 @@ function AccountSettings({ user, onClose, toast }) {
               </span>
             </div>
           </div>
-          <p style={{fontSize:13,color:DS.textMuted,textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
+          <p style={{fontSize:13,color:'#c8b8a8',textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
         </div>
       )}
       {tab==='securite'&&(
@@ -928,10 +907,10 @@ function DebriefCard({ debrief, onClick, showUser }) {
   const pct = Math.round(debrief.percentage || 0);
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{ background:DS.bgCard, border:`1px solid ${hov?'rgba(232,125,106,.2)':'rgba(255,255,255,.9)'}`, borderRadius:DS.radiusLg, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+      style={{ background:'#ffffff', border:`1px solid ${hov?'rgba(232,125,106,.2)':'rgba(255,255,255,.9)'}`, borderRadius:18, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{debrief.prospect_name}</p>
-        <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:DS.textMuted, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'#c8b8a8', flexWrap:'wrap' }}>
           <span>📅 {fmtDate(debrief.call_date)}</span>
           <span>👤 {debrief.closer_name}</span>
           {showUser&&debrief.user_name&&<span style={{background:'rgba(253,232,228,.2)',padding:'1px 6px',borderRadius:4}}>par {debrief.user_name}</span>}
@@ -957,7 +936,7 @@ function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, o
         <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.85)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:14, color:'#e87d6a', flexShrink:0 }}>{member.name.charAt(0)}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</p>
-          <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{member.level.icon} {member.level.name} · {member.totalDebriefs} debriefs · {member.avgScore}%</p>
+          <p style={{ fontSize:12, color:'#c8b8a8', margin:0 }}>{member.level.icon} {member.level.name} · {member.totalDebriefs} debriefs · {member.avgScore}%</p>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
           {!mob && otherTeams.length > 0 && (
@@ -985,7 +964,7 @@ function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, o
           )}
           {member.chartData.length > 0
             ? <><p style={{fontSize:13,fontWeight:600,color:'#5a4a3a',marginBottom:10}}>📈 Évolution</p><Chart debriefs={member.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>
-            : <p style={{color:DS.textMuted,fontSize:13,textAlign:'center',padding:'16px 0'}}>Aucun debrief enregistré</p>
+            : <p style={{color:'#c8b8a8',fontSize:13,textAlign:'center',padding:'16px 0'}}>Aucun debrief enregistré</p>
           }
           {member.badges.length > 0 && <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:10}}>{member.badges.map(b=><span key={b.id} style={{background:'rgba(255,245,242,.85)',color:'#5a4a3a',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
         </div>
@@ -1008,7 +987,7 @@ function TeamCard({ team, allDebriefs, onClick }) {
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16, marginTop:4 }}>
         <div>
           <h3 style={{ fontSize:17, fontWeight:700, color:'#5a4a3a', margin:'0 0 4px' }}>{team.name}</h3>
-          <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{team.members.length} membre{team.members.length!==1?'s':''} · {td.length} debrief{td.length!==1?'s':''}</p>
+          <p style={{ fontSize:12, color:'#c8b8a8', margin:0 }}>{team.members.length} membre{team.members.length!==1?'s':''} · {td.length} debrief{td.length!==1?'s':''}</p>
         </div>
         <span style={{ fontSize:20, color:hov?'#e87d6a':'#d1d5db', transition:'color .2s' }}>→</span>
       </div>
@@ -1018,7 +997,7 @@ function TeamCard({ team, allDebriefs, onClick }) {
           { l:'Taux',       v:`${rate}%`,  c:rate>=40?'#059669':'#d97706' },
         ].map(({ l, v, c }) => (
           <div key={l} style={{ background:'rgba(253,232,228,.2)', borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
-            <p style={{ fontSize:10, color:DS.textMuted, margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'.04em' }}>{l}</p>
+            <p style={{ fontSize:10, color:'#c8b8a8', margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'.04em' }}>{l}</p>
             <p style={{ fontWeight:700, fontSize:15, color:c, margin:0 }}>{v}</p>
           </div>
         ))}
@@ -1146,7 +1125,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
           <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>👑 Head of Sales</h1>
           <p style={{ color:'#6b7280', fontSize:13, marginTop:4 }}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p>
         </div>
-        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusMd }}>
+        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:14 }}>
           {[{key:'dashboard',label:'📊'},{key:'equipes',label:'👥'}].map(({key,label})=>(
             <button key={key} onClick={()=>setTab(key)} style={{ padding:'8px 16px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .2s', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', boxShadow:tab===key?'0 1px 4px rgba(0,0,0,.08)':'none', fontFamily:'inherit' }}>
               {label}{!mob&&<span> {key==='dashboard'?'Dashboard':'Équipes'}</span>}
@@ -1206,7 +1185,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
               {scopedSS && fTotal > 0 && (
                 <Card style={{ padding:20 }}>
                   <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse par section</h3>
-                  <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 20px' }}>{scopeLabel}{scope!=='all'?' · vs moyenne globale':''}</p>
+                  <p style={{ fontSize:12, color:'#c8b8a8', margin:'0 0 20px' }}>{scopeLabel}{scope!=='all'?' · vs moyenne globale':''}</p>
                   <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:24, alignItems:'center' }}>
                     <div style={{ display:'flex', justifyContent:'center' }}>
                       <Radar scores={scopedSS} color={scope.startsWith('closer:')?'#8b5cf6':scope.startsWith('team:')?'#059669':'#e87d6a'}/>
@@ -1220,7 +1199,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
               {fTotal > 0 && (
                 <Card style={{ padding:20 }}>
                   <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Évolution du score</h3>
-                  <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 16px' }}>{scopeLabel} · {fTotal} appel{fTotal!==1?'s':''}</p>
+                  <p style={{ fontSize:12, color:'#c8b8a8', margin:'0 0 16px' }}>{scopeLabel} · {fTotal} appel{fTotal!==1?'s':''}</p>
                   <Chart debriefs={scopedDebriefs}/>
                 </Card>
               )}
@@ -1249,11 +1228,11 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                 <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.85)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:14, color:'#e87d6a', flexShrink:0 }}>{m.name.charAt(0)}</div>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.name}</p>
-                                  <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{mTeam?.name} · {m.avgScore}%</p>
+                                  <p style={{ fontSize:12, color:'#c8b8a8', margin:0 }}>{mTeam?.name} · {m.avgScore}%</p>
                                 </div>
                                 <div style={{ textAlign:'right', flexShrink:0 }}>
                                   <p style={{ fontWeight:700, fontSize:14, color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':'#ef4444', margin:0 }}>{m.avgScore}%</p>
-                                  <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{m.totalDebriefs} debriefs</p>
+                                  <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{m.totalDebriefs} debriefs</p>
                                 </div>
                                 <span style={{ color:isSel?'#e87d6a':'#d1d5db', fontSize:14 }}>{isSel?'▲':'▼'}</span>
                               </div>
@@ -1262,7 +1241,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                   <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:14 }}>
                                     {[{l:'Debriefs',v:m.totalDebriefs},{l:'Closings',v:m.closed},{l:'Taux',v:`${cr}%`}].map(({l,v})=>(
                                       <div key={l} style={{ background:'#ffffff', borderRadius:8, padding:'8px 10px', textAlign:'center', border:'1px solid rgba(232,125,106,.12)' }}>
-                                        <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{l}</p>
+                                        <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{l}</p>
                                         <p style={{ fontWeight:700, color:'#5a4a3a', margin:0, fontSize:14 }}>{v}</p>
                                       </div>
                                     ))}
@@ -1306,7 +1285,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                     <td style={{ padding:'10px 12px' }}><span style={{ fontWeight:700, fontSize:13, color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':'#ef4444' }}>{m.avgScore}%</span></td>
                                     {ms ? ['decouverte','reformulation','projection','presentation_offre','closing'].map(k=>(
                                       <td key={k} style={{ padding:'10px 12px' }}><span style={{ fontWeight:700, fontSize:12, color:sc(ms[k]) }}>{ms[k]}/5</span></td>
-                                    )) : [...Array(5)].map((_,j)=><td key={j} style={{ padding:'10px 12px', color:DS.textMuted, fontSize:12 }}>—</td>)}
+                                    )) : [...Array(5)].map((_,j)=><td key={j} style={{ padding:'10px 12px', color:'#c8b8a8', fontSize:12 }}>—</td>)}
                                     <td style={{ padding:'10px 12px', fontSize:13, fontWeight:600, color:'#059669' }}>{m.closed}</td>
                                     <td style={{ padding:'10px 12px' }}>
                                       <div style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -1323,11 +1302,11 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                                         <div style={{ padding:'20px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
                                           <div>
                                             <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Scores par section</p>
-                                            {ms ? <SectionBars scores={ms} globalScores={globalSS}/> : <p style={{ color:DS.textMuted, fontSize:13 }}>Pas assez de données</p>}
+                                            {ms ? <SectionBars scores={ms} globalScores={globalSS}/> : <p style={{ color:'#c8b8a8', fontSize:13 }}>Pas assez de données</p>}
                                           </div>
                                           <div>
                                             <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>Évolution</p>
-                                            {m.chartData.length > 0 ? <Chart debriefs={m.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/> : <p style={{ color:DS.textMuted, fontSize:13 }}>Aucun debrief</p>}
+                                            {m.chartData.length > 0 ? <Chart debriefs={m.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/> : <p style={{ color:'#c8b8a8', fontSize:13 }}>Aucun debrief</p>}
                                           </div>
                                         </div>
                                       </td>
@@ -1388,7 +1367,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                   ) : (
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <h1 style={{ fontSize:20, fontWeight:700, color:'#5a4a3a', margin:0 }}>{team.name}</h1>
-                      <button onClick={()=>setEditingTeam({id:team.id,name:team.name})} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:DS.textMuted, padding:'2px 4px' }}>✏️</button>
+                      <button onClick={()=>setEditingTeam({id:team.id,name:team.name})} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#c8b8a8', padding:'2px 4px' }}>✏️</button>
                     </div>
                   )}
                   <p style={{ color:'#6b7280', fontSize:13, marginTop:2 }}>{team.members.length} membre{team.members.length!==1?'s':''} · {td.length} debrief{td.length!==1?'s':''}</p>
@@ -1414,7 +1393,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
             <Card style={{ padding:20 }}>
               <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 12px' }}>🔑 Codes d'invitation actifs</h3>
               {team.inviteCodes.length === 0
-                ? <p style={{ color:DS.textMuted, fontSize:13, margin:0 }}>Aucun code actif — cliquez sur "Générer un code" ci-dessus</p>
+                ? <p style={{ color:'#c8b8a8', fontSize:13, margin:0 }}>Aucun code actif — cliquez sur "Générer un code" ci-dessus</p>
                 : <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {team.inviteCodes.map(inv => (
                       <div key={inv.id} style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(253,232,228,.2)', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'8px 12px' }}>
@@ -1431,7 +1410,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
             {tSS && td.length > 0 && (
               <Card style={{ padding:20 }}>
                 <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse par section — {team.name}</h3>
-                <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 20px' }}>Score moyen · comparé à la moyenne globale</p>
+                <p style={{ fontSize:12, color:'#c8b8a8', margin:'0 0 20px' }}>Score moyen · comparé à la moyenne globale</p>
                 <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:24, alignItems:'center' }}>
                   <div style={{ display:'flex', justifyContent:'center' }}><Radar scores={tSS} color="#059669"/></div>
                   <SectionBars scores={tSS} globalScores={globalSS}/>
@@ -1445,7 +1424,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
                 <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Membres ({team.members.length})</h3>
               </div>
               {team.members.length === 0
-                ? <div style={{ padding:'32px 16px', textAlign:'center', color:DS.textMuted, fontSize:13 }}>Aucun membre — partagez un code d'invitation !</div>
+                ? <div style={{ padding:'32px 16px', textAlign:'center', color:'#c8b8a8', fontSize:13 }}>Aucun membre — partagez un code d'invitation !</div>
                 : team.members.map((m,i) => (
                     <div key={m.id} style={{ borderBottom:i<team.members.length-1?'1px solid rgba(232,125,106,.08)':'none' }}>
                       <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(mid,tid)=>moveMember(mid,tid)} selected={selMember===m.id} onSelect={()=>setSelMember(selMember===m.id?null:m.id)} onObjectives={()=>setObjectiveTarget(m)} onActionPlans={()=>setSelMember(selMember===m.id?null:m.id)}/>
@@ -1502,7 +1481,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       <StatsRow debriefs={debriefs}/>
       <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
         <Card style={{ padding:20 }}>
-          <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>
+          <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Évolution du score</h2>
           <Chart debriefs={debriefs}/>
         </Card>
         <Leaderboard refreshKey={lbKey}/>
@@ -1511,7 +1490,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
     {/* Mini Pipeline */}
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-        <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
+        <h2 style={{ fontSize:16, fontWeight:700, color:'#5a4a3a', margin:0 }}>🎯 Pipeline</h2>
       </div>
       <MiniPipeline navigate={navigate}/>
     </div>
@@ -1567,7 +1546,7 @@ function MiniPipeline({ navigate }) {
           { label:'En retard', value:late,                                    color:late>0?'#c05040':'#c8b8a8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...cardSm(), padding:'12px 14px' }}>
-            <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
+            <p style={{ fontSize:10, color:'#c8b8a8', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
             <p style={{ fontSize:18, fontWeight:700, color, margin:0 }}>{value}</p>
           </div>
         ))}
@@ -1588,7 +1567,7 @@ function MiniPipeline({ navigate }) {
                   </div>
                   {cols.slice(0,3).map(d => (
                     <div key={d.id} style={{ ...cardSm(), padding:'8px 10px' }}>
-                      <p style={{ fontWeight:600, fontSize:12, color:'var(--txt,#5a4a3a)', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
+                      <p style={{ fontWeight:600, fontSize:12, color:'#5a4a3a', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
                       {d.value>0 && <p style={{ fontSize:11, color:'#5a9858', fontWeight:700, margin:0 }}>{d.value.toLocaleString('fr-FR')} €</p>}
                     </div>
                   ))}
@@ -1617,12 +1596,12 @@ function History({ debriefs, navigate, user }) {
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div>
         <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>Historique</h1>
-        <p style={{ color:DS.textMuted, fontSize:13, marginTop:4 }}>{debriefs.length} debrief{debriefs.length!==1?'s':''}</p>
+        <p style={{ color:'#c8b8a8', fontSize:13, marginTop:4 }}>{debriefs.length} debrief{debriefs.length!==1?'s':''}</p>
       </div>
       <div style={{ position:'relative' }}>
-        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:DS.textMuted, pointerEvents:'none' }}>🔍</span>
+        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#c8b8a8', pointerEvents:'none' }}>🔍</span>
         <input placeholder="Rechercher..." value={q} onChange={e=>setQ(e.target.value)} style={{ width:'100%', padding:'12px 36px', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
-        {q && <button onClick={()=>setQ('')} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:18 }}>✕</button>}
+        {q && <button onClick={()=>setQ('')} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:18 }}>✕</button>}
       </div>
       {filtered.length===0
         ? <Empty icon="🔍" title="Aucun résultat" subtitle={q?`Aucun debrief pour "${q}"`:'Aucun debrief'} action={q?<Btn variant="secondary" onClick={()=>setQ('')}>Effacer</Btn>:null}/>
@@ -1636,7 +1615,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
   const mob = useIsMobile();
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
-      <p style={{ color:DS.textMuted }}>Debrief introuvable</p>
+      <p style={{ color:'#c8b8a8' }}>Debrief introuvable</p>
       <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{ marginTop:16 }}>Retour</Btn>
     </div>
   );
@@ -1650,7 +1629,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
           <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
           <div>
             <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>{debrief.prospect_name}</h1>
-            <div style={{ display:'flex', gap:12, fontSize:12, color:DS.textMuted, marginTop:4, flexWrap:'wrap' }}>
+            <div style={{ display:'flex', gap:12, fontSize:12, color:'#c8b8a8', marginTop:4, flexWrap:'wrap' }}>
               <span>📅 {fmtDate(debrief.call_date)}</span>
               <span>👤 {debrief.closer_name}</span>
               {debrief.user_name && <span>par {debrief.user_name}</span>}
@@ -1668,7 +1647,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
         <>
           <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
             <ScoreGauge percentage={pct}/>
-            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
+            <p style={{ fontSize:13, color:'#c8b8a8', margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
             <Radar scores={scores}/>
           </Card>
           <Card style={{ padding:20 }}>
@@ -1695,7 +1674,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
         <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap:20, alignItems:'start' }}>
           <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
             <ScoreGauge percentage={pct}/>
-            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
+            <p style={{ fontSize:13, color:'#c8b8a8', margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
             <Radar scores={scores}/>
           </Card>
           <Card style={{ padding:24 }}>
@@ -1768,7 +1747,7 @@ function NewDebrief({ navigate, onSave, toast }) {
         <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
         <div>
           <h1 style={{ fontSize:20, fontWeight:700, color:'#5a4a3a', margin:0 }}>Nouveau debrief</h1>
-          <p style={{ color:DS.textMuted, fontSize:13, marginTop:2 }}>Évaluez votre dernier appel</p>
+          <p style={{ color:'#c8b8a8', fontSize:13, marginTop:2 }}>Évaluez votre dernier appel</p>
         </div>
       </div>
 
@@ -1826,7 +1805,7 @@ function NewDebrief({ navigate, onSave, toast }) {
               <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Score en direct</h3>
                 <ScoreGauge percentage={percentage}/>
-                <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{total} / {max} points</p>
+                <p style={{ fontSize:13, color:'#c8b8a8', margin:0 }}>{total} / {max} points</p>
                 {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed}/>}
                 <Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</Btn>
               </Card>
@@ -1862,8 +1841,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
         </div>
         {(sidebar || !useIsMobile()) && <>
           <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
-            <p style={{ fontSize:13, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
-            <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
+            <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
+            <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
           </div>
           {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
           <span style={{ fontSize:10, color:TXT3 }}>{open?'▲':'▼'}</span>
@@ -1884,8 +1863,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
                 {user.name?.charAt(0)}
               </div>
               <div>
-                <p style={{ fontWeight:600, fontSize:13, color:'var(--txt,#5a4a3a)', margin:0 }}>{user.name}</p>
-                <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{user.email}</p>
+                <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0 }}>{user.name}</p>
+                <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{user.email}</p>
               </div>
             </div>
             {gam && (
@@ -1900,24 +1879,12 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
             { icon:'⚙️', label:'Paramètres du compte', action:()=>{ onSettings(); setOpen(false); } },
             { icon:'🔔', label:'Notifications',         action:()=>{ toast('Bientôt disponible !','info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
-            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', textAlign:'left', transition:'background .1s' }}
+            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#5a4a3a', textAlign:'left', transition:'background .1s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>{icon}</span>{label}
             </button>
           ))}
-          <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
-          <button onClick={()=>{ const d=document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'light':'dark'); localStorage.setItem('cd_dark',d?'0':'1'); }} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', transition:'background .1s' }}
-            onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.1)'}
-            onMouseLeave={e=>e.currentTarget.style.background='none'}>
-            <span style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <span style={{ fontSize:16, width:20, textAlign:'center' }}>🌙</span>
-              Mode nuit
-            </span>
-            <div style={{ width:36, height:20, borderRadius:10, background:document.documentElement.getAttribute('data-theme')==='dark'?'linear-gradient(135deg,#e87d6a,#d4604e)':'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
-              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:document.documentElement.getAttribute('data-theme')==='dark'?18:2, transition:'left .2s', boxShadow:'0 1px 3px rgba(0,0,0,.2)' }}/>
-            </div>
-          </button>
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
           <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#c05040', textAlign:'left', transition:'background .1s' }}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
@@ -2016,7 +1983,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
 
   return (
     <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
-      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusSm, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:10, marginBottom:20 }}>
         {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
           <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
@@ -2034,7 +2001,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
           </div>
         ))}
       </div>
-      <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 16px' }}>Laissez 0 pour ne pas suivre un indicateur.</p>
+      <p style={{ fontSize:12, color:'#c8b8a8', margin:'0 0 16px' }}>Laissez 0 pour ne pas suivre un indicateur.</p>
       <div style={{ display:'flex', gap:10 }}>
         <Btn onClick={save} disabled={saving} style={{ flex:1 }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Btn>
         <Btn variant="secondary" onClick={onClose} style={{ flex:1 }}>Annuler</Btn>
@@ -2093,7 +2060,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
       <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
           <h3 style={{ fontSize:14, fontWeight:700, color:'#5a4a3a', margin:0 }}>📌 Plan d'action</h3>
-          <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{active.length}/3 axe{active.length!==1?'s':''} actif{active.length!==1?'s':''}</p>
+          <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{active.length}/3 axe{active.length!==1?'s':''} actif{active.length!==1?'s':''}</p>
         </div>
         {isHOS && active.length < 3 && (
           <Btn onClick={()=>setShowAdd(true)} style={{ fontSize:12, padding:'6px 12px' }}>+ Ajouter</Btn>
@@ -2105,18 +2072,18 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
       ) : (
         <div style={{ padding:16, display:'flex', flexDirection:'column', gap:10 }}>
           {active.length === 0 && !showAdd && (
-            <p style={{ color:DS.textMuted, fontSize:13, textAlign:'center', padding:'12px 0' }}>
+            <p style={{ color:'#c8b8a8', fontSize:13, textAlign:'center', padding:'12px 0' }}>
               {isHOS ? 'Aucun axe actif. Cliquez "+ Ajouter" pour en définir un.' : "Aucun axe de travail défini pour l'instant."}
             </p>
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:10, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#e87d6a', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:'0 0 2px' }}>{plan.axis}</p>
                 {plan.description && <p style={{ fontSize:12, color:'#6b7280', margin:0 }}>{plan.description}</p>}
-                <p style={{ fontSize:11, color:DS.textMuted, margin:'4px 0 0' }}>
+                <p style={{ fontSize:11, color:'#c8b8a8', margin:'4px 0 0' }}>
                   Ajouté le {fmtDate(plan.created_at)}
                 </p>
               </div>
@@ -2128,7 +2095,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           ))}
 
           {showAdd && (
-            <div style={{ padding:'14px', background:DS.bgCard, borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ padding:'14px', background:'#ffffff', borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
               <Input placeholder="Axe de travail (ex: Améliorer le closing)" value={form.axis} onChange={e=>setForm({...form,axis:e.target.value})} autoFocus/>
               <Textarea placeholder="Description (optionnel)" rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
               <div style={{ display:'flex', gap:8 }}>
@@ -2140,12 +2107,12 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
 
           {resolved.length > 0 && (
             <div style={{ marginTop:4 }}>
-              <p style={{ fontSize:11, color:DS.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginBottom:8 }}>Récemment résolus</p>
+              <p style={{ fontSize:11, color:'#c8b8a8', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginBottom:8 }}>Récemment résolus</p>
               {resolved.map(plan => (
                 <div key={plan.id} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, alignItems:'center', opacity:.65 }}>
                   <span style={{ color:'#059669', fontSize:12 }}>✓</span>
                   <span style={{ fontSize:12, color:'#6b7280', textDecoration:'line-through', flex:1 }}>{plan.axis}</span>
-                  <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(plan.resolved_at)}</span>
+                  <span style={{ fontSize:11, color:'#c8b8a8' }}>{fmtDate(plan.resolved_at)}</span>
                 </div>
               ))}
             </div>
@@ -2195,7 +2162,7 @@ function CommentsSection({ debriefId, user, toast }) {
       </div>
       <div style={{ padding:16, display:'flex', flexDirection:'column', gap:12 }}>
         {loading ? <Spinner size={24}/> : comments.length === 0 ? (
-          <p style={{ color:DS.textMuted, fontSize:13, textAlign:'center', padding:'8px 0' }}>Aucun commentaire</p>
+          <p style={{ color:'#c8b8a8', fontSize:13, textAlign:'center', padding:'8px 0' }}>Aucun commentaire</p>
         ) : comments.map(c => (
           <div key={c.id} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
             <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
@@ -2203,7 +2170,7 @@ function CommentsSection({ debriefId, user, toast }) {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
                 <span style={{ fontWeight:600, fontSize:12, color:'#5a4a3a' }}>{c.author_name}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(c.created_at)}</span>
+                  <span style={{ fontSize:11, color:'#c8b8a8' }}>{fmtDate(c.created_at)}</span>
                   {(c.author_id === user.id || user.role === 'head_of_sales') && (
                     <button onClick={()=>del(c.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:12, padding:0 }}>✕</button>
                   )}
@@ -2293,7 +2260,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
             </div>
             <div style={{ display:'flex', gap:8 }}>
               {!isNew && <button onClick={del} disabled={deleting} style={{ background:'#fee2e2', border:'none', color:'#dc2626', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>🗑 Supprimer</button>}
-              <button onClick={onClose} style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+              <button onClick={onClose} style={{ background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
             </div>
           </div>
           {/* Nom prospect */}
@@ -2365,7 +2332,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 
             {/* Aperçu du debrief lié */}
             {linkedDebrief && (
-              <div style={{ marginTop:12, padding:'14px 16px', background:DS.bgCard, borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
+              <div style={{ marginTop:12, padding:'14px 16px', background:'#ffffff', borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                   <div>
                     <p style={{ fontWeight:700, fontSize:14, color:'#5a4a3a', margin:0 }}>{linkedDebrief.prospect_name}</p>
@@ -2407,7 +2374,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
                 await apiFetch('/zapier/push-deal', {method:'POST', body:{deal_id:deal.id}});
                 toast('Synchronisé avec iClosed !');
               } catch(e){ toast(e.message,'error'); }
-            }} style={{ width:'100%', padding:'10px', borderRadius:DS.radiusFull, background:'white', border:'1px solid rgba(232,125,106,.2)', color:DS.textSecondary, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', boxShadow:DS.shadowSm, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+            }} style={{ width:'100%', padding:'10px', borderRadius:50, background:'white', border:'1px solid rgba(232,125,106,.2)', color:'#b09080', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', boxShadow:SH_SM, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
               <span>🔄</span> Synchroniser avec iClosed
             </button>
           )}
@@ -2444,7 +2411,7 @@ function DealCard({ deal, onOpen, onMove, stages }) {
         <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
         <div ref={ref} style={{ position:'relative' }}>
           <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}}
-            style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
+            style={{ background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
           {showMenu && (
             <div style={{ position:'absolute', right:0, top:'100%', background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
               {stages.filter(s=>s.key!==deal.status).map(s => (
@@ -2469,7 +2436,7 @@ function DealCard({ deal, onOpen, onMove, stages }) {
         )}
         {deal.debrief_id && <span style={{ fontSize:11, color:'#e87d6a', background:'rgba(255,245,242,.85)', padding:'2px 7px', borderRadius:6 }}>📞 debrief</span>}
       </div>
-      {deal.user_name && <p style={{ fontSize:11, color:DS.textMuted, margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
+      {deal.user_name && <p style={{ fontSize:11, color:'#c8b8a8', margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
     </div>
   );
 }
@@ -2708,7 +2675,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:"var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))", fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:"linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)", fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
@@ -2717,48 +2684,6 @@ export default function App() {
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
         ::-webkit-scrollbar-track{background:transparent}
-
-        /* ── Dark mode ── */
-        :root {
-          color-scheme: light;
-          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
-          --card: #ffffff;
-          --input: #f5ede6;
-          --txt: #5a4a3a;
-          --txt2: #b09080;
-          --txt3: #c8b8a8;
-          --border: rgba(232,125,106,.1);
-          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
-          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
-          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
-          --sidebar: rgba(255,248,244,.97);
-        }
-        [data-theme='dark'] {
-          --bg: linear-gradient(160deg,#1a1410 0%,#0f1a22 100%);
-          --card: #1e1a16;
-          --input: #2a2218;
-          --txt: #e8d8c8;
-          --txt2: #a89080;
-          --txt3: #705848;
-          --border: rgba(232,125,106,.15);
-          --sh-card: 5px 5px 15px rgba(0,0,0,.35), -2px -2px 8px rgba(255,255,255,.04);
-          --sh-sm: 3px 3px 8px rgba(0,0,0,.3), -1px -1px 5px rgba(255,255,255,.03);
-          --sh-in: inset 2px 2px 6px rgba(0,0,0,.3), inset -1px -1px 4px rgba(255,255,255,.04);
-          --sidebar: #1a1510;
-        }
-        [data-theme='light'] {
-          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
-          --card: #ffffff;
-          --input: #f5ede6;
-          --txt: #5a4a3a;
-          --txt2: #b09080;
-          --txt3: #c8b8a8;
-          --border: rgba(232,125,106,.1);
-          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
-          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
-          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
-          --sidebar: rgba(255,248,244,.97);
-        }
       `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
@@ -2767,7 +2692,7 @@ export default function App() {
 
       {mob ? (
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar, rgba(255,248,244,.97))', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
@@ -2779,7 +2704,7 @@ export default function App() {
           <main style={{ padding:'16px 14px 90px' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'var(--sidebar, rgba(255,248,244,.97))', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
@@ -2790,7 +2715,7 @@ export default function App() {
         </>
       ) : (
         <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar, rgba(255,248,244,.97))', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
