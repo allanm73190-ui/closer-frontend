@@ -67,11 +67,19 @@ function useBreakpoint() {
 
 // ─── DARK MODE ────────────────────────────────────────────────────────────────
 function useDarkMode() {
-  const [dark, setDark] = React.useState(() => localStorage.getItem('cd_dark') === '1');
+  const [dark, setDark] = React.useState(() => {
+    const saved = localStorage.getItem('cd_dark');
+    return saved === '1'; // défaut = light
+  });
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('cd_dark', dark ? '1' : '0');
   }, [dark]);
+  // Initialiser immédiatement au chargement
+  React.useEffect(() => {
+    const saved = localStorage.getItem('cd_dark');
+    document.documentElement.setAttribute('data-theme', saved === '1' ? 'dark' : 'light');
+  }, []);
   return [dark, setDark];
 }
 
@@ -113,8 +121,8 @@ const DS = {
 };
 
 // ─── HELPERS STYLE ────────────────────────────────────────────────────────────
-const card = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:'var(--sh-card,'+SH_CARD+')', ...extra });
-const cardSm = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:'var(--sh-sm,'+SH_SM+')', ...extra });
+const card = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
+const cardSm = (extra={}) => ({ background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:SH_SM, ...extra });
 const inp = (extra={}) => ({ width:'100%', background:'var(--input,#f5ede6)', border:'1px solid rgba(232,125,106,.15)',
   borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit',
   outline:'none', boxSizing:'border-box', color:'var(--txt,#5a4a3a)', boxShadow:SH_IN, ...extra
@@ -739,7 +747,7 @@ function S5({ data={}, onChange, notes, onNotes }) {
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({ subtitle, icon, children }) {
   return (
-    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#f5ede6,#e8f0f5)`, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <div style={{ minHeight:'100vh', background:"var(--bg, linear-gradient(160deg,#f5ede6,#e8f0f5))", display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ width:'100%', maxWidth:460 }}>
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:SH_BTN }}>
@@ -2700,7 +2708,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:`var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))`, fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:"var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))", fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
@@ -2711,7 +2719,20 @@ export default function App() {
         ::-webkit-scrollbar-track{background:transparent}
 
         /* ── Dark mode ── */
-        :root { color-scheme: light; }
+        :root {
+          color-scheme: light;
+          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
+          --card: #ffffff;
+          --input: #f5ede6;
+          --txt: #5a4a3a;
+          --txt2: #b09080;
+          --txt3: #c8b8a8;
+          --border: rgba(232,125,106,.1);
+          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
+          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
+          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
+          --sidebar: rgba(255,248,244,.97);
+        }
         [data-theme='dark'] {
           --bg: linear-gradient(160deg,#1a1410 0%,#0f1a22 100%);
           --card: #1e1a16;
