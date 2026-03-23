@@ -1468,7 +1468,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
   const isHOS = user.role === 'head_of_sales';
   const mob = useIsMobile();
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
           <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>Tableau de bord</h1>
@@ -1478,13 +1478,19 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       </div>
       {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
-      <StatsRow debriefs={debriefs}/>
-      <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
-        <Card style={{ padding:20 }}>
-          <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Évolution du score</h2>
-          <Chart debriefs={debriefs}/>
-        </Card>
-        <Leaderboard refreshKey={lbKey}/>
+      <div>
+        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📊 Statistiques</p>
+        <StatsRow debriefs={debriefs}/>
+      </div>
+      <div>
+        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📈 Performance</p>
+        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
+          <Card style={{ padding:20 }}>
+            <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Évolution du score</h2>
+            <Chart debriefs={debriefs}/>
+          </Card>
+          <Leaderboard refreshKey={lbKey}/>
+        </div>
       </div>
 
     {/* Mini Pipeline */}
@@ -1496,6 +1502,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
     </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
+        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📋 Derniers debriefs</p>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <h2 style={{ fontSize:16, fontWeight:600, color:'#5a4a3a', margin:0 }}>Derniers debriefs</h2>
           {debriefs.length>5 && <button onClick={()=>navigate('History')} style={{background:'none',border:'none',color:'#e87d6a',fontSize:13,cursor:'pointer'}}>Voir tout ›</button>}
@@ -2269,7 +2276,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
             placeholder="Nom du prospect *"
             value={form.prospect_name}
             onChange={e=>setForm({...form,prospect_name:e.target.value})}
-            style={{ width:'100%', fontSize:20, fontWeight:700, color:'#5a4a3a', border:'none', outline:'none', borderBottom:'2px solid #e2e8f0', paddingBottom:10, marginBottom:16, fontFamily:'inherit', boxSizing:'border-box', background:'transparent' }}
+            style={{ width:'100%', fontSize:20, fontWeight:700, color:'#5a4a3a', border:'none', outline:'none', borderBottom:'2px solid #e2e8f0', paddingBottom:10, marginBottom:16, fontFamily:'inherit', boxSizing:'border-box', background:'#f5ede6' }}
             onFocus={e=>e.target.style.borderBottomColor='#e87d6a'}
             onBlur={e=>e.target.style.borderBottomColor='#e2e8f0'}
           />
@@ -2295,19 +2302,19 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>💶 CA (€)</label>
               <input type="number" placeholder="0" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📅 Relance</label>
               <input type="date" value={form.follow_up_date} onChange={e=>setForm({...form,follow_up_date:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📥 Source</label>
               <input placeholder="LinkedIn, Inbound..." value={form.source} onChange={e=>setForm({...form,source:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
           </div>
@@ -2456,13 +2463,15 @@ function DropColumn({ stage, deals, onOpen, onMove, onDrop }) {
   return (
     <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:8 }}>
       {/* Header colonne */}
-      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between', borderLeft:`3px solid ${stage.color}` }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ fontSize:13 }}>{stage.icon}</span>
+          <span style={{ fontSize:14 }}>{stage.icon}</span>
           <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
-          <span style={{ background:'#ffffff', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{deals.length}</span>
         </div>
-        {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
+          <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:10, minWidth:20, textAlign:'center' }}>{deals.length}</span>
+        </div>
       </div>
 
       {/* Zone de drop */}
@@ -2720,9 +2729,12 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:"linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)", fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
-        *{box-sizing:border-box}
-        html,body,#root{background:linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)!important;min-height:100vh}
+        *{box-sizing:border-box;margin:0;padding:0}
+        html{background:#f5ede6;min-height:100%}
+        body{background:linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);min-height:100vh;min-width:100vw}
+        #root{min-height:100vh;min-width:100vw;background:transparent}
         input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
+        input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(0.5)}
         ::placeholder{color:rgba(180,150,120,.5)!important}
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
@@ -2783,7 +2795,7 @@ export default function App() {
               <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
             </div>
           </aside>
-          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>
+          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
         </div>
