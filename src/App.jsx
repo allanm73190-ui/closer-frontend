@@ -2399,92 +2399,114 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
   );
 }
 
-function DealCard({ deal, onOpen, onMove, stages }) {
+// ─── DEAL CARD — Option C Rich ────────────────────────────────────────────────
+function DealCard({ deal, onOpen, onMove }) {
   const [showMenu, setShowMenu] = useState(false);
   const [dragging, setDragging] = useState(false);
   const draggedRef = useRef(false);
-  const ref = useRef(null);
+  const menuRef = useRef(null);
+
   useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setShowMenu(false); };
+    const h = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
   const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
+  const stage = PIPELINE_STAGES.find(s => s.key === deal.status) || PIPELINE_STAGES[0];
+
+  // Score du debrief lié
+  const scoreVal = deal.debrief_score != null ? deal.debrief_score : null;
+  const scoreColor = scoreVal == null ? '#c8b8a8' : scoreVal >= 80 ? '#5a9858' : scoreVal >= 60 ? '#c07830' : '#c05040';
+
+  const fmtDate = d => { try { return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); } catch { return d; }};
 
   return (
     <div
       draggable
-      onDragStart={e => { e.dataTransfer.setData('dealId', deal.id); setDragging(true); draggedRef.current = true; e.dataTransfer.effectAllowed='move'; }}
-      onDragEnd={() => { setDragging(false); setTimeout(()=>{ draggedRef.current = false; }, 100); }}
-      onClick={()=>{ if (!draggedRef.current) onOpen(deal); }}
-      style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'grab', position:'relative', boxShadow:dragging?'0 8px 24px rgba(232,125,106,.25)':'0 1px 3px rgba(0,0,0,.05)', transition:'all .15s', opacity:dragging?.5:1, transform:dragging?'rotate(2deg)':'none' }}
-      onMouseEnter={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.15)'; }}
-      onMouseLeave={e=>{ if(!dragging) e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'; }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
-        <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
-        <div ref={ref} style={{ position:'relative' }}>
-          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}}
-            style={{ background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
+      onDragStart={e => { e.dataTransfer.setData('dealId', String(deal.id)); draggedRef.current = true; setDragging(true); e.dataTransfer.effectAllowed = 'move'; }}
+      onDragEnd={() => { setDragging(false); setTimeout(() => { draggedRef.current = false; }, 100); }}
+      onClick={() => { if (!draggedRef.current) onOpen(deal); }}
+      style={{ background:'#ffffff', borderRadius:12, boxShadow:dragging ? '0 12px 32px rgba(232,125,106,.25)' : SH_SM, border:`1px solid ${isOverdue ? 'rgba(192,80,64,.25)' : 'rgba(232,125,106,.08)'}`, padding:'12px 14px', cursor:'grab', transition:'all .15s', opacity:dragging ? .5 : 1, transform:dragging ? 'rotate(2deg) scale(1.02)' : 'none', userSelect:'none' }}
+      onMouseEnter={e => { if (!dragging) e.currentTarget.style.boxShadow = SH_HOVERED; }}
+      onMouseLeave={e => { if (!dragging) e.currentTarget.style.boxShadow = SH_SM; }}>
+
+      {/* Ligne 1 — Nom + menu */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+        <p style={{ fontWeight:700, fontSize:14, color:TXT, margin:0, flex:1, marginRight:8, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{deal.prospect_name}</p>
+        <div ref={menuRef} style={{ position:'relative', flexShrink:0 }}>
+          <button onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
+            style={{ background:'none', border:'none', color:TXT3, cursor:'pointer', fontSize:18, padding:'0 2px', lineHeight:1, fontFamily:'inherit' }}>⋮</button>
           {showMenu && (
-            <div style={{ position:'absolute', right:0, top:'100%', background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
-              {stages.filter(s=>s.key!==deal.status).map(s => (
-                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}}
-                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#5a4a3a', textAlign:'left' }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
-                  onMouseLeave={e=>e.currentTarget.style.background='none'}>
-                  {s.icon} → {s.label}
+            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:'#ffffff', borderRadius:R_MD, boxShadow:SH_HOVERED, minWidth:170, zIndex:100, overflow:'hidden' }}>
+              {PIPELINE_STAGES.filter(s => s.key !== deal.status).map(s => (
+                <button key={s.key} onClick={e => { e.stopPropagation(); onMove(deal.id, s.key); setShowMenu(false); }}
+                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:TXT, textAlign:'left' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,232,228,.2)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  <span style={{ fontSize:13 }}>{s.icon}</span> → {s.label}
                 </button>
               ))}
             </div>
           )}
         </div>
       </div>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
-        {deal.value > 0 && <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#d1fae5', padding:'2px 7px', borderRadius:6 }}>{deal.value.toLocaleString('fr-FR')} €</span>}
-        {deal.source && <span style={{ fontSize:11, color:'#6b7280', background:'rgba(253,232,228,.2)', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
+
+      {/* Ligne 2 — CA + source */}
+      <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:10 }}>
+        <p style={{ fontSize:14, fontWeight:700, color:'#5a9858', margin:0 }}>
+          {deal.value > 0 ? `${deal.value.toLocaleString('fr-FR')} €` : <span style={{ color:TXT3, fontSize:12, fontWeight:400 }}>Aucun CA</span>}
+        </p>
+        {deal.source && <span style={{ fontSize:11, color:TXT3 }}>{deal.source}</span>}
+      </div>
+
+      {/* Barre score debrief */}
+      <div style={{ marginBottom:10 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:TXT3, marginBottom:3 }}>
+          <span>Score debrief</span>
+          <span style={{ color:scoreColor, fontWeight:700 }}>{scoreVal != null ? `${scoreVal}%` : 'Aucun'}</span>
+        </div>
+        <div style={{ height:4, background:'#f0e8e0', borderRadius:2 }}>
+          {scoreVal != null && <div style={{ height:'100%', width:`${scoreVal}%`, background:`linear-gradient(90deg,${P},${P2})`, borderRadius:2, transition:'width .5s' }}/>}
+        </div>
+      </div>
+
+      {/* Ligne 3 — Closer + date */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <span style={{ fontSize:11, color:TXT3 }}>{deal.user_name || '—'}</span>
         {deal.follow_up_date && (
-          <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#94a3b8', background:isOverdue?'#fee2e2':'transparent', padding:'2px 4px', borderRadius:4, fontWeight:isOverdue?600:400 }}>
-            {isOverdue?'⚠️ ':''}{deal.follow_up_date}
+          <span style={{ fontSize:11, fontWeight:isOverdue ? 700 : 400, color:isOverdue ? '#c05040' : TXT3 }}>
+            {isOverdue ? '⚠ ' : ''}{fmtDate(deal.follow_up_date)}
           </span>
         )}
-        {deal.debrief_id && <span style={{ fontSize:11, color:'#e87d6a', background:'rgba(255,245,242,.85)', padding:'2px 7px', borderRadius:6 }}>📞 debrief</span>}
       </div>
-      {deal.user_name && <p style={{ fontSize:11, color:'#c8b8a8', margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
     </div>
   );
 }
 
-// ─── DROP ZONE (colonne kanban avec drag & drop) ──────────────────────────────
-function DropColumn({ stage, deals, onOpen, onMove, onDrop }) {
+// ─── DROP COLUMN — Kanban desktop ─────────────────────────────────────────────
+function DropColumn({ stage, deals, onOpen, onMove }) {
   const [over, setOver] = useState(false);
-  const stageValue = deals.reduce((s,d)=>s+(d.value||0),0);
-
   return (
     <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:8 }}>
-      {/* Header colonne */}
-      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between', borderLeft:`3px solid ${stage.color}` }}>
+      {/* Header — sans montant */}
+      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:R_SM, display:'flex', alignItems:'center', justifyContent:'space-between', borderLeft:`3px solid ${stage.color}` }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ fontSize:14 }}>{stage.icon}</span>
+          <span style={{ fontSize:13 }}>{stage.icon}</span>
           <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
-          <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:10, minWidth:20, textAlign:'center' }}>{deals.length}</span>
-        </div>
+        <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:R_FULL, minWidth:22, textAlign:'center' }}>{deals.length}</span>
       </div>
 
       {/* Zone de drop */}
       <div
-        onDragOver={e=>{ e.preventDefault(); setOver(true); }}
-        onDragLeave={()=>setOver(false)}
-        onDrop={e=>{ e.preventDefault(); setOver(false); const id=e.dataTransfer.getData('dealId'); if(id) onDrop(id, stage.key); }}
-        style={{ display:'flex', flexDirection:'column', gap:7, minHeight:80, padding:over?'6px':'0', background:over?`${stage.bg}`:'transparent', borderRadius:10, border:over?`2px dashed ${stage.color}`:'2px dashed transparent', transition:'all .15s' }}>
-        {deals.map(deal => (
-          <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove} stages={PIPELINE_STAGES}/>
-        ))}
+        onDragOver={e => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={e => { e.preventDefault(); setOver(false); const id = e.dataTransfer.getData('dealId'); if (id) onMove(id, stage.key); }}
+        style={{ display:'flex', flexDirection:'column', gap:8, minHeight:100, padding:over ? 6 : 0, background:over ? stage.bg : 'transparent', borderRadius:R_SM, border:`2px dashed ${over ? stage.color : 'transparent'}`, transition:'all .15s' }}>
+        {deals.map(deal => <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove}/>)}
         {deals.length === 0 && !over && (
-          <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'16px 10px', textAlign:'center', color:'#cbd5e1', fontSize:11 }}>
+          <div style={{ border:`2px dashed rgba(232,125,106,.15)`, borderRadius:R_SM, padding:'20px 10px', textAlign:'center', color:TXT3, fontSize:11 }}>
             Déposez ici
           </div>
         )}
@@ -2493,46 +2515,74 @@ function DropColumn({ stage, deals, onOpen, onMove, onDrop }) {
   );
 }
 
+// ─── ACCORDION COLUMN — Mobile ─────────────────────────────────────────────────
+function AccordionColumn({ stage, deals, onOpen, onMove }) {
+  const [open, setOpen] = useState(deals.length > 0);
+  return (
+    <div style={{ borderRadius:R_MD, overflow:'hidden', border:`1px solid rgba(232,125,106,.1)`, background:'#ffffff', boxShadow:SH_SM }}>
+      <button onClick={() => setOpen(v => !v)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', background:open ? stage.bg : '#ffffff', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'background .2s' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:14 }}>{stage.icon}</span>
+          <span style={{ fontSize:13, fontWeight:700, color:stage.color }}>{stage.label}</span>
+          <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:R_FULL }}>{deals.length}</span>
+        </div>
+        <span style={{ color:TXT3, fontSize:12, transition:'transform .2s', display:'inline-block', transform:open ? 'rotate(180deg)' : 'none' }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ padding:'8px 12px 12px', display:'flex', flexDirection:'column', gap:8, borderTop:`1px solid rgba(232,125,106,.08)` }}>
+          {deals.length === 0
+            ? <p style={{ fontSize:12, color:TXT3, textAlign:'center', padding:'12px 0' }}>Aucun lead dans cette catégorie</p>
+            : deals.map(deal => <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove}/>)
+          }
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PIPELINE PAGE ─────────────────────────────────────────────────────────────
 function PipelinePage({ user, toast, debriefs }) {
   const [deals, setDeals]       = useState([]);
   const [loading, setLoading]   = useState(true);
-  const [openLead, setOpenLead] = useState(null); // null | {} (new) | deal (edit)
+  const [openLead, setOpenLead] = useState(null);
   const [filter, setFilter]     = useState('all');
   const mob = useIsMobile();
 
   useEffect(() => {
-    apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
+    apiFetch('/deals').then(setDeals).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  // Recharger quand la fenêtre reprend le focus
   useEffect(() => {
-    const onFocus = () => apiFetch('/deals').then(setDeals).catch(()=>{});
+    const onFocus = () => apiFetch('/deals').then(setDeals).catch(() => {});
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
 
-  const handleSave = (deal, isEdit) => {
-    setDeals(prev => isEdit ? prev.map(d=>d.id===deal.id?deal:d) : [deal,...prev]);
-  };
-  const handleMove = async (id, status) => {
+  const handleSave   = (deal, isEdit) => setDeals(prev => isEdit ? prev.map(d => d.id === deal.id ? deal : d) : [deal, ...prev]);
+  const handleMove   = async (id, status) => {
+    // Optimistic update
+    setDeals(prev => prev.map(d => d.id === id || d.id === String(id) ? { ...d, status } : d));
     try {
-      const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status }});
-      setDeals(prev => prev.map(d => d.id===id ? updated : d));
-    } catch(e) { toast(e.message, 'error'); }
+      const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status } });
+      setDeals(prev => prev.map(d => d.id === updated.id ? updated : d));
+    } catch(e) {
+      toast(e.message, 'error');
+      apiFetch('/deals').then(setDeals).catch(() => {});
+    }
   };
-  const handleDelete = (id) => {
-    setDeals(prev => prev.filter(d => d.id!==id));
-  };
+  const handleDelete = id => setDeals(prev => prev.filter(d => d.id !== id));
 
   const isHOS = user.role === 'head_of_sales';
-  const closers = [...new Map(deals.map(d=>[d.user_id,{id:d.user_id,name:d.user_name}])).values()];
-  const displayDeals = filter==='all' ? deals : deals.filter(d=>d.user_id===filter);
+  const closers = [...new Map(deals.filter(d => d.user_id).map(d => [d.user_id, { id:d.user_id, name:d.user_name }])).values()];
+  const displayDeals = filter === 'all' ? deals : deals.filter(d => d.user_id === filter);
 
-  const totalValue   = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
-  const totalPipe    = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
-  const overdueCount = deals.filter(d=>d.follow_up_date&&new Date(d.follow_up_date)<new Date()&&!['signe','perdu'].includes(d.status)).length;
-  const closed       = deals.filter(d=>['signe','perdu'].includes(d.status));
-  const winRate      = closed.length > 0 ? Math.round((deals.filter(d=>d.status==='signe').length/closed.length)*100) : 0;
+  const signed   = deals.filter(d => d.status === 'signe');
+  const active   = deals.filter(d => !['signe','perdu'].includes(d.status));
+  const closed   = deals.filter(d => ['signe','perdu'].includes(d.status));
+  const overdue  = active.filter(d => d.follow_up_date && new Date(d.follow_up_date) < new Date());
+  const winRate  = closed.length ? Math.round(signed.length / closed.length * 100) : 0;
+  const totalCA  = signed.reduce((s,d) => s + (d.value||0), 0);
+  const totalPipe = active.reduce((s,d) => s + (d.value||0), 0);
 
   if (loading) return <Spinner full/>;
 
@@ -2540,57 +2590,57 @@ function PipelinePage({ user, toast, debriefs }) {
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
 
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
-          <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>🎯 Pipeline</h1>
-          <p style={{ color:'#6b7280', fontSize:13, marginTop:4 }}>{deals.length} lead{deals.length!==1?'s':''}</p>
+          <h1 style={{ fontSize:22, fontWeight:700, color:TXT, margin:0 }}>Pipeline</h1>
+          <p style={{ color:TXT2, fontSize:13, marginTop:4 }}>{deals.length} lead{deals.length !== 1 ? 's' : ''}</p>
         </div>
-        <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
+        <Btn onClick={() => setOpenLead({})}>+ Nouveau lead</Btn>
       </div>
 
       {/* KPIs */}
-      <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
+      <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
         {[
-          { label:'CA Signé',   value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', bg:'#d1fae5', c:'#059669' },
-          { label:'Pipeline',   value:`${totalPipe.toLocaleString('fr-FR')} €`,  icon:'🔮', bg:'rgba(253,232,228,.6)', c:'#e87d6a' },
-          { label:'Taux win',   value:`${winRate}%`,                             icon:'🏆', bg:'#fef3c7', c:'#d97706' },
-          { label:'En retard',  value:overdueCount,                              icon:'⚠️', bg:overdueCount>0?'#fee2e2':'#f1f5f9', c:overdueCount>0?'#dc2626':'#64748b' },
-        ].map(({ label, value, icon, bg, c }) => (
-          <Card key={label} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
-            <div>
-              <p style={{ fontSize:10, color:'#6b7280', margin:0, fontWeight:500, textTransform:'uppercase', letterSpacing:'.04em' }}>{label}</p>
-              <p style={{ fontSize:20, fontWeight:700, color:c, margin:0 }}>{value}</p>
-            </div>
-          </Card>
+          { label:'CA Signé',  value:`${totalCA.toLocaleString('fr-FR')} €`,   color:'#5a9858', bg:'rgba(218,240,216,.5)' },
+          { label:'Pipeline',  value:`${totalPipe.toLocaleString('fr-FR')} €`, color:P,         bg:'rgba(253,232,228,.5)' },
+          { label:'Taux win',  value:`${winRate}%`,                            color:'#c07830',  bg:'rgba(254,243,224,.5)' },
+          { label:'En retard', value:overdue.length,                           color:overdue.length > 0 ? '#c05040' : TXT3, bg:overdue.length > 0 ? 'rgba(253,232,228,.5)' : 'rgba(245,237,230,.3)' },
+        ].map(({ label, value, color, bg }) => (
+          <div key={label} style={{ ...cardSm(), padding:'14px 16px' }}>
+            <p style={{ fontSize:10, color:TXT3, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'.05em', fontWeight:600 }}>{label}</p>
+            <p style={{ fontSize:20, fontWeight:700, color, margin:0 }}>{value}</p>
+          </div>
         ))}
       </div>
 
-      {/* Filtre closer (HOS) */}
+      {/* Filtre closer HOS */}
       {isHOS && closers.length > 1 && (
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          <button onClick={()=>setFilter('all')} style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${filter==='all'?'#e87d6a':'rgba(232,125,106,.2)'}`, background:filter==='all'?'rgba(253,232,228,.6)':'white', color:filter==='all'?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>Tous</button>
-          {closers.map(c => (
-            <button key={c.id} onClick={()=>setFilter(c.id)} style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${filter===c.id?'#e87d6a':'rgba(232,125,106,.2)'}`, background:filter===c.id?'rgba(253,232,228,.6)':'white', color:filter===c.id?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>👤 {c.name}</button>
+          {[{ id:'all', name:'Tous' }, ...closers].map(c => (
+            <button key={c.id} onClick={() => setFilter(c.id)}
+              style={{ padding:'6px 14px', borderRadius:R_FULL, border:`1.5px solid ${filter === c.id ? P : 'rgba(232,125,106,.2)'}`, background:filter === c.id ? 'rgba(253,232,228,.6)' : WHITE, color:filter === c.id ? P2 : TXT2, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', transition:'all .15s' }}>
+              {c.name}
+            </button>
           ))}
         </div>
       )}
 
-      {/* Kanban */}
+      {/* Kanban desktop / Accordéon mobile */}
       {deals.length === 0 ? (
-        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead ou soumettez un debrief" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}/>
+        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead pour commencer" action={<Btn onClick={() => setOpenLead({})}>+ Créer un lead</Btn>}/>
+      ) : mob ? (
+        /* ── MOBILE : accordéon ── */
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {PIPELINE_STAGES.map(stage => (
+            <AccordionColumn key={stage.key} stage={stage} deals={displayDeals.filter(d => d.status === stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
+          ))}
+        </div>
       ) : (
-        <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
-          <div style={{ display:'flex', gap:12, minWidth:mob?`${PIPELINE_STAGES.length*220}px`:'auto' }}>
+        /* ── DESKTOP : kanban ── */
+        <div style={{ overflowX:'auto', paddingBottom:8 }}>
+          <div style={{ display:'flex', gap:12, minWidth:`${PIPELINE_STAGES.length * 190}px` }}>
             {PIPELINE_STAGES.map(stage => (
-              <DropColumn
-                key={stage.key}
-                stage={stage}
-                deals={displayDeals.filter(d=>d.status===stage.key)}
-                onOpen={setOpenLead}
-                onMove={handleMove}
-                onDrop={(dealId, newStatus) => handleMove(dealId, newStatus)}
-              />
+              <DropColumn key={stage.key} stage={stage} deals={displayDeals.filter(d => d.status === stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
             ))}
           </div>
         </div>
@@ -2601,7 +2651,7 @@ function PipelinePage({ user, toast, debriefs }) {
         <LeadSheet
           deal={openLead?.id ? openLead : null}
           debriefs={debriefs || []}
-          onClose={()=>setOpenLead(null)}
+          onClose={() => setOpenLead(null)}
           onSave={handleSave}
           onDelete={handleDelete}
           toast={toast}
