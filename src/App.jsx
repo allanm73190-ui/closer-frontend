@@ -839,73 +839,18 @@ function ResetPage({ token, onDone }) {
   );
 }
 
-// ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
-function AccountSettings({ user, onClose, toast }) {
-  const isHOS = user.role === 'head_of_sales';
-  const [tab, setTab] = useState('profil');
-  const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const changePwd = async () => {
-    setErr('');
-    if (pwd.next !== pwd.confirm) return setErr('Les mots de passe ne correspondent pas');
-    if (pwd.next.length < 8) return setErr('Trop court (8 caractères min)');
-    setSaving(true);
-    try { await apiFetch('/auth/change-password',{method:'POST',body:{currentPassword:pwd.current,newPassword:pwd.next}}); toast('Mot de passe modifié !'); setPwd({current:'',next:'',confirm:''}); }
-    catch(e) { setErr(e.message); } finally { setSaving(false); }
-  };
-
-  const tabs = [
-    { key:'profil',    label:'👤 Profil' },
-    { key:'securite',  label:'🔒 Sécurité' },
-    ...(isHOS ? [{ key:'questions', label:'📋 Questions' }] : []),
-  ];
-
-  return (
-    <Modal title="Paramètres du compte" onClose={onClose}>
-      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20,flexWrap:'wrap'}}>
-        {tabs.map(({key,label})=>(
-          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?TXT:'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit',minWidth:80}}>{label}</button>
-        ))}
-      </div>
-
-      {tab==='profil' && (
-        <div>
-          <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.2)',borderRadius:12,marginBottom:20}}>
-            <div style={{width:52,height:52,borderRadius:'50%',background:`linear-gradient(135deg,${P},${P2})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
-            <div>
-              <p style={{fontWeight:700,fontSize:16,color:TXT,margin:0}}>{user.name}</p>
-              <p style={{fontSize:13,color:TXT2,margin:'2px 0 0'}}>{user.email}</p>
-              <span style={{display:'inline-block',marginTop:4,background:isHOS?'#fef3c7':'rgba(253,232,228,.6)',color:isHOS?'#92400e':P2,fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>
-                {isHOS?'👑 Head of Sales':'🎯 Closer'}
-              </span>
-            </div>
-          </div>
-          <p style={{fontSize:13,color:TXT3,textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
-        </div>
-      )}
-
-      {tab==='securite' && (
-        <div>
-          <p style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Changer le mot de passe</p>
-          <AlertBox type="error" message={err}/>
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            {[{key:'current',label:'Mot de passe actuel'},{key:'next',label:'Nouveau mot de passe'},{key:'confirm',label:'Confirmer'}].map(({key,label})=>(
-              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
-            ))}
-            <Btn onClick={changePwd} disabled={saving||!pwd.current||!pwd.next||!pwd.confirm} style={{marginTop:4}}>{saving?'Modification...':'Modifier le mot de passe'}</Btn>
-          </div>
-        </div>
-      )}
-
-      {tab==='questions' && isHOS && (
-        <DebriefConfigEditor onClose={onClose} toast={toast}/>
-      )}
-    </Modal>
-  );
+// ─── HOOK useDebriefConfig ────────────────────────────────────────────────────
+function useDebriefConfig() {
+  const [config, setConfig] = React.useState(DEFAULT_DEBRIEF_CONFIG);
+  const [loaded, setLoaded] = React.useState(false);
+  React.useEffect(() => {
+    apiFetch('/debrief-config')
+      .then(d => { if (d && d.sections && Array.isArray(d.sections) && d.sections.length > 0) setConfig(d.sections); })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+  return [config, setConfig, loaded];
 }
-
 
 // ─── DEBRIEF CONFIG EDITOR (HOS only) ────────────────────────────────────────
 function DebriefConfigEditor({ onClose, toast }) {
@@ -1053,6 +998,74 @@ function DebriefConfigEditor({ onClose, toast }) {
   );
 }
 
+// ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
+function AccountSettings({ user, onClose, toast }) {
+  const isHOS = user.role === 'head_of_sales';
+  const [tab, setTab] = useState('profil');
+  const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const changePwd = async () => {
+    setErr('');
+    if (pwd.next !== pwd.confirm) return setErr('Les mots de passe ne correspondent pas');
+    if (pwd.next.length < 8) return setErr('Trop court (8 caractères min)');
+    setSaving(true);
+    try { await apiFetch('/auth/change-password',{method:'POST',body:{currentPassword:pwd.current,newPassword:pwd.next}}); toast('Mot de passe modifié !'); setPwd({current:'',next:'',confirm:''}); }
+    catch(e) { setErr(e.message); } finally { setSaving(false); }
+  };
+
+  const tabs = [
+    { key:'profil',    label:'👤 Profil' },
+    { key:'securite',  label:'🔒 Sécurité' },
+    ...(isHOS ? [{ key:'questions', label:'📋 Questions' }] : []),
+  ];
+
+  return (
+    <Modal title="Paramètres du compte" onClose={onClose}>
+      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20,flexWrap:'wrap'}}>
+        {tabs.map(({key,label})=>(
+          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?TXT:'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit',minWidth:80}}>{label}</button>
+        ))}
+      </div>
+
+      {tab==='profil' && (
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.2)',borderRadius:12,marginBottom:20}}>
+            <div style={{width:52,height:52,borderRadius:'50%',background:`linear-gradient(135deg,${P},${P2})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
+            <div>
+              <p style={{fontWeight:700,fontSize:16,color:TXT,margin:0}}>{user.name}</p>
+              <p style={{fontSize:13,color:TXT2,margin:'2px 0 0'}}>{user.email}</p>
+              <span style={{display:'inline-block',marginTop:4,background:isHOS?'#fef3c7':'rgba(253,232,228,.6)',color:isHOS?'#92400e':P2,fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>
+                {isHOS?'👑 Head of Sales':'🎯 Closer'}
+              </span>
+            </div>
+          </div>
+          <p style={{fontSize:13,color:TXT3,textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
+        </div>
+      )}
+
+      {tab==='securite' && (
+        <div>
+          <p style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Changer le mot de passe</p>
+          <AlertBox type="error" message={err}/>
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            {[{key:'current',label:'Mot de passe actuel'},{key:'next',label:'Nouveau mot de passe'},{key:'confirm',label:'Confirmer'}].map(({key,label})=>(
+              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
+            ))}
+            <Btn onClick={changePwd} disabled={saving||!pwd.current||!pwd.next||!pwd.confirm} style={{marginTop:4}}>{saving?'Modification...':'Modifier le mot de passe'}</Btn>
+          </div>
+        </div>
+      )}
+
+      {tab==='questions' && isHOS && (
+        <DebriefConfigEditor onClose={onClose} toast={toast}/>
+      )}
+    </Modal>
+  );
+}
+
+
 // ─── DEBRIEF CARD ─────────────────────────────────────────────────────────────
 function DebriefCard({ debrief, onClick, showUser }) {
   const [hov, setHov] = useState(false);
@@ -1187,9 +1200,9 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    apiFetch('/teams').then(setTeams).catch(()=>setTeams([])).finally(()=>setLoading(false));
+    apiFetch('/teams').then(d=>setTeams((d||[]).map(t=>({...t,inviteCodes:t.inviteCodes||[],members:t.members||[]})))).catch(()=>setTeams([])).finally(()=>setLoading(false));
   }, []);
-  useEffect(() => { load(); }, [leaderboardKey]);
+  useEffect(() => { load(); }, []); // Ne pas dépendre de leaderboardKey — évite reset au moindre debrief
 
   // Reset activeTeamId if tab changes
   useEffect(() => { if (tab !== 'equipes') setActiveTeamId(null); }, [tab]);
@@ -1212,11 +1225,11 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
   };
   const genCode = async (teamId) => {
     setGenerating(teamId);
-    try { const inv = await apiFetch(`/teams/${teamId}/invite`,{method:'POST'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:[inv,...t.inviteCodes]}:t)); toast('Code généré !'); }
+    try { const inv = await apiFetch(`/teams/${teamId}/invite`,{method:'POST'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:[inv,...(t.inviteCodes||[])]}:t)); toast('Code généré !'); }
     catch(e) { toast(e.message,'error'); } finally { setGenerating(null); }
   };
   const delCode = async (teamId, codeId) => {
-    try { await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:t.inviteCodes.filter(c=>c.id!==codeId)}:t)); toast('Code supprimé'); }
+    try { await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:(t.inviteCodes||[]).filter(c=>c.id!==codeId)}:t)); toast('Code supprimé'); }
     catch(e) { toast(e.message,'error'); }
   };
   const removeMember = async (teamId, memberId, name) => {
@@ -1883,7 +1896,8 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
 }
 
 function NewDebrief({ navigate, onSave, toast }) {
-  const [config] = useDebriefConfig();
+  const [config, , loaded] = useDebriefConfig(); // config = DEFAULT si API échoue
+  if (!loaded) return <Spinner full/>;
   const [form, setForm] = useState({ prospect_name:'', call_date: new Date().toISOString().split('T')[0], is_closed:false });
   const [sections, setSections] = useState({});
   const [notes, setNotes] = useState({});
@@ -2146,7 +2160,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
     <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
       <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:10, marginBottom:20 }}>
         {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
-          <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
+          <button type="button" key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
