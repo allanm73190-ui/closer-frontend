@@ -853,8 +853,7 @@ function useDebriefConfig() {
 }
 
 // ─── DEBRIEF CONFIG EDITOR (HOS only) ────────────────────────────────────────
-function DebriefConfigEditor({ onClose, toast }) {
-  const [config, setConfig, loaded] = useDebriefConfig();
+function DebriefConfigEditor({ onClose, toast, config, setConfig, loaded }) {
   const [saving, setSaving] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState(0);
 
@@ -999,7 +998,7 @@ function DebriefConfigEditor({ onClose, toast }) {
 }
 
 // ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
-function AccountSettings({ user, onClose, toast }) {
+function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig, debriefLoaded }) {
   const isHOS = user.role === 'head_of_sales';
   const [tab, setTab] = useState('profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
@@ -1059,7 +1058,7 @@ function AccountSettings({ user, onClose, toast }) {
       )}
 
       {tab==='questions' && isHOS && (
-        <DebriefConfigEditor onClose={onClose} toast={toast}/>
+        <DebriefConfigEditor onClose={onClose} toast={toast} config={debriefConfig||[]} setConfig={setDebriefConfig} loaded={debriefLoaded||false}/>
       )}
     </Modal>
   );
@@ -1896,35 +1895,34 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
 }
 
 function NewDebrief({ navigate, onSave, toast }) {
-  const [config, , loaded] = useDebriefConfig(); // config = DEFAULT si API échoue
-  if (!loaded) return <Spinner full/>;
-  const [form, setForm] = useState({ prospect_name:'', call_date: new Date().toISOString().split('T')[0], is_closed:false });
+  // Hooks — tous en premier, sans retour conditionnel avant
+  const [config]            = useDebriefConfig();
+  const [form, setForm]     = useState({ prospect_name:'', call_date: new Date().toISOString().split('T')[0], is_closed:false });
   const [sections, setSections] = useState({});
-  const [notes, setNotes] = useState({});
+  const [notes, setNotes]   = useState({});
   const [loading, setLoading] = useState(false);
   const mob = useIsMobile();
 
-  const updateSection = (key, data) => setSections(p => ({...p, [key]:data}));
-  const updateNotes   = (key, data) => setNotes(p => ({...p, [key]:data}));
+  const updateSection = (key, data) => setSections(p => ({...p, [key]: data}));
+  const updateNotes   = (key, data) => setNotes(p => ({...p, [key]: data}));
 
   const score = computeScore(sections);
-  const pct   = Math.round((score.points / Math.max(score.max,1)) * 100);
+  const pct   = Math.round((score.points / Math.max(score.max, 1)) * 100);
 
-  const submit = async e => {
-    e && e.preventDefault();
+  const submit = async () => {
     if (!form.prospect_name.trim()) return toast('Nom du prospect requis', 'error');
     setLoading(true);
     try {
       const res = await apiFetch('/debriefs', { method:'POST', body:{ ...form, sections, notes } });
       onSave(res.debrief, res.gamification);
-      toast('Debrief enregistré ! +' + (res.gamification?.pointsEarned||0) + ' pts');
+      toast('Debrief enregistré ! +' + (res.gamification?.pointsEarned || 0) + ' pts');
       navigate('Dashboard');
     } catch(e) { toast(e.message, 'error'); } finally { setLoading(false); }
   };
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:700, color:TXT, margin:0 }}>Nouveau debrief</h1>
           <p style={{ color:TXT2, fontSize:13, marginTop:4 }}>Analysez votre appel section par section</p>
@@ -1932,25 +1930,24 @@ function NewDebrief({ navigate, onSave, toast }) {
         <Btn variant="secondary" onClick={()=>navigate('Dashboard')}>← Retour</Btn>
       </div>
 
-      {/* Infos prospect */}
       <Card style={{ padding:16 }}>
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:12 }}>
           <div>
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Nom du prospect *</label>
-            <Input placeholder="Jean Dupont" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})} autoFocus/>
+            <Input placeholder="Jean Dupont" value={form.prospect_name} onChange={e=>setForm({...form, prospect_name:e.target.value})} autoFocus/>
           </div>
           <div>
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Date de l'appel</label>
-            <Input type="date" value={form.call_date} onChange={e=>setForm({...form,call_date:e.target.value})}/>
+            <Input type="date" value={form.call_date} onChange={e=>setForm({...form, call_date:e.target.value})}/>
           </div>
         </div>
         <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
-          <input type="checkbox" id="is_closed" checked={form.is_closed} onChange={e=>setForm({...form,is_closed:e.target.checked})} style={{ width:16, height:16, accentColor:P, cursor:'pointer' }}/>
-          <label htmlFor="is_closed" style={{ fontSize:13, color:TXT, cursor:'pointer' }}>✅ Call closé (vente signée)</label>
+          <input type="checkbox" id="nd_is_closed" checked={form.is_closed} onChange={e=>setForm({...form, is_closed:e.target.checked})}
+            style={{ width:16, height:16, accentColor:P, cursor:'pointer' }}/>
+          <label htmlFor="nd_is_closed" style={{ fontSize:13, color:TXT, cursor:'pointer' }}>✅ Call closé (vente signée)</label>
         </div>
       </Card>
 
-      {/* Score live */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_MD, color:'white' }}>
         <span style={{ fontSize:13, fontWeight:600 }}>Score en cours</span>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -1961,31 +1958,25 @@ function NewDebrief({ navigate, onSave, toast }) {
         </div>
       </div>
 
-      {/* Sections dynamiques depuis config */}
       {config.map((section, idx) => (
-        <CatCard key={section.key} number={String(idx+1)} title={section.title}>
+        <CatCard key={section.key} number={String(idx + 1)} title={section.title}>
           {section.questions.map(q => {
             const val = (sections[section.key] || {})[q.id];
-            const setVal = v => updateSection(section.key, { ...(sections[section.key]||{}), [q.id]: v });
-            if (q.type === 'radio') return (
-              <RadioGroup key={q.id} label={q.label} options={q.options||[]} value={val} onChange={setVal}/>
-            );
-            if (q.type === 'checkbox') return (
-              <CheckboxGroup key={q.id} label={q.label} options={q.options||[]} value={val||[]} onChange={setVal}/>
-            );
-            if (q.type === 'text') return (
+            const setVal = v => updateSection(section.key, { ...(sections[section.key] || {}), [q.id]: v });
+            if (q.type === 'radio')    return <RadioGroup    key={q.id} label={q.label} options={q.options || []} value={val} onChange={setVal}/>;
+            if (q.type === 'checkbox') return <CheckboxGroup key={q.id} label={q.label} options={q.options || []} value={val || []} onChange={setVal}/>;
+            if (q.type === 'text')     return (
               <div key={q.id} style={{ marginBottom:16 }}>
                 <label style={{ display:'block', fontSize:13, fontWeight:600, color:TXT, marginBottom:6 }}>{q.label}</label>
-                <Textarea placeholder="Votre réponse..." value={val||''} onChange={e=>setVal(e.target.value)}/>
+                <Textarea placeholder="Votre réponse..." value={val || ''} onChange={e => setVal(e.target.value)}/>
               </div>
             );
             return null;
           })}
-          <SectionNotes notes={notes[section.key]||{}} onChange={d=>updateNotes(section.key,d)}/>
+          <SectionNotes notes={notes[section.key] || {}} onChange={d => updateNotes(section.key, d)}/>
         </CatCard>
       ))}
 
-      {/* Bouton submit */}
       <Btn onClick={submit} disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
         {loading ? 'Enregistrement...' : '💾 Enregistrer le debrief'}
       </Btn>
@@ -2846,6 +2837,7 @@ export default function App() {
   const [lbKey,   setLbKey]   = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const mob = useIsMobile();
+  const [debriefConfig, setDebriefConfig, debriefLoaded] = useDebriefConfig();
 
   // Detect reset token in URL
   useEffect(() => {
@@ -2934,7 +2926,7 @@ export default function App() {
   const Content = () => (
     <>
       {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
-      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
+      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast} debriefConfig={debriefConfig}/>}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
@@ -2960,7 +2952,7 @@ export default function App() {
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
       <Toasts list={toasts}/>
-      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
+      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig} debriefLoaded={debriefLoaded}/>}
 
       {mob ? (
         <>
