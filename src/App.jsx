@@ -108,6 +108,61 @@ const inp = (extra={}) => ({ width:'100%', background:'#f5ede6', border:'1px sol
   outline:'none', boxSizing:'border-box', color:'#5a4a3a', boxShadow:SH_IN, ...extra
 });
 
+
+// ─── CONFIG DEBRIEF PAR DÉFAUT ───────────────────────────────────────────────
+const DEFAULT_DEBRIEF_CONFIG = [
+  {
+    key: 'decouverte',
+    title: 'Phase de découverte',
+    questions: [
+      { id:'douleur_surface',   label:'Douleur de surface identifiée ?',          type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}], hasNote:true },
+      { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'✅ Oui — verbalisé fort'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}], hasNote:true },
+      { id:'couches_douleur',   label:'Couches de douleur creusées',               type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique / performance'},{value:'couche2',label:'Couche 2 : impact quotidien / social'},{value:'couche3',label:'Couche 3 : identité / peur du futur'}] },
+      { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+      { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}], hasNote:true },
+    ]
+  },
+  {
+    key: 'reformulation',
+    title: 'Reformulation',
+    questions: [
+      { id:'reformulation',     label:'Reformulation faite ?',         type:'radio',    options:[{value:'oui',label:'✅ Complète et précise'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
+      { id:'prospect_reconnu',  label:"Le prospect s'est reconnu ?",   type:'radio',    options:[{value:'oui',label:"✅ Oui — c'est exactement ça"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+      { id:'couches_reformulation', label:'Les 3 couches présentes ?', type:'checkbox', options:[{value:'physique',label:'Douleur physique / performance'},{value:'quotidien',label:'Impact quotidien'},{value:'identitaire',label:'Dimension identitaire'}] },
+    ]
+  },
+  {
+    key: 'projection',
+    title: 'Projection',
+    questions: [
+      { id:'projection_posee',  label:'Question de projection posée ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+      { id:'qualite_reponse',   label:'Qualité de la réponse',          type:'radio', options:[{value:'forte',label:'✅ Forte — émotionnelle, identitaire'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
+      { id:'deadline_levier',   label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
+    ]
+  },
+  {
+    key: 'presentation_offre',
+    title: "Présentation de l'offre",
+    questions: [
+      { id:'colle_douleurs',        label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non — générique'}] },
+      { id:'exemples_transformation', label:'Exemples bien choisis ?',         type:'radio', options:[{value:'oui',label:"✅ Oui — le prospect s'est reconnu"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+      { id:'duree_justifiee',       label:'Durée / Offre justifiée ?',         type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    ]
+  },
+  {
+    key: 'closing',
+    title: 'Closing & Objections',
+    questions: [
+      { id:'annonce_prix',     label:'Annonce du prix',                     type:'radio',    options:[{value:'directe',label:'✅ Directe et assumée'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
+      { id:'silence_prix',     label:'Silence après le prix ?',             type:'radio',    options:[{value:'oui',label:'✅ Oui — laissé respirer'},{value:'non',label:'❌ Non — rempli trop vite'}] },
+      { id:'objections',       label:'Objection rencontrée',                type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:"J'ai besoin de réfléchir"},{value:'conjoint',label:'Conjoint / autre personne'},{value:'methode',label:'Pas convaincu de la méthode'},{value:'aucune',label:"Pas d'objection"}] },
+      { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',   options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+      { id:'objection_isolee', label:'Objection bien isolée ?',             type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+      { id:'resultat_closing', label:'Résultat du closing',                 type:'radio',    options:[{value:'close',label:'✅ Closé en direct'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance planifiée'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
+    ]
+  },
+];
+
 // ─── SCORES ───────────────────────────────────────────────────────────────────
 function computeScore(sections) {
   let pts = 0, max = 0;
@@ -658,70 +713,6 @@ function CatCard({ number, title, children }) {
     </div>
   );
 }
-function S1({ data={}, onChange, notes, onNotes }) {
-  const set = (k,v) => onChange({...data,[k]:v});
-  return (
-    <CatCard number="1" title="Phase de découverte">
-      <RadioGroup label="Douleur de surface identifiée ?" options={[{value:'oui',label:'Oui'},{value:'non',label:'Non'}]} value={data.douleur_surface} onChange={v=>set('douleur_surface',v)}/>
-      {data.douleur_surface==='oui'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Note ce qu'elle était..." value={data.douleur_surface_note||''} onChange={e=>set('douleur_surface_note',e.target.value)}/></div>}
-      <RadioGroup label="Douleur profonde / identitaire atteinte ?" options={[{value:'oui',label:"✅ Oui — verbalisé fort"},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}]} value={data.douleur_profonde} onChange={v=>set('douleur_profonde',v)}/>
-      {data.douleur_profonde&&data.douleur_profonde!=='non'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Note la douleur profonde..." value={data.douleur_profonde_note||''} onChange={e=>set('douleur_profonde_note',e.target.value)}/></div>}
-      <CheckboxGroup label="Couches de douleur creusées" options={[{value:'couche1',label:'Couche 1 : physique / performance'},{value:'couche2',label:'Couche 2 : impact quotidien / social'},{value:'couche3',label:'Couche 3 : identité / peur du futur'}]} value={data.couches_douleur||[]} onChange={v=>set('couches_douleur',v)}/>
-      <RadioGroup label="Temporalité demandée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.temporalite} onChange={v=>set('temporalite',v)}/>
-      <RadioGroup label="Urgence naturelle identifiée ?" options={[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}]} value={data.urgence} onChange={v=>set('urgence',v)}/>
-      {data.urgence==='oui'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Laquelle ?" value={data.urgence_note||''} onChange={e=>set('urgence_note',e.target.value)}/></div>}
-      <SectionNotes notes={notes} onChange={onNotes}/>
-    </CatCard>
-  );
-}
-function S2({ data={}, onChange, notes, onNotes }) {
-  const set = (k,v) => onChange({...data,[k]:v});
-  return (
-    <CatCard number="2" title="Reformulation">
-      <RadioGroup label="Reformulation faite ?" options={[{value:'oui',label:'✅ Complète et précise'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}]} value={data.reformulation} onChange={v=>set('reformulation',v)}/>
-      <RadioGroup label="Le prospect s'est reconnu ?" options={[{value:'oui',label:"✅ Oui — \"c'est exactement ça\""},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}]} value={data.prospect_reconnu} onChange={v=>set('prospect_reconnu',v)}/>
-      <CheckboxGroup label="Les 3 couches présentes ?" options={[{value:'physique',label:'Douleur physique / performance'},{value:'quotidien',label:'Impact quotidien'},{value:'identitaire',label:'Dimension identitaire'}]} value={data.couches_reformulation||[]} onChange={v=>set('couches_reformulation',v)}/>
-      <SectionNotes notes={notes} onChange={onNotes}/>
-    </CatCard>
-  );
-}
-function S3({ data={}, onChange, notes, onNotes }) {
-  const set = (k,v) => onChange({...data,[k]:v});
-  return (
-    <CatCard number="3" title="Projection">
-      <RadioGroup label="Question de projection posée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.projection_posee} onChange={v=>set('projection_posee',v)}/>
-      <RadioGroup label="Qualité de la réponse" options={[{value:'forte',label:'✅ Forte — émotionnelle, identitaire'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}]} value={data.qualite_reponse} onChange={v=>set('qualite_reponse',v)}/>
-      <RadioGroup label="Deadline utilisée comme levier ?" options={[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}]} value={data.deadline_levier} onChange={v=>set('deadline_levier',v)}/>
-      <SectionNotes notes={notes} onChange={onNotes}/>
-    </CatCard>
-  );
-}
-function S4({ data={}, onChange, notes, onNotes }) {
-  const set = (k,v) => onChange({...data,[k]:v});
-  return (
-    <CatCard number="4" title="Présentation de l'offre">
-      <RadioGroup label="Présentation collée aux douleurs ?" options={[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non — générique'}]} value={data.colle_douleurs} onChange={v=>set('colle_douleurs',v)}/>
-      <RadioGroup label="Exemples bien choisis ?" options={[{value:'oui',label:"✅ Oui — le prospect s'est reconnu"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}]} value={data.exemples_transformation} onChange={v=>set('exemples_transformation',v)}/>
-      <RadioGroup label="Durée / Offre justifiée ?" options={[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}]} value={data.duree_justifiee} onChange={v=>set('duree_justifiee',v)}/>
-      <SectionNotes notes={notes} onChange={onNotes}/>
-    </CatCard>
-  );
-}
-function S5({ data={}, onChange, notes, onNotes }) {
-  const set = (k,v) => onChange({...data,[k]:v});
-  return (
-    <CatCard number="5" title="Closing & Objections">
-      <RadioGroup label="Annonce du prix" options={[{value:'directe',label:'✅ Directe et assumée'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}]} value={data.annonce_prix} onChange={v=>set('annonce_prix',v)}/>
-      <RadioGroup label="Silence après le prix ?" options={[{value:'oui',label:'✅ Oui — laissé respirer'},{value:'non',label:'❌ Non — rempli trop vite'}]} value={data.silence_prix} onChange={v=>set('silence_prix',v)}/>
-      <CheckboxGroup label="Objection rencontrée" options={[{value:'budget',label:'Budget'},{value:'reflechir',label:'"J\'ai besoin de réfléchir"'},{value:'conjoint',label:'Conjoint / autre personne'},{value:'methode',label:'Pas convaincu de la méthode'},{value:'aucune',label:"Pas d'objection"}]} value={data.objections||[]} onChange={v=>set('objections',v)}/>
-      <RadioGroup label="Douleur réancrée avant l'objection ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.douleur_reancree} onChange={v=>set('douleur_reancree',v)}/>
-      <RadioGroup label="Objection bien isolée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.objection_isolee} onChange={v=>set('objection_isolee',v)}/>
-      <RadioGroup label="Résultat du closing" options={[{value:'close',label:'✅ Closé en direct'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance planifiée'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}]} value={data.resultat_closing} onChange={v=>set('resultat_closing',v)}/>
-      <SectionNotes notes={notes} onChange={onNotes}/>
-    </CatCard>
-  );
-}
-
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({ subtitle, icon, children }) {
   return (
@@ -850,10 +841,12 @@ function ResetPage({ token, onDone }) {
 
 // ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
 function AccountSettings({ user, onClose, toast }) {
+  const isHOS = user.role === 'head_of_sales';
   const [tab, setTab] = useState('profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+
   const changePwd = async () => {
     setErr('');
     if (pwd.next !== pwd.confirm) return setErr('Les mots de passe ne correspondent pas');
@@ -862,41 +855,201 @@ function AccountSettings({ user, onClose, toast }) {
     try { await apiFetch('/auth/change-password',{method:'POST',body:{currentPassword:pwd.current,newPassword:pwd.next}}); toast('Mot de passe modifié !'); setPwd({current:'',next:'',confirm:''}); }
     catch(e) { setErr(e.message); } finally { setSaving(false); }
   };
+
+  const tabs = [
+    { key:'profil',    label:'👤 Profil' },
+    { key:'securite',  label:'🔒 Sécurité' },
+    ...(isHOS ? [{ key:'questions', label:'📋 Questions' }] : []),
+  ];
+
   return (
     <Modal title="Paramètres du compte" onClose={onClose}>
-      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20}}>
-        {[{key:'profil',label:'👤 Profil'},{key:'securite',label:'🔒 Sécurité'}].map(({key,label})=>(
-          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?'#1e293b':'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit'}}>{label}</button>
+      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20,flexWrap:'wrap'}}>
+        {tabs.map(({key,label})=>(
+          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?TXT:'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit',minWidth:80}}>{label}</button>
         ))}
       </div>
-      {tab==='profil'&&(
+
+      {tab==='profil' && (
         <div>
           <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.2)',borderRadius:12,marginBottom:20}}>
-            <div style={{width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#e87d6a,#d4604e)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
+            <div style={{width:52,height:52,borderRadius:'50%',background:`linear-gradient(135deg,${P},${P2})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
             <div>
-              <p style={{fontWeight:700,fontSize:16,color:'#5a4a3a',margin:0}}>{user.name}</p>
-              <p style={{fontSize:13,color:'#6b7280',margin:'2px 0 0'}}>{user.email}</p>
-              <span style={{display:'inline-block',marginTop:4,background:user.role==='head_of_sales'?'#fef3c7':'rgba(253,232,228,.6)',color:user.role==='head_of_sales'?'#92400e':'#4c1d95',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>
-                {user.role==='head_of_sales'?'👑 Head of Sales':'🎯 Closer'}
+              <p style={{fontWeight:700,fontSize:16,color:TXT,margin:0}}>{user.name}</p>
+              <p style={{fontSize:13,color:TXT2,margin:'2px 0 0'}}>{user.email}</p>
+              <span style={{display:'inline-block',marginTop:4,background:isHOS?'#fef3c7':'rgba(253,232,228,.6)',color:isHOS?'#92400e':P2,fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>
+                {isHOS?'👑 Head of Sales':'🎯 Closer'}
               </span>
             </div>
           </div>
-          <p style={{fontSize:13,color:'#c8b8a8',textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
+          <p style={{fontSize:13,color:TXT3,textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
         </div>
       )}
-      {tab==='securite'&&(
+
+      {tab==='securite' && (
         <div>
-          <p style={{fontSize:13,fontWeight:600,color:'#5a4a3a',marginBottom:16}}>Changer le mot de passe</p>
+          <p style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Changer le mot de passe</p>
           <AlertBox type="error" message={err}/>
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             {[{key:'current',label:'Mot de passe actuel'},{key:'next',label:'Nouveau mot de passe'},{key:'confirm',label:'Confirmer'}].map(({key,label})=>(
-              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
+              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
             ))}
             <Btn onClick={changePwd} disabled={saving||!pwd.current||!pwd.next||!pwd.confirm} style={{marginTop:4}}>{saving?'Modification...':'Modifier le mot de passe'}</Btn>
           </div>
         </div>
       )}
+
+      {tab==='questions' && isHOS && (
+        <DebriefConfigEditor onClose={onClose} toast={toast}/>
+      )}
     </Modal>
+  );
+}
+
+
+// ─── DEBRIEF CONFIG EDITOR (HOS only) ────────────────────────────────────────
+function DebriefConfigEditor({ onClose, toast }) {
+  const [config, setConfig, loaded] = useDebriefConfig();
+  const [saving, setSaving] = React.useState(false);
+  const [activeSection, setActiveSection] = React.useState(0);
+
+  const updateSection = (si, field, val) => {
+    setConfig(prev => prev.map((s, i) => i === si ? { ...s, [field]: val } : s));
+  };
+
+  const updateQuestion = (si, qi, field, val) => {
+    setConfig(prev => prev.map((s, i) => i !== si ? s : {
+      ...s,
+      questions: s.questions.map((q, j) => j !== qi ? q : { ...q, [field]: val })
+    }));
+  };
+
+  const addQuestion = si => {
+    const id = `q_${Date.now()}`;
+    setConfig(prev => prev.map((s, i) => i !== si ? s : {
+      ...s,
+      questions: [...s.questions, { id, label: 'Nouvelle question', type: 'radio', options: [{value:'oui',label:'Oui'},{value:'non',label:'Non'}] }]
+    }));
+  };
+
+  const removeQuestion = (si, qi) => {
+    setConfig(prev => prev.map((s, i) => i !== si ? s : {
+      ...s,
+      questions: s.questions.filter((_, j) => j !== qi)
+    }));
+  };
+
+  const addSection = () => {
+    const id = `section_${Date.now()}`;
+    setConfig(prev => [...prev, { key: id, title: 'Nouvelle section', questions: [] }]);
+    setActiveSection(config.length);
+  };
+
+  const removeSection = si => {
+    if (config.length <= 1) return toast('Il faut au moins une section', 'error');
+    setConfig(prev => prev.filter((_, i) => i !== si));
+    setActiveSection(Math.max(0, activeSection - 1));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await apiFetch('/debrief-config', { method:'PUT', body:{ sections: config } });
+      toast('Configuration sauvegardée !');
+      onClose();
+    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    if (!confirm('Réinitialiser aux questions par défaut ?')) return;
+    try {
+      await apiFetch('/debrief-config', { method:'DELETE' });
+      setConfig(DEFAULT_DEBRIEF_CONFIG);
+      toast('Configuration réinitialisée');
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  if (!loaded) return <div style={{padding:40,textAlign:'center'}}><Spinner/></div>;
+
+  const sec = config[activeSection] || config[0];
+  const si = activeSection;
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+      {/* Tabs sections */}
+      <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:16 }}>
+        {config.map((s, i) => (
+          <button key={s.key} onClick={() => setActiveSection(i)}
+            style={{ padding:'5px 12px', borderRadius:R_FULL, border:'none', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', background:i===activeSection?`linear-gradient(135deg,${P},${P2})`:'rgba(253,232,228,.3)', color:i===activeSection?'white':TXT2, transition:'all .15s' }}>
+            {i+1}. {s.title}
+          </button>
+        ))}
+        <button onClick={addSection} style={{ padding:'5px 12px', borderRadius:R_FULL, border:`1px dashed rgba(232,125,106,.4)`, fontSize:12, cursor:'pointer', fontFamily:'inherit', background:'transparent', color:TXT3 }}>
+          + Section
+        </button>
+      </div>
+
+      {sec && (
+        <div style={{ ...card(), padding:16, marginBottom:16 }}>
+          {/* Titre de la section */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+            <Input value={sec.title} onChange={e => updateSection(si, 'title', e.target.value)} style={{fontSize:14,fontWeight:700}}/>
+            {config.length > 1 && (
+              <button onClick={() => removeSection(si)} style={{ padding:'8px 10px', borderRadius:R_SM, border:'none', background:'rgba(253,232,228,.6)', color:'#c05040', cursor:'pointer', fontSize:13, flexShrink:0 }}>🗑</button>
+            )}
+          </div>
+
+          {/* Questions */}
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {sec.questions.map((q, qi) => (
+              <div key={q.id} style={{ background:SAND, borderRadius:R_SM, padding:'12px 14px', border:'1px solid rgba(232,125,106,.1)' }}>
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <Input value={q.label} onChange={e => updateQuestion(si, qi, 'label', e.target.value)} style={{fontSize:13}}/>
+                  <select value={q.type} onChange={e => updateQuestion(si, qi, 'type', e.target.value)}
+                    style={{ padding:'8px 10px', borderRadius:R_SM, border:'1px solid rgba(232,125,106,.15)', background:SAND, fontSize:12, color:TXT, fontFamily:'inherit', cursor:'pointer', flexShrink:0 }}>
+                    <option value="radio">Choix unique</option>
+                    <option value="checkbox">Choix multiple</option>
+                    <option value="text">Texte libre</option>
+                  </select>
+                  <button onClick={() => removeQuestion(si, qi)} style={{ padding:'8px 10px', borderRadius:R_SM, border:'none', background:'rgba(253,232,228,.6)', color:'#c05040', cursor:'pointer', fontSize:13, flexShrink:0 }}>🗑</button>
+                </div>
+                {q.type !== 'text' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                    {(q.options || []).map((opt, oi) => (
+                      <div key={oi} style={{ display:'flex', gap:6 }}>
+                        <Input value={opt.value} onChange={e => updateQuestion(si, qi, 'options', q.options.map((o,k)=>k===oi?{...o,value:e.target.value}:o))} style={{fontSize:11,flex:'0 0 90px'}}/>
+                        <Input value={opt.label} onChange={e => updateQuestion(si, qi, 'options', q.options.map((o,k)=>k===oi?{...o,label:e.target.value}:o))} style={{fontSize:11}}/>
+                        <button onClick={() => updateQuestion(si, qi, 'options', q.options.filter((_,k)=>k!==oi))}
+                          style={{ border:'none', background:'none', color:'#c8b8a8', cursor:'pointer', fontSize:14, padding:'0 4px' }}>✕</button>
+                      </div>
+                    ))}
+                    <button onClick={() => updateQuestion(si, qi, 'options', [...(q.options||[]), {value:`opt${Date.now()}`,label:'Nouvelle option'}])}
+                      style={{ alignSelf:'flex-start', padding:'4px 10px', borderRadius:R_SM, border:`1px dashed rgba(232,125,106,.3)`, background:'transparent', fontSize:11, color:TXT3, cursor:'pointer', fontFamily:'inherit' }}>
+                      + Option
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button onClick={() => addQuestion(si)}
+              style={{ padding:'8px 14px', borderRadius:R_SM, border:`1px dashed rgba(232,125,106,.3)`, background:'transparent', fontSize:12, color:TXT3, cursor:'pointer', fontFamily:'inherit', textAlign:'left' }}>
+              + Ajouter une question
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display:'flex', gap:8, justifyContent:'space-between' }}>
+        <button onClick={reset} style={{ padding:'8px 14px', borderRadius:R_FULL, border:`1px solid rgba(192,80,64,.3)`, background:'rgba(253,232,228,.5)', color:'#c05040', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
+          Réinitialiser par défaut
+        </button>
+        <div style={{ display:'flex', gap:8 }}>
+          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={save} disabled={saving}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Btn>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1730,102 +1883,102 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
 }
 
 function NewDebrief({ navigate, onSave, toast }) {
-  const mob = useIsMobile();
-  const [form, setForm] = useState({ prospect_name:'', call_date:new Date().toISOString().split('T')[0], closer_name:'', call_link:'', is_closed:null, notes:'' });
-  const [secs,  setSecs]  = useState({ decouverte:{}, reformulation:{}, projection:{}, offre:{}, closing:{} });
-  const [notes, setNotes] = useState({ decouverte:{}, reformulation:{}, projection:{}, offre:{}, closing:{} });
+  const [config] = useDebriefConfig();
+  const [form, setForm] = useState({ prospect_name:'', call_date: new Date().toISOString().split('T')[0], is_closed:false });
+  const [sections, setSections] = useState({});
+  const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(false);
-  const { total, max, percentage } = computeScore(secs);
+  const mob = useIsMobile();
+
+  const updateSection = (key, data) => setSections(p => ({...p, [key]:data}));
+  const updateNotes   = (key, data) => setNotes(p => ({...p, [key]:data}));
+
+  const score = computeScore(sections);
+  const pct   = Math.round((score.points / Math.max(score.max,1)) * 100);
 
   const submit = async e => {
-    e.preventDefault();
-    if (form.is_closed === null) { toast("Indiquez le résultat de l'appel", 'error'); return; }
+    e && e.preventDefault();
+    if (!form.prospect_name.trim()) return toast('Nom du prospect requis', 'error');
     setLoading(true);
     try {
-      const r = await apiFetch('/debriefs',{ method:'POST', body:{ ...form, sections:secs, section_notes:notes, total_score:total, max_score:max, percentage, scores:{}, criteria_notes:{} } });
-      onSave(r.debrief, r.gamification);
-      toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
-      navigate('Detail', r.debrief.id);
-    } catch(e) { toast(e.message,'error'); } finally { setLoading(false); }
+      const res = await apiFetch('/debriefs', { method:'POST', body:{ ...form, sections, notes } });
+      onSave(res.debrief, res.gamification);
+      toast('Debrief enregistré ! +' + (res.gamification?.pointsEarned||0) + ' pts');
+      navigate('Dashboard');
+    } catch(e) { toast(e.message, 'error'); } finally { setLoading(false); }
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-        <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <h1 style={{ fontSize:20, fontWeight:700, color:'#5a4a3a', margin:0 }}>Nouveau debrief</h1>
-          <p style={{ color:'#c8b8a8', fontSize:13, marginTop:2 }}>Évaluez votre dernier appel</p>
+          <h1 style={{ fontSize:22, fontWeight:700, color:TXT, margin:0 }}>Nouveau debrief</h1>
+          <p style={{ color:TXT2, fontSize:13, marginTop:4 }}>Analysez votre appel section par section</p>
+        </div>
+        <Btn variant="secondary" onClick={()=>navigate('Dashboard')}>← Retour</Btn>
+      </div>
+
+      {/* Infos prospect */}
+      <Card style={{ padding:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:12 }}>
+          <div>
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Nom du prospect *</label>
+            <Input placeholder="Jean Dupont" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})} autoFocus/>
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Date de l'appel</label>
+            <Input type="date" value={form.call_date} onChange={e=>setForm({...form,call_date:e.target.value})}/>
+          </div>
+        </div>
+        <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
+          <input type="checkbox" id="is_closed" checked={form.is_closed} onChange={e=>setForm({...form,is_closed:e.target.checked})} style={{ width:16, height:16, accentColor:P, cursor:'pointer' }}/>
+          <label htmlFor="is_closed" style={{ fontSize:13, color:TXT, cursor:'pointer' }}>✅ Call closé (vente signée)</label>
+        </div>
+      </Card>
+
+      {/* Score live */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_MD, color:'white' }}>
+        <span style={{ fontSize:13, fontWeight:600 }}>Score en cours</span>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ height:6, width:120, background:'rgba(255,255,255,.3)', borderRadius:3 }}>
+            <div style={{ height:'100%', width:`${pct}%`, background:'white', borderRadius:3, transition:'width .4s' }}/>
+          </div>
+          <span style={{ fontSize:18, fontWeight:700 }}>{pct}%</span>
         </div>
       </div>
 
-      {/* Score en haut sur mobile */}
-      {mob && (
-        <div style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', borderRadius:12, padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
-          <div>
-            <p style={{ fontSize:11, opacity:.8, margin:0, textTransform:'uppercase', letterSpacing:'.05em' }}>Score en direct</p>
-            <p style={{ fontSize:28, fontWeight:700, margin:0 }}>{percentage}%</p>
-            <p style={{ fontSize:12, opacity:.7, margin:0 }}>{total} / {max} points</p>
-          </div>
-          {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed}/>}
-        </div>
-      )}
+      {/* Sections dynamiques depuis config */}
+      {config.map((section, idx) => (
+        <CatCard key={section.key} number={String(idx+1)} title={section.title}>
+          {section.questions.map(q => {
+            const val = (sections[section.key] || {})[q.id];
+            const setVal = v => updateSection(section.key, { ...(sections[section.key]||{}), [q.id]: v });
+            if (q.type === 'radio') return (
+              <RadioGroup key={q.id} label={q.label} options={q.options||[]} value={val} onChange={setVal}/>
+            );
+            if (q.type === 'checkbox') return (
+              <CheckboxGroup key={q.id} label={q.label} options={q.options||[]} value={val||[]} onChange={setVal}/>
+            );
+            if (q.type === 'text') return (
+              <div key={q.id} style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:TXT, marginBottom:6 }}>{q.label}</label>
+                <Textarea placeholder="Votre réponse..." value={val||''} onChange={e=>setVal(e.target.value)}/>
+              </div>
+            );
+            return null;
+          })}
+          <SectionNotes notes={notes[section.key]||{}} onChange={d=>updateNotes(section.key,d)}/>
+        </CatCard>
+      ))}
 
-      <form onSubmit={submit}>
-        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 300px', gap:mob?16:24, alignItems:'start' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <Card style={{ padding:16 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Informations de l'appel</h3>
-              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12, marginBottom:14 }}>
-                <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:6}}>Prospect *</label><Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})}/></div>
-                <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:6}}>Closer *</label><Input required placeholder="Votre nom" value={form.closer_name} onChange={e=>setForm({...form,closer_name:e.target.value})}/></div>
-                <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:6}}>Date *</label><Input type="date" required value={form.call_date} onChange={e=>setForm({...form,call_date:e.target.value})}/></div>
-              </div>
-              <div style={{ marginBottom:14 }}>
-                <label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:6}}>🔗 Lien enregistrement</label>
-                <Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({...form,call_link:e.target.value})}/>
-              </div>
-              <div>
-                <label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:8}}>Résultat *</label>
-                <div style={{ display:'flex', gap:10 }}>
-                  {[{val:true,label:'✅ Closer',border:'#059669',bg:'#d1fae5',c:'#065f46'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'#fee2e2',c:'#991b1b'}].map(({val,label,border,bg,c})=>(
-                    <button key={String(val)} type="button" onClick={()=>setForm({...form,is_closed:val})} style={{flex:1,padding:'12px 14px',borderRadius:10,border:`2px solid ${form.is_closed===val?border:'#e2e8f0'}`,background:form.is_closed===val?bg:'white',color:form.is_closed===val?c:'#94a3b8',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',transition:'all .2s'}}>{label}</button>
-                  ))}
-                </div>
-              </div>
-            </Card>
-            <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Évaluation des critères</h2>
-            <S1 data={secs.decouverte}    onChange={v=>setSecs(s=>({...s,decouverte:v}))}    notes={notes.decouverte}    onNotes={n=>setNotes(p=>({...p,decouverte:n}))}/>
-            <S2 data={secs.reformulation}  onChange={v=>setSecs(s=>({...s,reformulation:v}))}  notes={notes.reformulation}  onNotes={n=>setNotes(p=>({...p,reformulation:n}))}/>
-            <S3 data={secs.projection}     onChange={v=>setSecs(s=>({...s,projection:v}))}     notes={notes.projection}     onNotes={n=>setNotes(p=>({...p,projection:n}))}/>
-            <S4 data={secs.offre}          onChange={v=>setSecs(s=>({...s,offre:v}))}          notes={notes.offre}          onNotes={n=>setNotes(p=>({...p,offre:n}))}/>
-            <S5 data={secs.closing}        onChange={v=>setSecs(s=>({...s,closing:v}))}        notes={notes.closing}        onNotes={n=>setNotes(p=>({...p,closing:n}))}/>
-            <Card style={{ padding:16 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Notes globales</h3>
-              <Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
-            </Card>
-            {mob && <Btn type="submit" disabled={loading} style={{width:'100%',padding:'14px 20px',fontSize:15}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</Btn>}
-          </div>
-
-          {/* Sidebar score — desktop */}
-          {!mob && (
-            <div style={{ position:'sticky', top:80 }}>
-              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
-                <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Score en direct</h3>
-                <ScoreGauge percentage={percentage}/>
-                <p style={{ fontSize:13, color:'#c8b8a8', margin:0 }}>{total} / {max} points</p>
-                {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed}/>}
-                <Btn type="submit" disabled={loading} style={{width:'100%'}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</Btn>
-              </Card>
-            </div>
-          )}
-        </div>
-      </form>
+      {/* Bouton submit */}
+      <Btn onClick={submit} disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
+        {loading ? 'Enregistrement...' : '💾 Enregistrer le debrief'}
+      </Btn>
     </div>
   );
 }
 
-// ─── USER MENU ────────────────────────────────────────────────────────────────
 function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
