@@ -65,25 +65,25 @@ function useBreakpoint() {
 
 
 
-const P  = '#e87d6a';   // primaire corail
-const P2 = '#d4604e';   // primaire foncé
-const A  = '#6aacce';   // accent bleu ciel
+// ─── DESIGN SYSTEM — Soft Pastel 3D ─────────────────────────────────────────
+const P  = '#e87d6a';
+const P2 = '#d4604e';
+const A  = '#6aacce';
 const BG = 'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)';
 const WHITE = '#ffffff';
-const TXT  = '#5a4a3a';  // texte principal
-const TXT2 = '#b09080';  // texte secondaire
-const TXT3 = '#c8b8a8';  // texte muted
-const SAND = '#f5ede6';  // fond inputs
-
-// Ombres neumorphiques
+const TXT  = '#5a4a3a';
+const TXT2 = '#b09080';
+const TXT3 = '#c8b8a8';
+const SAND = '#f5ede6';
 const SH_CARD = '5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9)';
 const SH_SM   = '3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85)';
 const SH_BTN  = '0 6px 18px rgba(232,125,106,.35), inset 0 1px 0 rgba(255,255,255,.25)';
 const SH_IN   = 'inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9)';
 const SH_HOVERED = '6px 6px 20px rgba(174,130,100,.22), -3px -3px 10px rgba(255,255,255,.9)';
-
-// Radius
-const R_SM = 10; const R_MD = 14; const R_LG = 18; const R_XL = 24; const R_FULL = 50;
+const R_SM=10; const R_MD=14; const R_LG=18; const R_XL=24; const R_FULL=50;
+const card   = (x={}) => ({ background:WHITE, borderRadius:R_LG, boxShadow:SH_CARD, ...x });
+const cardSm = (x={}) => ({ background:WHITE, borderRadius:R_MD, boxShadow:SH_SM, ...x });
+const inp    = (x={}) => ({ width:'100%', background:SAND, border:'1px solid rgba(232,125,106,.15)', borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:TXT, boxShadow:SH_IN, ...x });
 
 const DS = {
   bgApp: BG, bgCard: WHITE, bgInput: SAND,
@@ -99,69 +99,6 @@ const DS = {
   border: 'none',
   bgNavItem: `linear-gradient(135deg,${P},${P2})`,
 };
-
-// ─── HELPERS STYLE ────────────────────────────────────────────────────────────
-const card = (extra={}) => ({ background:'#ffffff', borderRadius:R_LG, boxShadow:SH_CARD, ...extra });
-const cardSm = (extra={}) => ({ background:'#ffffff', borderRadius:R_MD, boxShadow:SH_SM, ...extra });
-const inp = (extra={}) => ({ width:'100%', background:'#f5ede6', border:'1px solid rgba(232,125,106,.15)',
-  borderRadius:R_MD, padding:'11px 14px', fontSize:14, fontFamily:'inherit',
-  outline:'none', boxSizing:'border-box', color:'#5a4a3a', boxShadow:SH_IN, ...extra
-});
-
-
-// ─── CONFIG DEBRIEF PAR DÉFAUT ───────────────────────────────────────────────
-const DEFAULT_DEBRIEF_CONFIG = [
-  {
-    key: 'decouverte',
-    title: 'Phase de découverte',
-    questions: [
-      { id:'douleur_surface',   label:'Douleur de surface identifiée ?',          type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}], hasNote:true },
-      { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'✅ Oui — verbalisé fort'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}], hasNote:true },
-      { id:'couches_douleur',   label:'Couches de douleur creusées',               type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique / performance'},{value:'couche2',label:'Couche 2 : impact quotidien / social'},{value:'couche3',label:'Couche 3 : identité / peur du futur'}] },
-      { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-      { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}], hasNote:true },
-    ]
-  },
-  {
-    key: 'reformulation',
-    title: 'Reformulation',
-    questions: [
-      { id:'reformulation',     label:'Reformulation faite ?',         type:'radio',    options:[{value:'oui',label:'✅ Complète et précise'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
-      { id:'prospect_reconnu',  label:"Le prospect s'est reconnu ?",   type:'radio',    options:[{value:'oui',label:"✅ Oui — c'est exactement ça"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
-      { id:'couches_reformulation', label:'Les 3 couches présentes ?', type:'checkbox', options:[{value:'physique',label:'Douleur physique / performance'},{value:'quotidien',label:'Impact quotidien'},{value:'identitaire',label:'Dimension identitaire'}] },
-    ]
-  },
-  {
-    key: 'projection',
-    title: 'Projection',
-    questions: [
-      { id:'projection_posee',  label:'Question de projection posée ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-      { id:'qualite_reponse',   label:'Qualité de la réponse',          type:'radio', options:[{value:'forte',label:'✅ Forte — émotionnelle, identitaire'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
-      { id:'deadline_levier',   label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
-    ]
-  },
-  {
-    key: 'presentation_offre',
-    title: "Présentation de l'offre",
-    questions: [
-      { id:'colle_douleurs',        label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non — générique'}] },
-      { id:'exemples_transformation', label:'Exemples bien choisis ?',         type:'radio', options:[{value:'oui',label:"✅ Oui — le prospect s'est reconnu"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
-      { id:'duree_justifiee',       label:'Durée / Offre justifiée ?',         type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
-    ]
-  },
-  {
-    key: 'closing',
-    title: 'Closing & Objections',
-    questions: [
-      { id:'annonce_prix',     label:'Annonce du prix',                     type:'radio',    options:[{value:'directe',label:'✅ Directe et assumée'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
-      { id:'silence_prix',     label:'Silence après le prix ?',             type:'radio',    options:[{value:'oui',label:'✅ Oui — laissé respirer'},{value:'non',label:'❌ Non — rempli trop vite'}] },
-      { id:'objections',       label:'Objection rencontrée',                type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:"J'ai besoin de réfléchir"},{value:'conjoint',label:'Conjoint / autre personne'},{value:'methode',label:'Pas convaincu de la méthode'},{value:'aucune',label:"Pas d'objection"}] },
-      { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',   options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-      { id:'objection_isolee', label:'Objection bien isolée ?',             type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-      { id:'resultat_closing', label:'Résultat du closing',                 type:'radio',    options:[{value:'close',label:'✅ Closé en direct'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance planifiée'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
-    ]
-  },
-];
 
 // ─── SCORES ───────────────────────────────────────────────────────────────────
 function computeScore(sections) {
@@ -290,7 +227,16 @@ function Toasts({ list }) {
           <span style={{ flexShrink:0 }}>{ic[t.type]||ic.success}</span>{t.msg}
         </div>
       ))}
-      <style>{`@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:none;opacity:1}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        *{box-sizing:border-box}
+        html,body,#root{background:linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)!important;min-height:100%}
+        input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
+        ::placeholder{color:rgba(180,150,120,.5)!important}
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
+        ::-webkit-scrollbar-track{background:transparent}
+      `}</style>
     </div>
   );
 }
@@ -333,9 +279,9 @@ function Textarea({ placeholder, value, onChange, rows=3 }) {
 
 const BTN = {
   primary:   { background:`linear-gradient(135deg,${P},${P2})`, color:'white', border:'none', boxShadow:SH_BTN },
-  secondary: { background:WHITE, color:'#5a4a3a', border:'none', boxShadow:SH_SM },
+  secondary: { background:WHITE, color:TXT, border:'none', boxShadow:SH_SM },
   danger:    { background:'rgba(253,232,228,.8)', color:'#c05040', border:'1px solid rgba(192,80,64,.3)', boxShadow:'none' },
-  ghost:     { background:'transparent', color:'#b09080', border:'none', boxShadow:'none' },
+  ghost:     { background:'transparent', color:TXT2, border:'none', boxShadow:'none' },
   green:     { background:'rgba(218,240,216,.8)', color:'#5a9858', border:'1px solid rgba(90,152,88,.3)', boxShadow:'none' },
 };
 function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
@@ -364,8 +310,8 @@ function Empty({ icon, title, subtitle, action }) {
   return (
     <div style={{ ...card(), padding:'40px 24px', textAlign:'center' }}>
       <div style={{ fontSize:40, marginBottom:12 }}>{icon}</div>
-      <p style={{ fontWeight:700, fontSize:16, color:'#5a4a3a', margin:'0 0 6px' }}>{title}</p>
-      <p style={{ color:'#c8b8a8', fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
+      <p style={{ fontWeight:700, fontSize:16, color:TXT, margin:'0 0 6px' }}>{title}</p>
+      <p style={{ color:TXT3, fontSize:14, margin:`0 0 ${action?'20px':'0'}` }}>{subtitle}</p>
       {action}
     </div>
   );
@@ -381,8 +327,8 @@ function Modal({ title, onClose, children }) {
       onClick={e => e.target===e.currentTarget && onClose()}>
       <div style={{ background:WHITE, borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(174,130,100,.2)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontSize:17, fontWeight:700, color:'#5a4a3a', margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'#c8b8a8', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
+          <h2 style={{ fontSize:17, fontWeight:700, color:TXT, margin:0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:TXT3, cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
         {children}
       </div>
@@ -414,7 +360,7 @@ function ScoreGauge({ percentage, size='lg' }) {
   );
 }
 function ScoreBadge({ pct }) {
-  const s = pct>=80?{bg:'rgba(209,250,229,.85)',c:'#065f46',b:'rgba(110,231,183,.6)'}:pct>=60?{bg:'rgba(254,243,199,.85)',c:'#92400e',b:'rgba(252,211,77,.6)'}:pct>=40?{bg:'rgba(218,237,245,.8)',c:'#3a7a9a',b:'rgba(58,122,154,.3)'}:{bg:'rgba(254,226,226,.85)',c:'#991b1b',b:'rgba(252,165,165,.6)'};
+  const s = pct>=80?{bg:'rgba(209,250,229,.85)',c:'#065f46',b:'rgba(110,231,183,.6)'}:pct>=60?{bg:'rgba(254,243,199,.85)',c:'#92400e',b:'rgba(252,211,77,.6)'}:pct>=40?{bg:'rgba(237,233,254,.85)',c:'#4c1d95',b:'rgba(196,181,253,.6)'}:{bg:'rgba(254,226,226,.85)',c:'#991b1b',b:'rgba(252,165,165,.6)'};
   return <span style={{ background:s.bg, color:s.c, border:`1px solid ${s.b}`, padding:'3px 10px', borderRadius:8, fontWeight:700, fontSize:13, whiteSpace:'nowrap' }}>{pct}%</span>;
 }
 function ClosedBadge({ isClosed }) {
@@ -501,40 +447,42 @@ function SectionBars({ scores, globalScores }) {
 function GamCard({ gam }) {
   if (!gam) return null;
   const { points, level, badges } = gam;
-  const pct = level.next ? Math.min(Math.round((points - level.min) / (level.next - level.min) * 100), 100) : 100;
+  const pct = level.next ? Math.min(Math.round(((points-level.min)/(level.next-level.min))*100), 100) : 100;
   return (
-    <div style={{ background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_LG, padding:'16px 20px', color:'white' }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+    <div style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', borderRadius:16, padding:20, color:'white' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <div>
-          <p style={{ fontSize:10, opacity:.75, margin:0, textTransform:'uppercase', letterSpacing:'.06em' }}>Niveau</p>
-          <h2 style={{ fontSize:17, fontWeight:700, margin:'3px 0 0' }}>{level.icon} {level.name}</h2>
+          <p style={{ fontSize:11, opacity:.75, margin:0, textTransform:'uppercase', letterSpacing:'.06em' }}>Niveau</p>
+          <h2 style={{ fontSize:20, fontWeight:700, margin:'4px 0 0' }}>{level.icon} {level.name}</h2>
         </div>
         <div style={{ textAlign:'right' }}>
-          <p style={{ fontSize:10, opacity:.75, margin:0 }}>Points</p>
-          <p style={{ fontSize:22, fontWeight:700, margin:0 }}>{points}</p>
+          <p style={{ fontSize:11, opacity:.75, margin:0 }}>Points</p>
+          <p style={{ fontSize:26, fontWeight:700, margin:0 }}>{points}</p>
         </div>
       </div>
       {level.next && (
-        <div style={{ marginBottom: badges.length > 0 ? 10 : 0 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, opacity:.75, marginBottom:4 }}>
+        <div style={{ marginBottom:badges.length>0?14:0 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, opacity:.75, marginBottom:5 }}>
             <span>{points} pts</span>
             <span>{level.next - points} pts avant {computeLevel(level.next).name}</span>
           </div>
-          <div style={{ height:6, background:'rgba(255,255,255,.2)', borderRadius:3 }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:'rgba(255,255,255,.9)', borderRadius:3, transition:'width .7s' }}/>
+          <div style={{ height:8, background:'rgba(255,255,255,.2)', borderRadius:4 }}>
+            <div style={{ height:'100%', width:`${pct}%`, background:WHITE, borderRadius:4, transition:'width .7s' }}/>
           </div>
         </div>
       )}
       {badges.length > 0 && (
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-          {badges.map(b => (
-            <span key={b.id} style={{ background:'rgba(255,255,255,.2)', padding:'3px 10px', borderRadius:20, fontSize:11 }}>{b.icon} {b.label}</span>
-          ))}
+        <div>
+          <p style={{ fontSize:11, opacity:.75, marginBottom:8, textTransform:'uppercase', letterSpacing:'.06em' }}>Badges</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {badges.map(b => <span key={b.id} style={{ background:'rgba(255,255,255,.2)', padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:500 }}>{b.icon} {b.label}</span>)}
+          </div>
         </div>
       )}
     </div>
   );
 }
+
 function Leaderboard({ refreshKey }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -696,6 +644,52 @@ function SectionNotes({ notes={}, onChange }) {
     </div>
   );
 }
+
+// ─── DEFAULT DEBRIEF CONFIG ───────────────────────────────────────────────────
+const DEFAULT_DEBRIEF_CONFIG = [
+  { key:'decouverte', title:'Phase de découverte', questions:[
+    { id:'douleur_surface',   label:'Douleur de surface identifiée ?',          type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'✅ Oui — verbalisé fort'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_douleur',   label:'Couches de douleur creusées',               type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique'},{value:'couche2',label:'Couche 2 : quotidien'},{value:'couche3',label:'Couche 3 : identité'}] },
+    { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}] },
+  ]},
+  { key:'reformulation', title:'Reformulation', questions:[
+    { id:'reformulation',         label:'Reformulation faite ?',       type:'radio',    options:[{value:'oui',label:'✅ Complète'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
+    { id:'prospect_reconnu',      label:"Le prospect s'est reconnu ?", type:'radio',    options:[{value:'oui',label:"✅ Oui"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_reformulation', label:'Les 3 couches présentes ?',   type:'checkbox', options:[{value:'physique',label:'Physique'},{value:'quotidien',label:'Quotidien'},{value:'identitaire',label:'Identitaire'}] },
+  ]},
+  { key:'projection', title:'Projection', questions:[
+    { id:'projection_posee', label:'Question de projection posée ?',    type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'qualite_reponse',  label:'Qualité de la réponse',             type:'radio', options:[{value:'forte',label:'✅ Forte'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
+    { id:'deadline_levier',  label:'Deadline utilisée comme levier ?',  type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
+  ]},
+  { key:'presentation_offre', title:"Présentation de l'offre", questions:[
+    { id:'colle_douleurs',          label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'exemples_transformation', label:'Exemples bien choisis ?',            type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'duree_justifiee',         label:'Durée / Offre justifiée ?',          type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+  ]},
+  { key:'closing', title:'Closing & Objections', questions:[
+    { id:'annonce_prix',     label:'Annonce du prix',                      type:'radio',    options:[{value:'directe',label:'✅ Directe'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
+    { id:'silence_prix',     label:'Silence après le prix ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objections',       label:'Objection rencontrée',                 type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:'Besoin de réfléchir'},{value:'conjoint',label:'Conjoint'},{value:'methode',label:'Méthode'},{value:'aucune',label:'Aucune'}] },
+    { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objection_isolee', label:'Objection bien isolée ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'resultat_closing', label:'Résultat du closing',                  type:'radio',    options:[{value:'close',label:'✅ Closé'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
+  ]},
+];
+
+// useDebriefConfig : appelé UNIQUEMENT dans App, jamais dans composants conditionnels
+function useDebriefConfig() {
+  const [config, setConfig] = React.useState(DEFAULT_DEBRIEF_CONFIG);
+  React.useEffect(() => {
+    apiFetch('/debrief-config')
+      .then(d => { if (d && Array.isArray(d.sections) && d.sections.length > 0) setConfig(d.sections); })
+      .catch(() => {}); // silently fallback to default
+  }, []);
+  return [config, setConfig];
+}
+
 function CatCard({ number, title, children }) {
   const [open, setOpen] = React.useState(false);
   return (
@@ -713,6 +707,70 @@ function CatCard({ number, title, children }) {
     </div>
   );
 }
+function S1({ data={}, onChange, notes, onNotes }) {
+  const set = (k,v) => onChange({...data,[k]:v});
+  return (
+    <CatCard number="1" title="Phase de découverte">
+      <RadioGroup label="Douleur de surface identifiée ?" options={[{value:'oui',label:'Oui'},{value:'non',label:'Non'}]} value={data.douleur_surface} onChange={v=>set('douleur_surface',v)}/>
+      {data.douleur_surface==='oui'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Note ce qu'elle était..." value={data.douleur_surface_note||''} onChange={e=>set('douleur_surface_note',e.target.value)}/></div>}
+      <RadioGroup label="Douleur profonde / identitaire atteinte ?" options={[{value:'oui',label:"✅ Oui — verbalisé fort"},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}]} value={data.douleur_profonde} onChange={v=>set('douleur_profonde',v)}/>
+      {data.douleur_profonde&&data.douleur_profonde!=='non'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Note la douleur profonde..." value={data.douleur_profonde_note||''} onChange={e=>set('douleur_profonde_note',e.target.value)}/></div>}
+      <CheckboxGroup label="Couches de douleur creusées" options={[{value:'couche1',label:'Couche 1 : physique / performance'},{value:'couche2',label:'Couche 2 : impact quotidien / social'},{value:'couche3',label:'Couche 3 : identité / peur du futur'}]} value={data.couches_douleur||[]} onChange={v=>set('couches_douleur',v)}/>
+      <RadioGroup label="Temporalité demandée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.temporalite} onChange={v=>set('temporalite',v)}/>
+      <RadioGroup label="Urgence naturelle identifiée ?" options={[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}]} value={data.urgence} onChange={v=>set('urgence',v)}/>
+      {data.urgence==='oui'&&<div style={{marginTop:-8,marginBottom:16}}><Input placeholder="Laquelle ?" value={data.urgence_note||''} onChange={e=>set('urgence_note',e.target.value)}/></div>}
+      <SectionNotes notes={notes} onChange={onNotes}/>
+    </CatCard>
+  );
+}
+function S2({ data={}, onChange, notes, onNotes }) {
+  const set = (k,v) => onChange({...data,[k]:v});
+  return (
+    <CatCard number="2" title="Reformulation">
+      <RadioGroup label="Reformulation faite ?" options={[{value:'oui',label:'✅ Complète et précise'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}]} value={data.reformulation} onChange={v=>set('reformulation',v)}/>
+      <RadioGroup label="Le prospect s'est reconnu ?" options={[{value:'oui',label:"✅ Oui — \"c'est exactement ça\""},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}]} value={data.prospect_reconnu} onChange={v=>set('prospect_reconnu',v)}/>
+      <CheckboxGroup label="Les 3 couches présentes ?" options={[{value:'physique',label:'Douleur physique / performance'},{value:'quotidien',label:'Impact quotidien'},{value:'identitaire',label:'Dimension identitaire'}]} value={data.couches_reformulation||[]} onChange={v=>set('couches_reformulation',v)}/>
+      <SectionNotes notes={notes} onChange={onNotes}/>
+    </CatCard>
+  );
+}
+function S3({ data={}, onChange, notes, onNotes }) {
+  const set = (k,v) => onChange({...data,[k]:v});
+  return (
+    <CatCard number="3" title="Projection">
+      <RadioGroup label="Question de projection posée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.projection_posee} onChange={v=>set('projection_posee',v)}/>
+      <RadioGroup label="Qualité de la réponse" options={[{value:'forte',label:'✅ Forte — émotionnelle, identitaire'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}]} value={data.qualite_reponse} onChange={v=>set('qualite_reponse',v)}/>
+      <RadioGroup label="Deadline utilisée comme levier ?" options={[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}]} value={data.deadline_levier} onChange={v=>set('deadline_levier',v)}/>
+      <SectionNotes notes={notes} onChange={onNotes}/>
+    </CatCard>
+  );
+}
+function S4({ data={}, onChange, notes, onNotes }) {
+  const set = (k,v) => onChange({...data,[k]:v});
+  return (
+    <CatCard number="4" title="Présentation de l'offre">
+      <RadioGroup label="Présentation collée aux douleurs ?" options={[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non — générique'}]} value={data.colle_douleurs} onChange={v=>set('colle_douleurs',v)}/>
+      <RadioGroup label="Exemples bien choisis ?" options={[{value:'oui',label:"✅ Oui — le prospect s'est reconnu"},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}]} value={data.exemples_transformation} onChange={v=>set('exemples_transformation',v)}/>
+      <RadioGroup label="Durée / Offre justifiée ?" options={[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}]} value={data.duree_justifiee} onChange={v=>set('duree_justifiee',v)}/>
+      <SectionNotes notes={notes} onChange={onNotes}/>
+    </CatCard>
+  );
+}
+function S5({ data={}, onChange, notes, onNotes }) {
+  const set = (k,v) => onChange({...data,[k]:v});
+  return (
+    <CatCard number="5" title="Closing & Objections">
+      <RadioGroup label="Annonce du prix" options={[{value:'directe',label:'✅ Directe et assumée'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}]} value={data.annonce_prix} onChange={v=>set('annonce_prix',v)}/>
+      <RadioGroup label="Silence après le prix ?" options={[{value:'oui',label:'✅ Oui — laissé respirer'},{value:'non',label:'❌ Non — rempli trop vite'}]} value={data.silence_prix} onChange={v=>set('silence_prix',v)}/>
+      <CheckboxGroup label="Objection rencontrée" options={[{value:'budget',label:'Budget'},{value:'reflechir',label:'"J\'ai besoin de réfléchir"'},{value:'conjoint',label:'Conjoint / autre personne'},{value:'methode',label:'Pas convaincu de la méthode'},{value:'aucune',label:"Pas d'objection"}]} value={data.objections||[]} onChange={v=>set('objections',v)}/>
+      <RadioGroup label="Douleur réancrée avant l'objection ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.douleur_reancree} onChange={v=>set('douleur_reancree',v)}/>
+      <RadioGroup label="Objection bien isolée ?" options={[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}]} value={data.objection_isolee} onChange={v=>set('objection_isolee',v)}/>
+      <RadioGroup label="Résultat du closing" options={[{value:'close',label:'✅ Closé en direct'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance planifiée'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}]} value={data.resultat_closing} onChange={v=>set('resultat_closing',v)}/>
+      <SectionNotes notes={notes} onChange={onNotes}/>
+    </CatCard>
+  );
+}
+
 // ─── AUTH PAGES ───────────────────────────────────────────────────────────────
 function AuthShell({ subtitle, icon, children }) {
   return (
@@ -722,8 +780,8 @@ function AuthShell({ subtitle, icon, children }) {
           <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${P},${P2})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, margin:'0 auto 14px', boxShadow:SH_BTN }}>
             {icon}
           </div>
-          <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>CloserDebrief</h1>
-          <p style={{ color:'#b09080', fontSize:14, marginTop:6 }}>{subtitle}</p>
+          <h1 style={{ fontSize:24, fontWeight:700, color:TXT, margin:0 }}>CloserDebrief</h1>
+          <p style={{ color:TXT2, fontSize:14, marginTop:6 }}>{subtitle}</p>
         </div>
         <div style={{ ...card(), padding:28 }}>{children}</div>
       </div>
@@ -839,168 +897,10 @@ function ResetPage({ token, onDone }) {
   );
 }
 
-// ─── HOOK useDebriefConfig ────────────────────────────────────────────────────
-function useDebriefConfig() {
-  const [config, setConfig] = React.useState(DEFAULT_DEBRIEF_CONFIG);
-  const [loaded, setLoaded] = React.useState(false);
-  React.useEffect(() => {
-    apiFetch('/debrief-config')
-      .then(d => { if (d && d.sections && Array.isArray(d.sections) && d.sections.length > 0) setConfig(d.sections); })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, []);
-  return [config, setConfig, loaded];
-}
-
-// ─── DEBRIEF CONFIG EDITOR (HOS only) ────────────────────────────────────────
-function DebriefConfigEditor({ onClose, toast, config, setConfig, loaded }) {
-  const [saving, setSaving] = React.useState(false);
-  const [activeSection, setActiveSection] = React.useState(0);
-
-  const updateSection = (si, field, val) => {
-    setConfig(prev => prev.map((s, i) => i === si ? { ...s, [field]: val } : s));
-  };
-
-  const updateQuestion = (si, qi, field, val) => {
-    setConfig(prev => prev.map((s, i) => i !== si ? s : {
-      ...s,
-      questions: s.questions.map((q, j) => j !== qi ? q : { ...q, [field]: val })
-    }));
-  };
-
-  const addQuestion = si => {
-    const id = `q_${Date.now()}`;
-    setConfig(prev => prev.map((s, i) => i !== si ? s : {
-      ...s,
-      questions: [...s.questions, { id, label: 'Nouvelle question', type: 'radio', options: [{value:'oui',label:'Oui'},{value:'non',label:'Non'}] }]
-    }));
-  };
-
-  const removeQuestion = (si, qi) => {
-    setConfig(prev => prev.map((s, i) => i !== si ? s : {
-      ...s,
-      questions: s.questions.filter((_, j) => j !== qi)
-    }));
-  };
-
-  const addSection = () => {
-    const id = `section_${Date.now()}`;
-    setConfig(prev => [...prev, { key: id, title: 'Nouvelle section', questions: [] }]);
-    setActiveSection(config.length);
-  };
-
-  const removeSection = si => {
-    if (config.length <= 1) return toast('Il faut au moins une section', 'error');
-    setConfig(prev => prev.filter((_, i) => i !== si));
-    setActiveSection(Math.max(0, activeSection - 1));
-  };
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await apiFetch('/debrief-config', { method:'PUT', body:{ sections: config } });
-      toast('Configuration sauvegardée !');
-      onClose();
-    } catch(e) { toast(e.message, 'error'); } finally { setSaving(false); }
-  };
-
-  const reset = async () => {
-    if (!confirm('Réinitialiser aux questions par défaut ?')) return;
-    try {
-      await apiFetch('/debrief-config', { method:'DELETE' });
-      setConfig(DEFAULT_DEBRIEF_CONFIG);
-      toast('Configuration réinitialisée');
-    } catch(e) { toast(e.message, 'error'); }
-  };
-
-  if (!loaded) return <div style={{padding:40,textAlign:'center'}}><Spinner/></div>;
-
-  const sec = config[activeSection] || config[0];
-  const si = activeSection;
-
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-      {/* Tabs sections */}
-      <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:16 }}>
-        {config.map((s, i) => (
-          <button key={s.key} onClick={() => setActiveSection(i)}
-            style={{ padding:'5px 12px', borderRadius:R_FULL, border:'none', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', background:i===activeSection?`linear-gradient(135deg,${P},${P2})`:'rgba(253,232,228,.3)', color:i===activeSection?'white':TXT2, transition:'all .15s' }}>
-            {i+1}. {s.title}
-          </button>
-        ))}
-        <button onClick={addSection} style={{ padding:'5px 12px', borderRadius:R_FULL, border:`1px dashed rgba(232,125,106,.4)`, fontSize:12, cursor:'pointer', fontFamily:'inherit', background:'transparent', color:TXT3 }}>
-          + Section
-        </button>
-      </div>
-
-      {sec && (
-        <div style={{ ...card(), padding:16, marginBottom:16 }}>
-          {/* Titre de la section */}
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-            <Input value={sec.title} onChange={e => updateSection(si, 'title', e.target.value)} style={{fontSize:14,fontWeight:700}}/>
-            {config.length > 1 && (
-              <button onClick={() => removeSection(si)} style={{ padding:'8px 10px', borderRadius:R_SM, border:'none', background:'rgba(253,232,228,.6)', color:'#c05040', cursor:'pointer', fontSize:13, flexShrink:0 }}>🗑</button>
-            )}
-          </div>
-
-          {/* Questions */}
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {sec.questions.map((q, qi) => (
-              <div key={q.id} style={{ background:SAND, borderRadius:R_SM, padding:'12px 14px', border:'1px solid rgba(232,125,106,.1)' }}>
-                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-                  <Input value={q.label} onChange={e => updateQuestion(si, qi, 'label', e.target.value)} style={{fontSize:13}}/>
-                  <select value={q.type} onChange={e => updateQuestion(si, qi, 'type', e.target.value)}
-                    style={{ padding:'8px 10px', borderRadius:R_SM, border:'1px solid rgba(232,125,106,.15)', background:SAND, fontSize:12, color:TXT, fontFamily:'inherit', cursor:'pointer', flexShrink:0 }}>
-                    <option value="radio">Choix unique</option>
-                    <option value="checkbox">Choix multiple</option>
-                    <option value="text">Texte libre</option>
-                  </select>
-                  <button onClick={() => removeQuestion(si, qi)} style={{ padding:'8px 10px', borderRadius:R_SM, border:'none', background:'rgba(253,232,228,.6)', color:'#c05040', cursor:'pointer', fontSize:13, flexShrink:0 }}>🗑</button>
-                </div>
-                {q.type !== 'text' && (
-                  <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                    {(q.options || []).map((opt, oi) => (
-                      <div key={oi} style={{ display:'flex', gap:6 }}>
-                        <Input value={opt.value} onChange={e => updateQuestion(si, qi, 'options', q.options.map((o,k)=>k===oi?{...o,value:e.target.value}:o))} style={{fontSize:11,flex:'0 0 90px'}}/>
-                        <Input value={opt.label} onChange={e => updateQuestion(si, qi, 'options', q.options.map((o,k)=>k===oi?{...o,label:e.target.value}:o))} style={{fontSize:11}}/>
-                        <button onClick={() => updateQuestion(si, qi, 'options', q.options.filter((_,k)=>k!==oi))}
-                          style={{ border:'none', background:'none', color:'#c8b8a8', cursor:'pointer', fontSize:14, padding:'0 4px' }}>✕</button>
-                      </div>
-                    ))}
-                    <button onClick={() => updateQuestion(si, qi, 'options', [...(q.options||[]), {value:`opt${Date.now()}`,label:'Nouvelle option'}])}
-                      style={{ alignSelf:'flex-start', padding:'4px 10px', borderRadius:R_SM, border:`1px dashed rgba(232,125,106,.3)`, background:'transparent', fontSize:11, color:TXT3, cursor:'pointer', fontFamily:'inherit' }}>
-                      + Option
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-            <button onClick={() => addQuestion(si)}
-              style={{ padding:'8px 14px', borderRadius:R_SM, border:`1px dashed rgba(232,125,106,.3)`, background:'transparent', fontSize:12, color:TXT3, cursor:'pointer', fontFamily:'inherit', textAlign:'left' }}>
-              + Ajouter une question
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={{ display:'flex', gap:8, justifyContent:'space-between' }}>
-        <button onClick={reset} style={{ padding:'8px 14px', borderRadius:R_FULL, border:`1px solid rgba(192,80,64,.3)`, background:'rgba(253,232,228,.5)', color:'#c05040', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
-          Réinitialiser par défaut
-        </button>
-        <div style={{ display:'flex', gap:8 }}>
-          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
-          <Btn onClick={save} disabled={saving}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Btn>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
-function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig, debriefLoaded }) {
+function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig }) {
   const isHOS = user.role === 'head_of_sales';
-  const [tab, setTab] = useState('profil');
+  const [tab, setTab] = useState(isHOS ? 'profil' : 'profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -1015,16 +915,16 @@ function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig
   };
 
   const tabs = [
-    { key:'profil',    label:'👤 Profil' },
-    { key:'securite',  label:'🔒 Sécurité' },
-    ...(isHOS ? [{ key:'questions', label:'📋 Questions' }] : []),
+    {key:'profil', label:'👤 Profil'},
+    {key:'securite', label:'🔒 Sécurité'},
+    ...(isHOS ? [{key:'questions', label:'📋 Questions'}] : []),
   ];
 
   return (
     <Modal title="Paramètres du compte" onClose={onClose}>
-      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20,flexWrap:'wrap'}}>
+      <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20}}>
         {tabs.map(({key,label})=>(
-          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?TXT:'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit',minWidth:80}}>{label}</button>
+          <button key={key} type="button" onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?WHITE:'transparent',color:tab===key?TXT:TXT2,boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit'}}>{label}</button>
         ))}
       </div>
 
@@ -1058,20 +958,118 @@ function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig
       )}
 
       {tab==='questions' && isHOS && (
-        <DebriefConfigEditor onClose={onClose} toast={toast} config={debriefConfig||[]} setConfig={setDebriefConfig} loaded={debriefLoaded||false}/>
+        <DebriefConfigEditor debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig} onClose={onClose} toast={toast}/>
       )}
     </Modal>
   );
 }
 
+// ─── DEBRIEF CONFIG EDITOR (HOS only) ─────────────────────────────────────────
+function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }) {
+  const [config, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(debriefConfig || DEFAULT_DEBRIEF_CONFIG)));
+  const [saving, setSaving] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-// ─── DEBRIEF CARD ─────────────────────────────────────────────────────────────
+  const sec = config[activeIdx] || config[0];
+  const si = activeIdx < config.length ? activeIdx : 0;
+
+  const updSec = (field, val) => setLocalConfig(p => p.map((s,i) => i===si ? {...s,[field]:val} : s));
+  const updQ = (qi, field, val) => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:s.questions.map((q,j) => j===qi ? {...q,[field]:val} : q)}));
+  const addQ = () => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:[...s.questions, {id:`q_${Date.now()}`,label:'Nouvelle question',type:'radio',options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}]}]}));
+  const delQ = qi => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:s.questions.filter((_,j)=>j!==qi)}));
+  const addSec = () => { setLocalConfig(p => [...p, {key:`sec_${Date.now()}`,title:'Nouvelle section',questions:[]}]); setActiveIdx(config.length); };
+  const delSec = () => { if(config.length<=1) return; setLocalConfig(p=>p.filter((_,i)=>i!==si)); setActiveIdx(Math.max(0,si-1)); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await apiFetch('/debrief-config', {method:'PUT', body:{sections:config}});
+      setDebriefConfig(config);
+      toast('Questions sauvegardées !');
+      onClose();
+    } catch(e) { toast(e.message,'error'); } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    if (!confirm('Réinitialiser aux questions par défaut ?')) return;
+    try {
+      await apiFetch('/debrief-config', {method:'DELETE'});
+      setLocalConfig(DEFAULT_DEBRIEF_CONFIG);
+      setDebriefConfig(DEFAULT_DEBRIEF_CONFIG);
+      toast('Questions réinitialisées');
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      {/* Section tabs */}
+      <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+        {config.map((s,i) => (
+          <button type="button" key={s.key} onClick={()=>setActiveIdx(i)}
+            style={{padding:'5px 12px',borderRadius:R_FULL,border:'none',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',background:i===activeIdx?`linear-gradient(135deg,${P},${P2})`:'rgba(253,232,228,.3)',color:i===activeIdx?'white':TXT2,transition:'all .15s'}}>
+            {i+1}. {s.title}
+          </button>
+        ))}
+        <button type="button" onClick={addSec} style={{padding:'5px 12px',borderRadius:R_FULL,border:`1px dashed rgba(232,125,106,.4)`,fontSize:12,cursor:'pointer',fontFamily:'inherit',background:'transparent',color:TXT3}}>+ Section</button>
+      </div>
+
+      {sec && (
+        <div style={{...card(),padding:14}}>
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <Input value={sec.title} onChange={e=>updSec('title',e.target.value)} style={{fontSize:13,fontWeight:700}}/>
+            {config.length>1 && <button type="button" onClick={delSec} style={{padding:'8px 10px',borderRadius:R_SM,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer',fontSize:13,flexShrink:0}}>🗑</button>}
+          </div>
+
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {sec.questions.map((q,qi) => (
+              <div key={q.id} style={{background:SAND,borderRadius:R_SM,padding:'10px 12px',border:'1px solid rgba(232,125,106,.1)'}}>
+                <div style={{display:'flex',gap:6,marginBottom:6}}>
+                  <Input value={q.label} onChange={e=>updQ(qi,'label',e.target.value)} style={{fontSize:12}}/>
+                  <select value={q.type} onChange={e=>updQ(qi,'type',e.target.value)}
+                    style={{...inp(),width:'auto',padding:'8px 10px',fontSize:12,flexShrink:0}}>
+                    <option value="radio">Choix unique</option>
+                    <option value="checkbox">Choix multiple</option>
+                    <option value="text">Texte libre</option>
+                  </select>
+                  <button type="button" onClick={()=>delQ(qi)} style={{padding:'8px 10px',borderRadius:R_SM,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer',flexShrink:0}}>🗑</button>
+                </div>
+                {q.type !== 'text' && (
+                  <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                    {(q.options||[]).map((opt,oi) => (
+                      <div key={oi} style={{display:'flex',gap:4,alignItems:'center'}}>
+                        <Input value={opt.value} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,value:e.target.value}:o))} style={{fontSize:11,flex:'0 0 80px'}}/>
+                        <Input value={opt.label} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,label:e.target.value}:o))} style={{fontSize:11}}/>
+                        <button type="button" onClick={()=>updQ(qi,'options',q.options.filter((_,k)=>k!==oi))} style={{background:'none',border:'none',color:TXT3,cursor:'pointer',fontSize:13,padding:'0 4px',flexShrink:0}}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>updQ(qi,'options',[...(q.options||[]),{value:`opt${Date.now()}`,label:'Nouvelle option'}])}
+                      style={{alignSelf:'flex-start',padding:'3px 10px',borderRadius:R_SM,border:`1px dashed rgba(232,125,106,.3)`,background:'transparent',fontSize:11,color:TXT3,cursor:'pointer',fontFamily:'inherit'}}>+ Option</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addQ} style={{padding:'7px 12px',borderRadius:R_SM,border:`1px dashed rgba(232,125,106,.3)`,background:'transparent',fontSize:12,color:TXT3,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>+ Question</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{display:'flex',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
+        <button type="button" onClick={reset} style={{padding:'8px 14px',borderRadius:R_FULL,border:`1px solid rgba(192,80,64,.3)`,background:'rgba(253,232,228,.5)',color:'#c05040',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Réinitialiser</button>
+        <div style={{display:'flex',gap:8}}>
+          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={save} disabled={saving}>{saving?'Sauvegarde...':'Sauvegarder'}</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DebriefCard({ debrief, onClick, showUser }) {
   const [hov, setHov] = useState(false);
   const pct = Math.round(debrief.percentage || 0);
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{ background:'#ffffff', border:`1px solid ${hov?'rgba(232,125,106,.2)':'rgba(255,255,255,.9)'}`, borderRadius:18, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+      style={{ background:WHITE, border:`1px solid ${hov?'rgba(232,125,106,.2)':'rgba(255,255,255,.9)'}`, borderRadius:R_LG, padding:'14px 16px', cursor:'pointer', transition:'all .15s', boxShadow:hov?'0 6px 24px rgba(232,125,106,.15), 0 2px 6px rgba(232,125,106,.1)':'0 2px 8px rgba(100,80,200,.07)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{debrief.prospect_name}</p>
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'#c8b8a8', flexWrap:'wrap' }}>
@@ -1199,9 +1197,9 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    apiFetch('/teams').then(d=>setTeams((d||[]).map(t=>({...t,inviteCodes:t.inviteCodes||[],members:t.members||[]})))).catch(()=>setTeams([])).finally(()=>setLoading(false));
+    apiFetch('/teams').then(d=>setTeams((d||[]).map(t=>({...t,inviteCodes:Array.isArray(t.inviteCodes)?t.inviteCodes:[],members:Array.isArray(t.members)?t.members:[]})))).catch(()=>setTeams([])).finally(()=>setLoading(false));
   }, []);
-  useEffect(() => { load(); }, []); // Ne pas dépendre de leaderboardKey — évite reset au moindre debrief
+  useEffect(() => { load(); }, [leaderboardKey]);
 
   // Reset activeTeamId if tab changes
   useEffect(() => { if (tab !== 'equipes') setActiveTeamId(null); }, [tab]);
@@ -1289,7 +1287,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
           <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>👑 Head of Sales</h1>
           <p style={{ color:'#6b7280', fontSize:13, marginTop:4 }}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p>
         </div>
-        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:14 }}>
+        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:R_MD }}>
           {[{key:'dashboard',label:'📊'},{key:'equipes',label:'👥'}].map(({key,label})=>(
             <button key={key} onClick={()=>setTab(key)} style={{ padding:'8px 16px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .2s', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', boxShadow:tab===key?'0 1px 4px rgba(0,0,0,.08)':'none', fontFamily:'inherit' }}>
               {label}{!mob&&<span> {key==='dashboard'?'Dashboard':'Équipes'}</span>}
@@ -1630,10 +1628,10 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
 
 // ─── PAGES ────────────────────────────────────────────────────────────────────
 function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
-  const isHOS = user.role === 'head_of_sales';
   const mob = useIsMobile();
+  const isHOS = user.role === 'head_of_sales';
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
           <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>Tableau de bord</h1>
@@ -1643,31 +1641,24 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       </div>
       {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
-      <div>
-        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📊 Statistiques</p>
-        <StatsRow debriefs={debriefs}/>
-      </div>
-      <div>
-        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📈 Performance</p>
-        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
-          <Card style={{ padding:20 }}>
-            <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Évolution du score</h2>
-            <Chart debriefs={debriefs}/>
-          </Card>
-          <Leaderboard refreshKey={lbKey}/>
-        </div>
+      <StatsRow debriefs={debriefs}/>
+      <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
+        <Card style={{ padding:20 }}>
+          <h2 style={{ fontSize:14, fontWeight:600, color:TXT, marginBottom:14 }}>Évolution du score</h2>
+          <Chart debriefs={debriefs}/>
+        </Card>
+        <Leaderboard refreshKey={lbKey}/>
       </div>
 
     {/* Mini Pipeline */}
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-        <h2 style={{ fontSize:16, fontWeight:700, color:'#5a4a3a', margin:0 }}>🎯 Pipeline</h2>
+        <h2 style={{ fontSize:16, fontWeight:700, color:TXT, margin:0 }}>🎯 Pipeline</h2>
       </div>
       <MiniPipeline navigate={navigate}/>
     </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
-        <p style={{ fontSize:11, fontWeight:700, color:'#c8b8a8', textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 10px' }}>📋 Derniers debriefs</p>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <h2 style={{ fontSize:16, fontWeight:600, color:'#5a4a3a', margin:0 }}>Derniers debriefs</h2>
           {debriefs.length>5 && <button onClick={()=>navigate('History')} style={{background:'none',border:'none',color:'#e87d6a',fontSize:13,cursor:'pointer'}}>Voir tout ›</button>}
@@ -1718,7 +1709,7 @@ function MiniPipeline({ navigate }) {
           { label:'En retard', value:late,                                    color:late>0?'#c05040':'#c8b8a8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...cardSm(), padding:'12px 14px' }}>
-            <p style={{ fontSize:10, color:'#c8b8a8', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
+            <p style={{ fontSize:10, color:TXT3, margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
             <p style={{ fontSize:18, fontWeight:700, color, margin:0 }}>{value}</p>
           </div>
         ))}
@@ -1739,7 +1730,7 @@ function MiniPipeline({ navigate }) {
                   </div>
                   {cols.slice(0,3).map(d => (
                     <div key={d.id} style={{ ...cardSm(), padding:'8px 10px' }}>
-                      <p style={{ fontWeight:600, fontSize:12, color:'#5a4a3a', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
+                      <p style={{ fontWeight:600, fontSize:12, color:TXT, margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
                       {d.value>0 && <p style={{ fontSize:11, color:'#5a9858', fontWeight:700, margin:0 }}>{d.value.toLocaleString('fr-FR')} €</p>}
                     </div>
                   ))}
@@ -1888,98 +1879,153 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
       )}
 
       {/* Comments */}
-      {user.role !== 'head_of_sales' && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
 }
 
-function NewDebrief({ navigate, onSave, toast }) {
-  // Hooks — tous en premier, sans retour conditionnel avant
-  const [config]            = useDebriefConfig();
-  const [form, setForm]     = useState({ prospect_name:'', call_date: new Date().toISOString().split('T')[0], is_closed:false });
-  const [sections, setSections] = useState({});
-  const [notes, setNotes]   = useState({});
-  const [loading, setLoading] = useState(false);
+function NewDebrief({ navigate, onSave, toast, debriefConfig }) {
   const mob = useIsMobile();
+  const cfg = debriefConfig && debriefConfig.length > 0 ? debriefConfig : DEFAULT_DEBRIEF_CONFIG;
 
-  const updateSection = (key, data) => setSections(p => ({...p, [key]: data}));
-  const updateNotes   = (key, data) => setNotes(p => ({...p, [key]: data}));
+  const [form, setForm]   = useState({ prospect_name:'', call_date:new Date().toISOString().split('T')[0], closer_name:'', call_link:'', is_closed:null, notes:'' });
+  const [secs, setSecs]   = useState({});
+  const [notes, setNotes] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const score = computeScore(sections);
-  const pct   = Math.round((score.points / Math.max(score.max, 1)) * 100);
+  // Score temps réel basé sur computeScore (utilise les clés standard)
+  const { total, max, percentage } = computeScore(secs);
 
-  const submit = async () => {
-    if (!form.prospect_name.trim()) return toast('Nom du prospect requis', 'error');
+  const setSecVal = (secKey, qid, val) => setSecs(p => ({...p, [secKey]: {...(p[secKey]||{}), [qid]:val}}));
+  const setNoteVal = (secKey, data) => setNotes(p => ({...p, [secKey]: data}));
+
+  const submit = async e => {
+    e.preventDefault();
+    if (form.is_closed === null) { toast("Indiquez le résultat de l'appel", 'error'); return; }
     setLoading(true);
     try {
-      const res = await apiFetch('/debriefs', { method:'POST', body:{ ...form, sections, notes } });
-      onSave(res.debrief, res.gamification);
-      toast('Debrief enregistré ! +' + (res.gamification?.pointsEarned || 0) + ' pts');
-      navigate('Dashboard');
-    } catch(e) { toast(e.message, 'error'); } finally { setLoading(false); }
+      const r = await apiFetch('/debriefs', { method:'POST', body:{ ...form, sections:secs, section_notes:notes, total_score:total, max_score:max, percentage, scores:{}, criteria_notes:{} }});
+      onSave(r.debrief, r.gamification);
+      toast(`Debrief enregistré ! +${r.gamification?.pointsEarned||0} pts`);
+      navigate('Detail', r.debrief.id);
+    } catch(e) { toast(e.message,'error'); } finally { setLoading(false); }
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+        <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
         <div>
-          <h1 style={{ fontSize:22, fontWeight:700, color:TXT, margin:0 }}>Nouveau debrief</h1>
-          <p style={{ color:TXT2, fontSize:13, marginTop:4 }}>Analysez votre appel section par section</p>
-        </div>
-        <Btn variant="secondary" onClick={()=>navigate('Dashboard')}>← Retour</Btn>
-      </div>
-
-      <Card style={{ padding:16 }}>
-        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:12 }}>
-          <div>
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Nom du prospect *</label>
-            <Input placeholder="Jean Dupont" value={form.prospect_name} onChange={e=>setForm({...form, prospect_name:e.target.value})} autoFocus/>
-          </div>
-          <div>
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:TXT, marginBottom:5 }}>Date de l'appel</label>
-            <Input type="date" value={form.call_date} onChange={e=>setForm({...form, call_date:e.target.value})}/>
-          </div>
-        </div>
-        <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
-          <input type="checkbox" id="nd_is_closed" checked={form.is_closed} onChange={e=>setForm({...form, is_closed:e.target.checked})}
-            style={{ width:16, height:16, accentColor:P, cursor:'pointer' }}/>
-          <label htmlFor="nd_is_closed" style={{ fontSize:13, color:TXT, cursor:'pointer' }}>✅ Call closé (vente signée)</label>
-        </div>
-      </Card>
-
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_MD, color:'white' }}>
-        <span style={{ fontSize:13, fontWeight:600 }}>Score en cours</span>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ height:6, width:120, background:'rgba(255,255,255,.3)', borderRadius:3 }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:'white', borderRadius:3, transition:'width .4s' }}/>
-          </div>
-          <span style={{ fontSize:18, fontWeight:700 }}>{pct}%</span>
+          <h1 style={{ fontSize:20, fontWeight:700, color:TXT, margin:0 }}>Nouveau debrief</h1>
+          <p style={{ color:TXT2, fontSize:13, marginTop:2 }}>Évaluez votre dernier appel</p>
         </div>
       </div>
 
-      {config.map((section, idx) => (
-        <CatCard key={section.key} number={String(idx + 1)} title={section.title}>
-          {section.questions.map(q => {
-            const val = (sections[section.key] || {})[q.id];
-            const setVal = v => updateSection(section.key, { ...(sections[section.key] || {}), [q.id]: v });
-            if (q.type === 'radio')    return <RadioGroup    key={q.id} label={q.label} options={q.options || []} value={val} onChange={setVal}/>;
-            if (q.type === 'checkbox') return <CheckboxGroup key={q.id} label={q.label} options={q.options || []} value={val || []} onChange={setVal}/>;
-            if (q.type === 'text')     return (
-              <div key={q.id} style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontSize:13, fontWeight:600, color:TXT, marginBottom:6 }}>{q.label}</label>
-                <Textarea placeholder="Votre réponse..." value={val || ''} onChange={e => setVal(e.target.value)}/>
+      {mob && (
+        <div style={{ background:`linear-gradient(135deg,${P},${P2})`, borderRadius:R_MD, padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
+          <div>
+            <p style={{ fontSize:11, opacity:.8, margin:0, textTransform:'uppercase', letterSpacing:'.05em' }}>Score en direct</p>
+            <p style={{ fontSize:28, fontWeight:700, margin:0 }}>{percentage}%</p>
+            <p style={{ fontSize:12, opacity:.7, margin:0 }}>{total} / {max} points</p>
+          </div>
+          {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed}/>}
+        </div>
+      )}
+
+      <form onSubmit={submit}>
+        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 300px', gap:mob?16:24, alignItems:'start' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+            {/* Infos appel */}
+            <Card style={{ padding:16 }}>
+              <h3 style={{ fontSize:14, fontWeight:600, color:TXT, marginBottom:14 }}>Informations de l'appel</h3>
+              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12, marginBottom:14 }}>
+                <div>
+                  <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>Prospect *</label>
+                  <Input placeholder="Jean Dupont" value={form.prospect_name} onChange={e=>setForm({...form,prospect_name:e.target.value})} required autoFocus/>
+                </div>
+                <div>
+                  <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>Nom du closer</label>
+                  <Input placeholder="Votre nom" value={form.closer_name} onChange={e=>setForm({...form,closer_name:e.target.value})}/>
+                </div>
+                <div>
+                  <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>Date de l'appel</label>
+                  <Input type="date" value={form.call_date} onChange={e=>setForm({...form,call_date:e.target.value})}/>
+                </div>
               </div>
-            );
-            return null;
-          })}
-          <SectionNotes notes={notes[section.key] || {}} onChange={d => updateNotes(section.key, d)}/>
-        </CatCard>
-      ))}
+              <div style={{ marginBottom:14 }}>
+                <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:5}}>Lien d'enregistrement</label>
+                <Input placeholder="https://..." value={form.call_link} onChange={e=>setForm({...form,call_link:e.target.value})}/>
+              </div>
+              <div>
+                <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:8}}>Résultat de l'appel *</label>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {[{v:true,l:'✅ Closé — vente signée',c:'#059669',bg:'#d1fae5'},{v:false,l:'❌ Non closé',c:'#dc2626',bg:'#fee2e2'}].map(({v,l,c,bg})=>(
+                    <button key={String(v)} type="button" onClick={()=>setForm({...form,is_closed:v})}
+                      style={{flex:1,padding:'10px 14px',borderRadius:R_MD,border:`2px solid ${form.is_closed===v?c:'#e2e8f0'}`,background:form.is_closed===v?bg:'white',color:form.is_closed===v?c:TXT2,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all .15s'}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
 
-      <Btn onClick={submit} disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
-        {loading ? 'Enregistrement...' : '💾 Enregistrer le debrief'}
-      </Btn>
+            {/* Sections dynamiques */}
+            {cfg.map((section) => {
+              const secData  = secs[section.key] || {};
+              const secNotes = notes[section.key] || {};
+              const sectionIdx = cfg.indexOf(section);
+              return (
+                <CatCard key={section.key} number={String(sectionIdx+1)} title={section.title}>
+                  {section.questions.map(q => {
+                    const val = secData[q.id];
+                    const setVal = v => setSecVal(section.key, q.id, v);
+                    if (q.type === 'radio')    return <RadioGroup key={q.id} label={q.label} options={q.options||[]} value={val} onChange={setVal}/>;
+                    if (q.type === 'checkbox') return <CheckboxGroup key={q.id} label={q.label} options={q.options||[]} value={val||[]} onChange={setVal}/>;
+                    if (q.type === 'text')     return (
+                      <div key={q.id} style={{marginBottom:16}}>
+                        <label style={{display:'block',fontSize:13,fontWeight:600,color:TXT,marginBottom:6}}>{q.label}</label>
+                        <Textarea placeholder="Votre réponse..." value={val||''} onChange={e=>setVal(e.target.value)} rows={2}/>
+                      </div>
+                    );
+                    return null;
+                  })}
+                  <SectionNotes notes={secNotes} onChange={d=>setNoteVal(section.key,d)}/>
+                </CatCard>
+              );
+            })}
+
+            {/* Notes globales */}
+            <Card style={{padding:16}}>
+              <label style={{display:'block',fontSize:12,fontWeight:600,color:TXT,marginBottom:8}}>Notes globales</label>
+              <Textarea placeholder="Points clés, impressions générales..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3}/>
+            </Card>
+
+            {mob && <button type="submit" disabled={loading} style={{...BTN.primary,width:'100%',padding:'14px 20px',fontSize:15,borderRadius:R_FULL,cursor:loading?'not-allowed':'pointer',opacity:loading?.6:1,fontFamily:'inherit',border:'none',fontWeight:700}}>{loading?'Enregistrement...':'💾 Enregistrer le debrief'}</button>}
+          </div>
+
+          {/* Panel score desktop */}
+          {!mob && (
+            <div style={{ position:'sticky', top:24, display:'flex', flexDirection:'column', gap:12 }}>
+              <Card style={{ padding:20 }}>
+                <p style={{fontSize:11,color:TXT3,textTransform:'uppercase',letterSpacing:'.06em',margin:'0 0 12px'}}>Score en direct</p>
+                <div style={{textAlign:'center',marginBottom:16}}>
+                  <ScoreGauge percentage={percentage} size="lg"/>
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:TXT2,marginBottom:16}}>
+                  <span>{total} pts</span><span>/ {max} pts max</span>
+                </div>
+                {form.is_closed !== null && (
+                  <div style={{textAlign:'center',marginBottom:12}}>
+                    <ClosedBadge isClosed={form.is_closed}/>
+                  </div>
+                )}
+                <button type="submit" disabled={loading} style={{...BTN.primary,width:'100%',padding:'12px 20px',fontSize:14,borderRadius:R_FULL,cursor:loading?'not-allowed':'pointer',opacity:loading?.6:1,fontFamily:'inherit',border:'none',fontWeight:700}}>{loading?'Enregistrement...':'💾 Enregistrer'}</button>
+              </Card>
+            </div>
+          )}
+        </div>
+      </form>
     </div>
   );
 }
@@ -2007,8 +2053,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
         </div>
         {(sidebar || !useIsMobile()) && <>
           <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
-            <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
-            <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
+            <p style={{ fontSize:13, fontWeight:600, color:TXT, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
+            <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
           </div>
           {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
           <span style={{ fontSize:10, color:TXT3 }}>{open?'▲':'▼'}</span>
@@ -2029,8 +2075,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
                 {user.name?.charAt(0)}
               </div>
               <div>
-                <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0 }}>{user.name}</p>
-                <p style={{ fontSize:11, color:'#c8b8a8', margin:0 }}>{user.email}</p>
+                <p style={{ fontWeight:600, fontSize:13, color:TXT, margin:0 }}>{user.name}</p>
+                <p style={{ fontSize:11, color:TXT3, margin:0 }}>{user.email}</p>
               </div>
             </div>
             {gam && (
@@ -2045,12 +2091,13 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
             { icon:'⚙️', label:'Paramètres du compte', action:()=>{ onSettings(); setOpen(false); } },
             { icon:'🔔', label:'Notifications',         action:()=>{ toast('Bientôt disponible !','info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
-            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#5a4a3a', textAlign:'left', transition:'background .1s' }}
+            <button key={label} onClick={action} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:TXT, textAlign:'left', transition:'background .1s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>{icon}</span>{label}
             </button>
           ))}
+          <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
           <button onClick={()=>{ onLogout(); setOpen(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'#c05040', textAlign:'left', transition:'background .1s' }}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
@@ -2149,9 +2196,9 @@ function ObjectiveModal({ closer, onClose, toast }) {
 
   return (
     <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
-      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:10, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:R_SM, marginBottom:20 }}>
         {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
-          <button type="button" key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
+          <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
@@ -2244,7 +2291,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:10, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:R_SM, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#e87d6a', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:'0 0 2px' }}>{plan.axis}</p>
@@ -2261,7 +2308,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           ))}
 
           {showAdd && (
-            <div style={{ padding:'14px', background:'#ffffff', borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ padding:'14px', background:WHITE, borderRadius:10, border:'1px solid rgba(196,181,253,.5)', display:'flex', flexDirection:'column', gap:10 }}>
               <Input placeholder="Axe de travail (ex: Améliorer le closing)" value={form.axis} onChange={e=>setForm({...form,axis:e.target.value})} autoFocus/>
               <Textarea placeholder="Description (optionnel)" rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
               <div style={{ display:'flex', gap:8 }}>
@@ -2434,7 +2481,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
             placeholder="Nom du prospect *"
             value={form.prospect_name}
             onChange={e=>setForm({...form,prospect_name:e.target.value})}
-            style={{ width:'100%', fontSize:20, fontWeight:700, color:'#5a4a3a', border:'none', outline:'none', borderBottom:'2px solid #e2e8f0', paddingBottom:10, marginBottom:16, fontFamily:'inherit', boxSizing:'border-box', background:'#f5ede6' }}
+            style={{ width:'100%', fontSize:20, fontWeight:700, color:'#5a4a3a', border:'none', outline:'none', borderBottom:'2px solid #e2e8f0', paddingBottom:10, marginBottom:16, fontFamily:'inherit', boxSizing:'border-box', background:'transparent' }}
             onFocus={e=>e.target.style.borderBottomColor='#e87d6a'}
             onBlur={e=>e.target.style.borderBottomColor='#e2e8f0'}
           />
@@ -2460,19 +2507,19 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>💶 CA (€)</label>
               <input type="number" placeholder="0" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📅 Relance</label>
               <input type="date" value={form.follow_up_date} onChange={e=>setForm({...form,follow_up_date:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
             <div>
               <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>📥 Source</label>
               <input placeholder="LinkedIn, Inbound..." value={form.source} onChange={e=>setForm({...form,source:e.target.value})}
-                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', background:'#f5ede6', color:'#5a4a3a' }}
+                style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box', color:'#5a4a3a' }}
                 onFocus={e=>e.target.style.borderColor='#e87d6a'} onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
             </div>
           </div>
@@ -2498,7 +2545,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 
             {/* Aperçu du debrief lié */}
             {linkedDebrief && (
-              <div style={{ marginTop:12, padding:'14px 16px', background:'#ffffff', borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
+              <div style={{ marginTop:12, padding:'14px 16px', background:WHITE, borderRadius:10, border:'1px solid rgba(196,181,253,.5)' }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                   <div>
                     <p style={{ fontWeight:700, fontSize:14, color:'#5a4a3a', margin:0 }}>{linkedDebrief.prospect_name}</p>
@@ -2540,7 +2587,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
                 await apiFetch('/zapier/push-deal', {method:'POST', body:{deal_id:deal.id}});
                 toast('Synchronisé avec iClosed !');
               } catch(e){ toast(e.message,'error'); }
-            }} style={{ width:'100%', padding:'10px', borderRadius:50, background:'white', border:'1px solid rgba(232,125,106,.2)', color:'#b09080', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', boxShadow:SH_SM, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+            }} style={{ width:'100%', padding:'10px', borderRadius:R_FULL, background:'white', border:'1px solid rgba(232,125,106,.2)', color:'#b09080', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', boxShadow:SH_SM, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
               <span>🔄</span> Synchroniser avec iClosed
             </button>
           )}
@@ -2557,7 +2604,7 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
   );
 }
 
-// ─── DEAL CARD — Option C Rich ────────────────────────────────────────────────
+// ─── DEAL CARD — Rich card (Option C) ────────────────────────────────────────
 function DealCard({ deal, onOpen, onMove }) {
   const [showMenu, setShowMenu] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -2571,72 +2618,58 @@ function DealCard({ deal, onOpen, onMove }) {
   }, []);
 
   const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
-  const stage = PIPELINE_STAGES.find(s => s.key === deal.status) || PIPELINE_STAGES[0];
-
-  // Score du debrief lié
-  const scoreVal = deal.debrief_score != null ? deal.debrief_score : null;
-  const scoreColor = scoreVal == null ? '#c8b8a8' : scoreVal >= 80 ? '#5a9858' : scoreVal >= 60 ? '#c07830' : '#c05040';
-
-  const fmtDate = d => { try { return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); } catch { return d; }};
+  const scoreVal  = deal.debrief_score != null ? deal.debrief_score : null;
+  const scoreColor = scoreVal == null ? TXT3 : scoreVal>=80 ? '#5a9858' : scoreVal>=60 ? '#c07830' : '#c05040';
+  const fmtD = d => { try { return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); } catch { return d; }};
 
   return (
-    <div
-      draggable
-      onDragStart={e => { e.dataTransfer.setData('dealId', String(deal.id)); draggedRef.current = true; setDragging(true); e.dataTransfer.effectAllowed = 'move'; }}
-      onDragEnd={() => { setDragging(false); setTimeout(() => { draggedRef.current = false; }, 100); }}
-      onClick={() => { if (!draggedRef.current) onOpen(deal); }}
-      style={{ background:'#ffffff', borderRadius:12, boxShadow:dragging ? '0 12px 32px rgba(232,125,106,.25)' : SH_SM, border:`1px solid ${isOverdue ? 'rgba(192,80,64,.25)' : 'rgba(232,125,106,.08)'}`, padding:'12px 14px', cursor:'grab', transition:'all .15s', opacity:dragging ? .5 : 1, transform:dragging ? 'rotate(2deg) scale(1.02)' : 'none', userSelect:'none' }}
-      onMouseEnter={e => { if (!dragging) e.currentTarget.style.boxShadow = SH_HOVERED; }}
-      onMouseLeave={e => { if (!dragging) e.currentTarget.style.boxShadow = SH_SM; }}>
-
-      {/* Ligne 1 — Nom + menu */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-        <p style={{ fontWeight:700, fontSize:14, color:TXT, margin:0, flex:1, marginRight:8, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{deal.prospect_name}</p>
-        <div ref={menuRef} style={{ position:'relative', flexShrink:0 }}>
-          <button onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
-            style={{ background:'none', border:'none', color:TXT3, cursor:'pointer', fontSize:18, padding:'0 2px', lineHeight:1, fontFamily:'inherit' }}>⋮</button>
+    <div draggable
+      onDragStart={e=>{ e.dataTransfer.setData('dealId',String(deal.id)); draggedRef.current=true; setDragging(true); e.dataTransfer.effectAllowed='move'; }}
+      onDragEnd={()=>{ setDragging(false); setTimeout(()=>{ draggedRef.current=false; },100); }}
+      onClick={()=>{ if(!draggedRef.current) onOpen(deal); }}
+      style={{ background:WHITE, borderRadius:R_MD, boxShadow:dragging?SH_HOVERED:SH_SM, border:`1px solid ${isOverdue?'rgba(192,80,64,.25)':'rgba(232,125,106,.08)'}`, padding:'12px 14px', cursor:'grab', transition:'all .15s', opacity:dragging?.5:1, transform:dragging?'rotate(2deg) scale(1.02)':'none', userSelect:'none' }}
+      onMouseEnter={e=>{ if(!dragging) e.currentTarget.style.boxShadow=SH_HOVERED; }}
+      onMouseLeave={e=>{ if(!dragging) e.currentTarget.style.boxShadow=SH_SM; }}>
+      {/* Nom + menu */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+        <p style={{fontWeight:700,fontSize:14,color:TXT,margin:0,flex:1,marginRight:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{deal.prospect_name}</p>
+        <div ref={menuRef} style={{position:'relative',flexShrink:0}}>
+          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}} style={{background:'none',border:'none',color:TXT3,cursor:'pointer',fontSize:18,padding:'0 2px',lineHeight:1,fontFamily:'inherit'}}>⋮</button>
           {showMenu && (
-            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', background:'#ffffff', borderRadius:R_MD, boxShadow:SH_HOVERED, minWidth:170, zIndex:100, overflow:'hidden' }}>
-              {PIPELINE_STAGES.filter(s => s.key !== deal.status).map(s => (
-                <button key={s.key} onClick={e => { e.stopPropagation(); onMove(deal.id, s.key); setShowMenu(false); }}
-                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:TXT, textAlign:'left' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,232,228,.2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                  <span style={{ fontSize:13 }}>{s.icon}</span> → {s.label}
+            <div style={{position:'absolute',right:0,top:'calc(100% + 4px)',background:WHITE,borderRadius:R_MD,boxShadow:SH_HOVERED,minWidth:170,zIndex:100,overflow:'hidden'}}>
+              {PIPELINE_STAGES.filter(s=>s.key!==deal.status).map(s=>(
+                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}}
+                  style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'9px 14px',background:'none',border:'none',fontSize:12,cursor:'pointer',fontFamily:'inherit',color:TXT,textAlign:'left'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(253,232,228,.2)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                  <span style={{fontSize:13}}>{s.icon}</span> → {s.label}
                 </button>
               ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* Ligne 2 — CA + source */}
-      <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:10 }}>
-        <p style={{ fontSize:14, fontWeight:700, color:'#5a9858', margin:0 }}>
-          {deal.value > 0 ? `${deal.value.toLocaleString('fr-FR')} €` : <span style={{ color:TXT3, fontSize:12, fontWeight:400 }}>Aucun CA</span>}
+      {/* CA + source */}
+      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:10}}>
+        <p style={{fontSize:14,fontWeight:700,color:'#5a9858',margin:0}}>
+          {deal.value>0 ? `${deal.value.toLocaleString('fr-FR')} €` : <span style={{color:TXT3,fontSize:12,fontWeight:400}}>Aucun CA</span>}
         </p>
-        {deal.source && <span style={{ fontSize:11, color:TXT3 }}>{deal.source}</span>}
+        {deal.source && <span style={{fontSize:11,color:TXT3}}>{deal.source}</span>}
       </div>
-
-      {/* Barre score debrief */}
-      <div style={{ marginBottom:10 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:TXT3, marginBottom:3 }}>
+      {/* Barre score */}
+      <div style={{marginBottom:10}}>
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:TXT3,marginBottom:3}}>
           <span>Score debrief</span>
-          <span style={{ color:scoreColor, fontWeight:700 }}>{scoreVal != null ? `${scoreVal}%` : 'Aucun'}</span>
+          <span style={{color:scoreColor,fontWeight:700}}>{scoreVal!=null?`${scoreVal}%`:'Aucun'}</span>
         </div>
-        <div style={{ height:4, background:'#f0e8e0', borderRadius:2 }}>
-          {scoreVal != null && <div style={{ height:'100%', width:`${scoreVal}%`, background:`linear-gradient(90deg,${P},${P2})`, borderRadius:2, transition:'width .5s' }}/>}
+        <div style={{height:4,background:'#f0e8e0',borderRadius:2}}>
+          {scoreVal!=null && <div style={{height:'100%',width:`${scoreVal}%`,background:`linear-gradient(90deg,${P},${P2})`,borderRadius:2,transition:'width .5s'}}/>}
         </div>
       </div>
-
-      {/* Ligne 3 — Closer + date */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <span style={{ fontSize:11, color:TXT3 }}>{deal.user_name || '—'}</span>
-        {deal.follow_up_date && (
-          <span style={{ fontSize:11, fontWeight:isOverdue ? 700 : 400, color:isOverdue ? '#c05040' : TXT3 }}>
-            {isOverdue ? '⚠ ' : ''}{fmtDate(deal.follow_up_date)}
-          </span>
-        )}
+      {/* Closer + date */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:11,color:TXT3}}>{deal.user_name||'—'}</span>
+        {deal.follow_up_date && <span style={{fontSize:11,fontWeight:isOverdue?700:400,color:isOverdue?'#c05040':TXT3}}>{isOverdue?'⚠ ':''}{fmtD(deal.follow_up_date)}</span>}
       </div>
     </div>
   );
@@ -2646,28 +2679,21 @@ function DealCard({ deal, onOpen, onMove }) {
 function DropColumn({ stage, deals, onOpen, onMove }) {
   const [over, setOver] = useState(false);
   return (
-    <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:8 }}>
-      {/* Header — sans montant */}
-      <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:R_SM, display:'flex', alignItems:'center', justifyContent:'space-between', borderLeft:`3px solid ${stage.color}` }}>
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ fontSize:13 }}>{stage.icon}</span>
-          <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
+    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{padding:'8px 12px',background:stage.bg,borderRadius:R_SM,display:'flex',alignItems:'center',justifyContent:'space-between',borderLeft:`3px solid ${stage.color}`}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <span style={{fontSize:13}}>{stage.icon}</span>
+          <span style={{fontSize:12,fontWeight:700,color:stage.color}}>{stage.label}</span>
         </div>
-        <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:R_FULL, minWidth:22, textAlign:'center' }}>{deals.length}</span>
+        <span style={{background:WHITE,color:stage.color,fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:R_FULL,minWidth:22,textAlign:'center'}}>{deals.length}</span>
       </div>
-
-      {/* Zone de drop */}
       <div
-        onDragOver={e => { e.preventDefault(); setOver(true); }}
-        onDragLeave={() => setOver(false)}
-        onDrop={e => { e.preventDefault(); setOver(false); const id = e.dataTransfer.getData('dealId'); if (id) onMove(id, stage.key); }}
-        style={{ display:'flex', flexDirection:'column', gap:8, minHeight:100, padding:over ? 6 : 0, background:over ? stage.bg : 'transparent', borderRadius:R_SM, border:`2px dashed ${over ? stage.color : 'transparent'}`, transition:'all .15s' }}>
-        {deals.map(deal => <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove}/>)}
-        {deals.length === 0 && !over && (
-          <div style={{ border:`2px dashed rgba(232,125,106,.15)`, borderRadius:R_SM, padding:'20px 10px', textAlign:'center', color:TXT3, fontSize:11 }}>
-            Déposez ici
-          </div>
-        )}
+        onDragOver={e=>{e.preventDefault();setOver(true);}}
+        onDragLeave={()=>setOver(false)}
+        onDrop={e=>{e.preventDefault();setOver(false);const id=e.dataTransfer.getData('dealId');if(id)onMove(id,stage.key);}}
+        style={{display:'flex',flexDirection:'column',gap:8,minHeight:100,padding:over?6:0,background:over?stage.bg:'transparent',borderRadius:R_SM,border:`2px dashed ${over?stage.color:'transparent'}`,transition:'all .15s'}}>
+        {deals.map(d=><DealCard key={d.id} deal={d} onOpen={onOpen} onMove={onMove}/>)}
+        {deals.length===0 && !over && <div style={{border:`2px dashed rgba(232,125,106,.15)`,borderRadius:R_SM,padding:'20px 10px',textAlign:'center',color:TXT3,fontSize:11}}>Déposez ici</div>}
       </div>
     </div>
   );
@@ -2676,21 +2702,22 @@ function DropColumn({ stage, deals, onOpen, onMove }) {
 // ─── ACCORDION COLUMN — Mobile ─────────────────────────────────────────────────
 function AccordionColumn({ stage, deals, onOpen, onMove }) {
   const [open, setOpen] = useState(deals.length > 0);
+  useEffect(()=>{ if(deals.length>0) setOpen(true); },[deals.length]);
   return (
-    <div style={{ borderRadius:R_MD, overflow:'hidden', border:`1px solid rgba(232,125,106,.1)`, background:'#ffffff', boxShadow:SH_SM }}>
-      <button onClick={() => setOpen(v => !v)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', background:open ? stage.bg : '#ffffff', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'background .2s' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:14 }}>{stage.icon}</span>
-          <span style={{ fontSize:13, fontWeight:700, color:stage.color }}>{stage.label}</span>
-          <span style={{ background:'#ffffff', color:stage.color, fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:R_FULL }}>{deals.length}</span>
+    <div style={{borderRadius:R_MD,overflow:'hidden',border:`1px solid rgba(232,125,106,.1)`,background:WHITE,boxShadow:SH_SM}}>
+      <button type="button" onClick={()=>setOpen(v=>!v)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:open?stage.bg:WHITE,border:'none',cursor:'pointer',fontFamily:'inherit',transition:'background .2s'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:14}}>{stage.icon}</span>
+          <span style={{fontSize:13,fontWeight:700,color:stage.color}}>{stage.label}</span>
+          <span style={{background:WHITE,color:stage.color,fontSize:11,fontWeight:700,padding:'1px 8px',borderRadius:R_FULL}}>{deals.length}</span>
         </div>
-        <span style={{ color:TXT3, fontSize:12, transition:'transform .2s', display:'inline-block', transform:open ? 'rotate(180deg)' : 'none' }}>▼</span>
+        <span style={{color:TXT3,fontSize:12,transition:'transform .2s',display:'inline-block',transform:open?'rotate(180deg)':'none'}}>▼</span>
       </button>
       {open && (
-        <div style={{ padding:'8px 12px 12px', display:'flex', flexDirection:'column', gap:8, borderTop:`1px solid rgba(232,125,106,.08)` }}>
-          {deals.length === 0
-            ? <p style={{ fontSize:12, color:TXT3, textAlign:'center', padding:'12px 0' }}>Aucun lead dans cette catégorie</p>
-            : deals.map(deal => <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove}/>)
+        <div style={{padding:'8px 12px 12px',display:'flex',flexDirection:'column',gap:8,borderTop:`1px solid rgba(232,125,106,.08)`}}>
+          {deals.length===0
+            ? <p style={{fontSize:12,color:TXT3,textAlign:'center',padding:'12px 0'}}>Aucun lead</p>
+            : deals.map(d=><DealCard key={d.id} deal={d} onOpen={onOpen} onMove={onMove}/>)
           }
         </div>
       )}
@@ -2706,120 +2733,97 @@ function PipelinePage({ user, toast, debriefs }) {
   const [filter, setFilter]     = useState('all');
   const mob = useIsMobile();
 
-  useEffect(() => {
-    apiFetch('/deals').then(setDeals).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  useEffect(()=>{
+    apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+  useEffect(()=>{
+    const fn=()=>apiFetch('/deals').then(setDeals).catch(()=>{});
+    window.addEventListener('focus',fn);
+    return ()=>window.removeEventListener('focus',fn);
+  },[]);
 
-  useEffect(() => {
-    const onFocus = () => apiFetch('/deals').then(setDeals).catch(() => {});
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, []);
-
-  const handleSave   = (deal, isEdit) => setDeals(prev => isEdit ? prev.map(d => d.id === deal.id ? deal : d) : [deal, ...prev]);
-  const handleMove   = async (id, status) => {
-    // Optimistic update
-    setDeals(prev => prev.map(d => d.id === id || d.id === String(id) ? { ...d, status } : d));
-    try {
-      const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status } });
-      setDeals(prev => prev.map(d => d.id === updated.id ? updated : d));
-    } catch(e) {
-      toast(e.message, 'error');
-      apiFetch('/deals').then(setDeals).catch(() => {});
-    }
+  const handleSave   = (deal,isEdit) => setDeals(p=>isEdit?p.map(d=>d.id===deal.id?deal:d):[deal,...p]);
+  const handleMove   = async (id,status) => {
+    setDeals(p=>p.map(d=>(d.id===id||d.id===String(id))?{...d,status}:d));
+    try { const u=await apiFetch(`/deals/${id}`,{method:'PATCH',body:{status}}); setDeals(p=>p.map(d=>d.id===u.id?u:d)); }
+    catch(e){ toast(e.message,'error'); apiFetch('/deals').then(setDeals).catch(()=>{}); }
   };
-  const handleDelete = id => setDeals(prev => prev.filter(d => d.id !== id));
+  const handleDelete = id => setDeals(p=>p.filter(d=>d.id!==id));
 
-  const isHOS = user.role === 'head_of_sales';
-  const closers = [...new Map(deals.filter(d => d.user_id).map(d => [d.user_id, { id:d.user_id, name:d.user_name }])).values()];
-  const displayDeals = filter === 'all' ? deals : deals.filter(d => d.user_id === filter);
+  const isHOS = user.role==='head_of_sales';
+  const closers = [...new Map(deals.filter(d=>d.user_id).map(d=>[d.user_id,{id:d.user_id,name:d.user_name}])).values()];
+  const displayDeals = filter==='all' ? deals : deals.filter(d=>d.user_id===filter);
 
-  const signed   = deals.filter(d => d.status === 'signe');
-  const active   = deals.filter(d => !['signe','perdu'].includes(d.status));
-  const closed   = deals.filter(d => ['signe','perdu'].includes(d.status));
-  const overdue  = active.filter(d => d.follow_up_date && new Date(d.follow_up_date) < new Date());
-  const winRate  = closed.length ? Math.round(signed.length / closed.length * 100) : 0;
-  const totalCA  = signed.reduce((s,d) => s + (d.value||0), 0);
-  const totalPipe = active.reduce((s,d) => s + (d.value||0), 0);
+  const signed  = deals.filter(d=>d.status==='signe');
+  const active  = deals.filter(d=>!['signe','perdu'].includes(d.status));
+  const closed  = deals.filter(d=>['signe','perdu'].includes(d.status));
+  const overdue = active.filter(d=>d.follow_up_date&&new Date(d.follow_up_date)<new Date());
+  const winRate = closed.length ? Math.round(signed.length/closed.length*100) : 0;
+  const totalCA = signed.reduce((s,d)=>s+(d.value||0),0);
+  const totalPipe = active.reduce((s,d)=>s+(d.value||0),0);
 
   if (loading) return <Spinner full/>;
-
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-
-      {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
         <div>
-          <h1 style={{ fontSize:22, fontWeight:700, color:TXT, margin:0 }}>Pipeline</h1>
-          <p style={{ color:TXT2, fontSize:13, marginTop:4 }}>{deals.length} lead{deals.length !== 1 ? 's' : ''}</p>
+          <h1 style={{fontSize:22,fontWeight:700,color:TXT,margin:0}}>Pipeline</h1>
+          <p style={{color:TXT2,fontSize:13,marginTop:4}}>{deals.length} lead{deals.length!==1?'s':''}</p>
         </div>
-        <Btn onClick={() => setOpenLead({})}>+ Nouveau lead</Btn>
+        <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
       </div>
 
       {/* KPIs */}
-      <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
+      <div style={{display:'grid',gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)',gap:10}}>
         {[
-          { label:'CA Signé',  value:`${totalCA.toLocaleString('fr-FR')} €`,   color:'#5a9858', bg:'rgba(218,240,216,.5)' },
-          { label:'Pipeline',  value:`${totalPipe.toLocaleString('fr-FR')} €`, color:P,         bg:'rgba(253,232,228,.5)' },
-          { label:'Taux win',  value:`${winRate}%`,                            color:'#c07830',  bg:'rgba(254,243,224,.5)' },
-          { label:'En retard', value:overdue.length,                           color:overdue.length > 0 ? '#c05040' : TXT3, bg:overdue.length > 0 ? 'rgba(253,232,228,.5)' : 'rgba(245,237,230,.3)' },
-        ].map(({ label, value, color, bg }) => (
-          <div key={label} style={{ ...cardSm(), padding:'14px 16px' }}>
-            <p style={{ fontSize:10, color:TXT3, margin:'0 0 5px', textTransform:'uppercase', letterSpacing:'.05em', fontWeight:600 }}>{label}</p>
-            <p style={{ fontSize:20, fontWeight:700, color, margin:0 }}>{value}</p>
+          {label:'CA Signé',  value:`${totalCA.toLocaleString('fr-FR')} €`,   color:'#5a9858', bg:'rgba(218,240,216,.5)'},
+          {label:'Pipeline',  value:`${totalPipe.toLocaleString('fr-FR')} €`, color:P,          bg:'rgba(253,232,228,.5)'},
+          {label:'Taux win',  value:`${winRate}%`,                            color:'#c07830',  bg:'rgba(254,243,224,.5)'},
+          {label:'En retard', value:overdue.length,                           color:overdue.length>0?'#c05040':TXT3, bg:overdue.length>0?'rgba(253,232,228,.5)':'rgba(245,237,230,.3)'},
+        ].map(({label,value,color,bg})=>(
+          <div key={label} style={{...cardSm(),padding:'14px 16px'}}>
+            <p style={{fontSize:10,color:TXT3,margin:'0 0 5px',textTransform:'uppercase',letterSpacing:'.05em',fontWeight:600}}>{label}</p>
+            <p style={{fontSize:20,fontWeight:700,color,margin:0}}>{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Filtre closer HOS */}
-      {isHOS && closers.length > 1 && (
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          {[{ id:'all', name:'Tous' }, ...closers].map(c => (
-            <button key={c.id} onClick={() => setFilter(c.id)}
-              style={{ padding:'6px 14px', borderRadius:R_FULL, border:`1.5px solid ${filter === c.id ? P : 'rgba(232,125,106,.2)'}`, background:filter === c.id ? 'rgba(253,232,228,.6)' : WHITE, color:filter === c.id ? P2 : TXT2, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', transition:'all .15s' }}>
+      {/* Filtre HOS */}
+      {isHOS && closers.length>1 && (
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          {[{id:'all',name:'Tous'},...closers].map(c=>(
+            <button key={c.id} type="button" onClick={()=>setFilter(c.id)}
+              style={{padding:'6px 14px',borderRadius:R_FULL,border:`1.5px solid ${filter===c.id?P:'rgba(232,125,106,.2)'}`,background:filter===c.id?'rgba(253,232,228,.6)':WHITE,color:filter===c.id?P2:TXT2,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all .15s'}}>
               {c.name}
             </button>
           ))}
         </div>
       )}
 
-      {/* Kanban desktop / Accordéon mobile */}
-      {deals.length === 0 ? (
-        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead pour commencer" action={<Btn onClick={() => setOpenLead({})}>+ Créer un lead</Btn>}/>
+      {deals.length===0 ? (
+        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead pour commencer" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}/>
       ) : mob ? (
-        /* ── MOBILE : accordéon ── */
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {PIPELINE_STAGES.map(stage => (
-            <AccordionColumn key={stage.key} stage={stage} deals={displayDeals.filter(d => d.status === stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {PIPELINE_STAGES.map(stage=>(
+            <AccordionColumn key={stage.key} stage={stage} deals={displayDeals.filter(d=>d.status===stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
           ))}
         </div>
       ) : (
-        /* ── DESKTOP : kanban ── */
-        <div style={{ overflowX:'auto', paddingBottom:8 }}>
-          <div style={{ display:'flex', gap:12, minWidth:`${PIPELINE_STAGES.length * 190}px` }}>
-            {PIPELINE_STAGES.map(stage => (
-              <DropColumn key={stage.key} stage={stage} deals={displayDeals.filter(d => d.status === stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
+        <div style={{overflowX:'auto',paddingBottom:8}}>
+          <div style={{display:'flex',gap:12,minWidth:`${PIPELINE_STAGES.length*190}px`}}>
+            {PIPELINE_STAGES.map(stage=>(
+              <DropColumn key={stage.key} stage={stage} deals={displayDeals.filter(d=>d.status===stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
             ))}
           </div>
         </div>
       )}
 
-      {/* Fiche lead */}
-      {openLead !== null && (
-        <LeadSheet
-          deal={openLead?.id ? openLead : null}
-          debriefs={debriefs || []}
-          onClose={() => setOpenLead(null)}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          toast={toast}
-        />
+      {openLead!==null && (
+        <LeadSheet deal={openLead?.id?openLead:null} debriefs={debriefs||[]} onClose={()=>setOpenLead(null)} onSave={handleSave} onDelete={handleDelete} toast={toast}/>
       )}
     </div>
   );
 }
-
-// ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
   const { list: toasts, toast } = useToast();
 
@@ -2837,9 +2841,7 @@ export default function App() {
   const [lbKey,   setLbKey]   = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const mob = useIsMobile();
-  const [debriefConfig, setDebriefConfig, debriefLoaded] = useDebriefConfig();
-
-  // Detect reset token in URL
+  const [debriefConfig, setDebriefConfig] = useDebriefConfig();
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const rt = p.get('reset_token');
@@ -2851,12 +2853,6 @@ export default function App() {
     _onExpired = () => { setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login'); toast('Session expirée, veuillez vous reconnecter', 'error'); };
     return () => { _onExpired = null; };
   }, [toast]);
-
-  // Clean dark mode residue
-  useEffect(() => {
-    localStorage.removeItem('cd_dark');
-    document.documentElement.removeAttribute('data-theme');
-  }, []);
 
   // Restore session
   useEffect(() => {
@@ -2938,25 +2934,37 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:"linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)", fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
-        *{box-sizing:border-box;margin:0;padding:0}
-        html{background:#f5ede6;min-height:100%}
-        body{background:linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);min-height:100vh;min-width:100vw}
-        #root{min-height:100vh;min-width:100vw;background:transparent}
+        *{box-sizing:border-box}
         input,select,textarea,button{-webkit-appearance:none;touch-action:manipulation}
-        input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(0.5)}
         ::placeholder{color:rgba(180,150,120,.5)!important}
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-thumb{background:rgba(232,125,106,.3);border-radius:3px}
         ::-webkit-scrollbar-track{background:transparent}
+
+        /* ── Dark mode ── */
+        :root {
+          color-scheme: light;
+          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
+          --card: #ffffff;
+          --input: #f5ede6;
+          --txt: #5a4a3a;
+          --txt2: #b09080;
+          --txt3: #c8b8a8;
+          --border: rgba(232,125,106,.1);
+          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
+          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
+          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
+          --sidebar: rgba(255,248,244,.97);
+        }
       `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
       <Toasts list={toasts}/>
-      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig} debriefLoaded={debriefLoaded}/>}
+      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig}/>}
 
       {mob ? (
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'#fff8f4', borderBottom:'1px solid rgba(232,125,106,.12)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
@@ -2968,7 +2976,7 @@ export default function App() {
           <main style={{ padding:'16px 14px 90px' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff8f4', borderTop:'1px solid rgba(232,125,106,.12)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
@@ -2979,7 +2987,7 @@ export default function App() {
         </>
       ) : (
         <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'#fff8f4', borderRight:'1px solid rgba(232,125,106,.12)', boxShadow:'4px 0 14px rgba(174,130,100,.08)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
@@ -3004,7 +3012,7 @@ export default function App() {
               <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
             </div>
           </aside>
-          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden' }}>
+          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>
             {dataLoading ? <Spinner full/> : <Content/>}
           </main>
         </div>
