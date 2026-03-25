@@ -46,6 +46,7 @@ export function ClosedBadge({ isClosed }) {
 // ─── RADAR (5 sections exactes) ───────────────────────────────────────────────
 
 
+
 export function Radar({ scores, color='#e87d6a', size=220 }) {
   if (!scores) return null;
   const n=SECTIONS.length, cx=size/2, cy=size/2, R=size*0.36;
@@ -320,7 +321,9 @@ export function SectionNotes({ notes={}, onChange }) {
 
 // ─── DEFAULT DEBRIEF CONFIG ───────────────────────────────────────────────────
 
+
 // useDebriefConfig : appelé UNIQUEMENT dans App, jamais dans composants conditionnels
+
 
 
 export function CatCard({ number, title, children }) {
