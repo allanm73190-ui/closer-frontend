@@ -1487,6 +1487,7 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
 
 // ─── PAGES ────────────────────────────────────────────────────────────────────
 function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
+  const mob = useIsMobile();
   const isHOS = user.role === 'head_of_sales';
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
