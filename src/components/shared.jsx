@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
+import { P, P2, TXT, TXT3, WHITE, R_LG, cardSm, SECTIONS } from '../constants.js';
+import { fmtDate, fmtShort, computeLevel } from '../utils.js';
+import { useIsMobile, useDebriefConfig } from '../hooks.js';
 
-import { Btn, Card, Spinner, Empty } from './ui.jsx';
+import { Card } from './ui.jsx';
 
 export function ScoreGauge({ percentage, size='lg' }) {
   const r  = size==='lg' ? 54 : 36;
@@ -45,8 +45,6 @@ export function ClosedBadge({ isClosed }) {
 
 // ─── RADAR (5 sections exactes) ───────────────────────────────────────────────
 
-
-
 export function Radar({ scores, color='#e87d6a', size=220 }) {
   if (!scores) return null;
   const n=SECTIONS.length, cx=size/2, cy=size/2, R=size*0.36;
@@ -77,7 +75,6 @@ export function Radar({ scores, color='#e87d6a', size=220 }) {
     </svg>
   );
 }
-
 
 export function SectionBars({ scores, globalScores }) {
   const LABELS = { decouverte:'Découverte', reformulation:'Reformulation', projection:'Projection', presentation_offre:"Présentation offre", closing:'Closing' };
@@ -150,7 +147,6 @@ export function GamCard({ gam }) {
     </div>
   );
 }
-
 
 export function Leaderboard({ refreshKey }) {
   const [data, setData] = useState([]);
@@ -321,10 +317,7 @@ export function SectionNotes({ notes={}, onChange }) {
 
 // ─── DEFAULT DEBRIEF CONFIG ───────────────────────────────────────────────────
 
-
 // useDebriefConfig : appelé UNIQUEMENT dans App, jamais dans composants conditionnels
-
-
 
 export function CatCard({ number, title, children }) {
   const [open, setOpen] = React.useState(false);

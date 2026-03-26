@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
+import { P, TXT, TXT3, WHITE, SH_IN, R_SM, R_FULL, card, inp, BTN } from '../constants.js';
+import { useIsMobile } from '../hooks.js';
 
 export function Toasts({ list }) {
   const mob = useIsMobile();
@@ -47,7 +45,6 @@ export function Burst({ points, levelUp, newLevel, onDone }) {
 
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
 
-
 export function Input({ placeholder, value, onChange, type='text', required, autoFocus, style={} }) {
   const [focus, setFocus] = React.useState(false);
   return (
@@ -60,7 +57,6 @@ export function Input({ placeholder, value, onChange, type='text', required, aut
   );
 }
 
-
 export function Textarea({ placeholder, value, onChange, rows=3 }) {
   return (
     <textarea placeholder={placeholder} value={value} onChange={onChange} rows={rows}
@@ -68,8 +64,6 @@ export function Textarea({ placeholder, value, onChange, rows=3 }) {
     />
   );
 }
-
-
 
 export function Btn({ children, onClick, type='button', variant='primary', disabled, style={} }) {
   return (
@@ -82,19 +76,16 @@ export function Btn({ children, onClick, type='button', variant='primary', disab
   );
 }
 
-
 export function AlertBox({ type, message }) {
   if (!message) return null;
   const s = { error:{bg:'rgba(253,232,228,.8)',b:'rgba(192,80,64,.3)',c:'#c05040'}, success:{bg:'rgba(218,240,216,.8)',b:'rgba(90,152,88,.3)',c:'#5a9858'}, info:{bg:'rgba(218,237,245,.8)',b:'rgba(58,122,154,.3)',c:'#3a7a9a'} }[type||'info'];
   return <div style={{ background:s.bg, border:`1px solid ${s.b}`, color:s.c, padding:'12px 14px', borderRadius:R_SM, fontSize:14, marginBottom:16 }}>{message}</div>;
 }
 
-
 export function Spinner({ full=false, size=32 }) {
   const el = <><div style={{ width:size, height:size, border:`${size>20?4:3}px solid rgba(232,125,106,.15)`, borderTopColor:P, borderRadius:'50%', animation:'spin .75s linear infinite' }}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></>;
   return full ? <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'50vh' }}>{el}</div> : el;
 }
-
 
 export function Empty({ icon, title, subtitle, action }) {
   return (
@@ -107,11 +98,9 @@ export function Empty({ icon, title, subtitle, action }) {
   );
 }
 
-
 export function Card({ children, style={} }) {
   return <div style={{ ...card(), ...style }}>{children}</div>;
 }
-
 
 export function Modal({ title, onClose, children }) {
   return (

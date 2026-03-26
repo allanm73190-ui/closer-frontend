@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
-
-import { Card, Btn } from './ui.jsx';
+import { P, P2, A, TXT, TXT3, WHITE, SH_SM, SH_HOVERED, R_SM, R_MD, R_LG } from '../constants.js';
+import { useIsMobile } from '../hooks.js';
 
 export function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
   const [open, setOpen] = React.useState(false);

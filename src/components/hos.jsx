@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
+import { WHITE, R_SM } from '../constants.js';
+import { fmtDate } from '../utils.js';
+import { useIsMobile } from '../hooks.js';
 
-import { Input, Btn, AlertBox, Modal, Card, Spinner, Empty } from './ui.jsx';
-import { ScoreGauge, Radar } from './shared.jsx';
+import { Input, Btn, Modal, Card, Spinner } from './ui.jsx';
 
 export function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, onSelect, onObjectives }) {
   const [movingTo, setMovingTo] = useState('');
@@ -403,5 +402,4 @@ export function CommentsSection({ debriefId, user, toast }) {
 }
 
 // ─── PIPELINE PAGE ────────────────────────────────────────────────────────────
-
 

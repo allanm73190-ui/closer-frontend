@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
-import { Input, Textarea, Btn, AlertBox, Spinner, Card, Modal, Empty } from '../components/ui.jsx';
-import { ScoreGauge, ScoreBadge, ClosedBadge, Radar, SectionBars, GamCard, Leaderboard, StatsRow, Chart, RadioGroup, CheckboxGroup, SectionNotes, CatCard, DebriefCard } from '../components/shared.jsx';
-import { MiniPipeline, DealCard, DropColumn, AccordionColumn } from '../components/pipeline.jsx';
-import { UserMenu } from '../components/layout.jsx';
-import { MemberRow, TeamCard, ProgBar, ObjectiveBanner, ObjectiveModal, ActionPlanCard, CommentsSection } from '../components/hos.jsx';
+import React from 'react';
+import { SECTIONS } from '../constants.js';
+import { fmtDate, computeSectionScores } from '../utils.js';
+import { useIsMobile } from '../hooks.js';
+import { Btn, Card } from '../components/ui.jsx';
+import { ScoreGauge, ClosedBadge, Radar } from '../components/shared.jsx';
+import { CommentsSection } from '../components/hos.jsx';
+
 export default function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
   const mob = useIsMobile();
   if (!debrief) return (
@@ -54,7 +52,7 @@ export default function Detail({ debrief, navigate, onDelete, fromPage, user, to
                 const val = scores[key]||0;
                 return (
                   <div key={key}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
                       <span style={{ fontSize:14, fontWeight:600, color:'#5a4a3a' }}>{label}</span>
                       <span style={{ fontSize:13, fontWeight:700, padding:'2px 8px', borderRadius:6, border:'1px solid rgba(232,125,106,.12)', color:barCol(val) }}>{val}/5</span>
                     </div>
@@ -82,7 +80,7 @@ export default function Detail({ debrief, navigate, onDelete, fromPage, user, to
                 const sn  = debrief.section_notes?.[key];
                 return (
                   <div key={key}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
                       <span style={{ fontSize:13, fontWeight:600, color:'#5a4a3a' }}>{label}</span>
                       <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:6, border:'1px solid rgba(232,125,106,.12)', color:barCol(val) }}>{val}/5</span>
                     </div>
@@ -107,14 +105,12 @@ export default function Detail({ debrief, navigate, onDelete, fromPage, user, to
       {(debrief.strengths||debrief.improvements||debrief.notes) && (
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12 }}>
           {debrief.strengths    && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#059669',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
-          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#d97706',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
+          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#d97706',marginBottom:8}}>Axes amélioration</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
           {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#e87d6a',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
         </div>
       )}
 
-      {/* Comments */}
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
 }
-

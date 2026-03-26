@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
-import { Input, Textarea, Btn, AlertBox, Spinner, Card, Modal, Empty } from '../components/ui.jsx';
-import { ScoreGauge, ScoreBadge, ClosedBadge, Radar, SectionBars, GamCard, Leaderboard, StatsRow, Chart, RadioGroup, CheckboxGroup, SectionNotes, CatCard, DebriefCard } from '../components/shared.jsx';
-import { MiniPipeline, DealCard, DropColumn, AccordionColumn } from '../components/pipeline.jsx';
-import { UserMenu } from '../components/layout.jsx';
-import LeadSheet from './LeadSheet.jsx';
+import { R_MD, SECTIONS } from '../constants.js';
+import { avgSectionScores } from '../utils.js';
+import { useIsMobile } from '../hooks.js';
+import { Input, Btn, Spinner, Card, Modal, Empty } from '../components/ui.jsx';
+import { Radar, SectionBars, Chart } from '../components/shared.jsx';
 
 export default function HOSPage({ toast, leaderboardKey, allDebriefs }) {
   const [tab,  setTab]  = useState('dashboard');

@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../api.js';
-import { P, P2, A, TXT, TXT2, TXT3, SAND, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, SH_HOVERED, R_SM, R_MD, R_LG, R_XL, R_FULL, card, cardSm, inp, BTN, DS, DEFAULT_DEBRIEF_CONFIG, PIPELINE_STAGES, SECTIONS } from '../constants.js';
-import { fmtDate, fmtShort, computeScore, computeSectionScores, computeLevel, avgSectionScores } from '../utils.js';
-import { useIsMobile, useToast, useDebriefConfig } from '../hooks.js';
-import { Input, Textarea, Btn, AlertBox, Spinner, Card, Modal, Empty } from '../components/ui.jsx';
-import { ScoreGauge, ScoreBadge, ClosedBadge, Radar, SectionBars, GamCard, Leaderboard, StatsRow, Chart, RadioGroup, CheckboxGroup, SectionNotes, CatCard, DebriefCard } from '../components/shared.jsx';
-import { MiniPipeline, DealCard, DropColumn, AccordionColumn } from '../components/pipeline.jsx';
-import { UserMenu } from '../components/layout.jsx';
-import { MemberRow, TeamCard, ProgBar, ObjectiveBanner, ObjectiveModal, ActionPlanCard, CommentsSection } from '../components/hos.jsx';
+import { P, P2, TXT, TXT2, TXT3, R_MD, R_FULL, BTN, DEFAULT_DEBRIEF_CONFIG } from '../constants.js';
+import { computeScore } from '../utils.js';
+import { useIsMobile } from '../hooks.js';
+import { Input, Textarea, Btn, Card } from '../components/ui.jsx';
+import { ScoreGauge, ClosedBadge, RadioGroup, CheckboxGroup, SectionNotes, CatCard } from '../components/shared.jsx';
 export default function NewDebrief({ navigate, onSave, toast, debriefConfig }) {
   const mob = useIsMobile();
   const cfg = debriefConfig && debriefConfig.length > 0 ? debriefConfig : DEFAULT_DEBRIEF_CONFIG;
