@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Viewport corrigé : no zoom, safe area pour iPhone notch -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CloserDebrief" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+
+    <!-- Mac / desktop -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- SEO -->
+    <meta name="description" content="L'outil de débrief et de pilotage des équipes commerciales" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <title>CloserDebrief</title>
+
+    <style>
+      /* Reset zoom & scaling issues */
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        /* Safe area pour iPhone notch / Dynamic Island */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      /* Prevent double-tap zoom on buttons */
+      button, a, input, select, textarea {
+        touch-action: manipulation;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DMOyqljS.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered:', reg.scope))
+            .catch(err => console.log('SW error:', err));
+        });
+      }
+    </script>
+  </body>
+</html>
