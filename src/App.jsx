@@ -65,24 +65,6 @@ function useBreakpoint() {
 
 
 
-// ─── DARK MODE ────────────────────────────────────────────────────────────────
-function useDarkMode() {
-  const [dark, setDark] = React.useState(() => {
-    const saved = localStorage.getItem('cd_dark');
-    return saved === '1'; // défaut = light
-  });
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    localStorage.setItem('cd_dark', dark ? '1' : '0');
-  }, [dark]);
-  // Initialiser immédiatement au chargement
-  React.useEffect(() => {
-    const saved = localStorage.getItem('cd_dark');
-    document.documentElement.setAttribute('data-theme', saved === '1' ? 'dark' : 'light');
-  }, []);
-  return [dark, setDark];
-}
-
 // ─── DESIGN SYSTEM — Soft Pastel 3D ─────────────────────────────────────────
 // Couleurs
 const P  = '#e87d6a';   // primaire corail
@@ -232,6 +214,278 @@ function avgSectionScores(debriefs) {
 const fmtDate  = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch { return s||''; }};
 const fmtShort = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); }             catch { return s||''; }};
 const copy     = t => navigator.clipboard.writeText(t).catch(()=>{});
+
+// ─── AI ANALYSIS ─────────────────────────────────────────────────────────────
+const AI_CACHE_PREFIX = 'cd_ai_';
+function getAiCache(debriefId) {
+  try { const raw = localStorage.getItem(AI_CACHE_PREFIX + debriefId); return raw ? JSON.parse(raw) : null; }
+  catch { return null; }
+}
+function setAiCache(debriefId, analysis) {
+  try { localStorage.setItem(AI_CACHE_PREFIX + debriefId, JSON.stringify({ analysis, ts: Date.now() })); } catch {}
+}
+
+const SECTION_LABELS = { decouverte:'Découverte', reformulation:'Reformulation', projection:'Projection', presentation_offre:"Présentation de l'offre", closing:'Closing & Objections' };
+const RESULT_LABELS = { close:'Closé en direct', retrograde:'Rétrogradé', relance:'Relance planifiée', porte_ouverte:'Porte ouverte', perdu:'Perdu' };
+
+function buildAiPrompt(debrief) {
+  const s = debrief.sections || {};
+  const scores = computeSectionScores(s);
+  const pct = Math.round(debrief.percentage || 0);
+  const sNotes = debrief.section_notes || {};
+
+  let prompt = `Voici le debrief post-appel à analyser :\n\n`;
+  prompt += `- Prospect : ${debrief.prospect_name || 'Non renseigné'}\n`;
+  prompt += `- Date : ${debrief.call_date || 'Non renseignée'}\n`;
+  prompt += `- Closer : ${debrief.closer_name || 'Non renseigné'}\n`;
+  prompt += `- Résultat : ${debrief.is_closed ? 'CLOSÉ ✅' : 'NON CLOSÉ ❌'}\n`;
+  prompt += `- Score global : ${pct}% (${debrief.total_score || 0}/${debrief.max_score || 0})\n\n`;
+
+  prompt += `### Scores par section :\n`;
+  SECTIONS.forEach(sec => {
+    prompt += `- ${SECTION_LABELS[sec.key] || sec.key} : ${scores[sec.key] || 0}/5\n`;
+  });
+
+  prompt += `\n### Détail des réponses par section :\n`;
+
+  // Découverte
+  const d = s.decouverte || {};
+  prompt += `\n**1. Découverte**\n`;
+  prompt += `- Douleur de surface identifiée : ${d.douleur_surface || 'non renseigné'}${d.douleur_surface_note ? ` (${d.douleur_surface_note})` : ''}\n`;
+  prompt += `- Douleur profonde atteinte : ${d.douleur_profonde || 'non renseigné'}${d.douleur_profonde_note ? ` (${d.douleur_profonde_note})` : ''}\n`;
+  prompt += `- Couches creusées : ${Array.isArray(d.couches_douleur) && d.couches_douleur.length > 0 ? d.couches_douleur.join(', ') : 'aucune'}\n`;
+  prompt += `- Temporalité demandée : ${d.temporalite || 'non renseigné'}\n`;
+  prompt += `- Urgence identifiée : ${d.urgence || 'non renseigné'}${d.urgence_note ? ` (${d.urgence_note})` : ''}\n`;
+
+  // Reformulation
+  const r = s.reformulation || {};
+  prompt += `\n**2. Reformulation**\n`;
+  prompt += `- Reformulation faite : ${r.reformulation || 'non renseigné'}\n`;
+  prompt += `- Prospect reconnu : ${r.prospect_reconnu || 'non renseigné'}\n`;
+  prompt += `- Couches reformulées : ${Array.isArray(r.couches_reformulation) && r.couches_reformulation.length > 0 ? r.couches_reformulation.join(', ') : 'aucune'}\n`;
+
+  // Projection
+  const p = s.projection || {};
+  prompt += `\n**3. Projection**\n`;
+  prompt += `- Projection posée : ${p.projection_posee || 'non renseigné'}\n`;
+  prompt += `- Qualité réponse : ${p.qualite_reponse || 'non renseigné'}\n`;
+  prompt += `- Deadline comme levier : ${p.deadline_levier || 'non renseigné'}\n`;
+
+  // Offre
+  const o = s.offre || {};
+  prompt += `\n**4. Présentation de l'offre**\n`;
+  prompt += `- Collée aux douleurs : ${o.colle_douleurs || 'non renseigné'}\n`;
+  prompt += `- Exemples transformation : ${o.exemples_transformation || 'non renseigné'}\n`;
+  prompt += `- Durée justifiée : ${o.duree_justifiee || 'non renseigné'}\n`;
+
+  // Closing
+  const c = s.closing || {};
+  prompt += `\n**5. Closing & Objections**\n`;
+  prompt += `- Annonce prix : ${c.annonce_prix || 'non renseigné'}\n`;
+  prompt += `- Silence après prix : ${c.silence_prix || 'non renseigné'}\n`;
+  prompt += `- Objections rencontrées : ${Array.isArray(c.objections) && c.objections.length > 0 ? c.objections.join(', ') : 'aucune'}\n`;
+  prompt += `- Douleur réancrée : ${c.douleur_reancree || 'non renseigné'}\n`;
+  prompt += `- Objection isolée : ${c.objection_isolee || 'non renseigné'}\n`;
+  prompt += `- Résultat closing : ${RESULT_LABELS[c.resultat_closing] || c.resultat_closing || 'non renseigné'}\n`;
+
+  // Notes de section
+  const hasNotes = Object.values(sNotes).some(n => n && (n.strength || n.weakness || n.improvement));
+  if (hasNotes) {
+    prompt += `\n### Notes du closer par section :\n`;
+    Object.entries(sNotes).forEach(([key, n]) => {
+      if (!n || (!n.strength && !n.weakness && !n.improvement)) return;
+      prompt += `\n**${SECTION_LABELS[key] || key}**\n`;
+      if (n.strength) prompt += `- Point fort : ${n.strength}\n`;
+      if (n.weakness) prompt += `- Point faible : ${n.weakness}\n`;
+      if (n.improvement) prompt += `- Amélioration : ${n.improvement}\n`;
+    });
+  }
+
+  if (debrief.notes) prompt += `\n### Notes globales du closer :\n${debrief.notes}\n`;
+
+  return prompt;
+}
+
+const AI_SYSTEM = `Tu es un expert senior en analyse d'appels de vente (sales call analysis) et en coaching commercial. Tu agis comme un directeur commercial chevronné avec 15 ans d'expérience en closing B2B et B2C.
+
+Tu analyses les debriefs post-appel remplis par des closers. Chaque debrief contient les évaluations du closer après un appel de vente structuré en 5 sections : Découverte, Reformulation, Projection, Présentation de l'offre, Closing & Objections.
+
+Pour chaque debrief soumis, produis une analyse structurée en suivant EXACTEMENT ce format :
+
+## 🎯 SCORE DE PERFORMANCE : [reprendre le score global]
+Résumé en 1 phrase de la performance.
+
+## ✅ POINTS FORTS
+[2-3 points spécifiques avec justification — basés sur les scores et notes]
+
+## ⚠️ AXES D'AMÉLIORATION PRIORITAIRES
+[2-3 recommandations actionnables classées par impact, avec des exemples concrets de scripts ou formulations]
+
+## 🔍 ANALYSE PAR SECTION
+Pour chaque section scorée faiblement (≤ 3/5), donne :
+- Ce qui manque
+- Une action concrète pour s'améliorer
+- Un exemple de script ou formulation
+
+## 🎓 COACHING PERSONNALISÉ
+[1 exercice ou technique spécifique à pratiquer avant le prochain appel]
+
+## 📋 ACTION PRIORITAIRE
+[UNE seule action mesurable et concrète]
+
+Règles :
+- Sois direct et factuel. Pas de flatterie gratuite.
+- Si le résultat est "Closé", analyse quand même ce qui peut être optimisé.
+- Ne jamais inventer de données manquantes — signale-les.
+- Adapte le ton : si les scores sont bas, sois plus pédagogique ; si élevés, sois plus stratégique.
+- Langue : Français.`;
+
+async function generateAiAnalysis(debrief) {
+  const userPrompt = buildAiPrompt(debrief);
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: AI_SYSTEM,
+      messages: [{ role: 'user', content: userPrompt }],
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'Erreur API IA');
+  }
+  const data = await response.json();
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  if (!text) throw new Error('Réponse IA vide');
+  return text;
+}
+
+function useAiAnalysis(debriefId) {
+  const [analysis, setAnalysis] = useState(() => getAiCache(debriefId)?.analysis || null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const generate = useCallback(async (debrief) => {
+    setLoading(true); setError(null);
+    try {
+      const text = await generateAiAnalysis(debrief);
+      setAnalysis(text);
+      setAiCache(debrief.id, text);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  }, []);
+
+  return { analysis, loading, error, generate };
+}
+
+// Simple markdown-ish renderer for AI output
+function AiMarkdown({ text }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const elements = [];
+  let i = 0;
+  for (const line of lines) {
+    i++;
+    if (line.startsWith('## ')) {
+      elements.push(<h3 key={i} style={{ fontSize:15, fontWeight:700, color:'#5a4a3a', margin:'20px 0 8px', borderBottom:'1px solid rgba(232,125,106,.12)', paddingBottom:8 }}>{line.replace(/^## /, '')}</h3>);
+    } else if (line.startsWith('### ')) {
+      elements.push(<h4 key={i} style={{ fontSize:13, fontWeight:700, color:'#e87d6a', margin:'14px 0 6px' }}>{line.replace(/^### /, '')}</h4>);
+    } else if (line.startsWith('- ')) {
+      const content = line.replace(/^- /, '').replace(/\*\*(.+?)\*\*/g, '⟨$1⟩');
+      const parts = content.split(/⟨(.+?)⟩/);
+      elements.push(
+        <div key={i} style={{ display:'flex', gap:8, marginBottom:4, paddingLeft:4 }}>
+          <span style={{ color:'#e87d6a', flexShrink:0, marginTop:2 }}>•</span>
+          <span style={{ fontSize:13, color:'#5a4a3a', lineHeight:1.6 }}>
+            {parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}
+          </span>
+        </div>
+      );
+    } else if (line.trim()) {
+      const content = line.replace(/\*\*(.+?)\*\*/g, '⟨$1⟩');
+      const parts = content.split(/⟨(.+?)⟩/);
+      elements.push(
+        <p key={i} style={{ fontSize:13, color:'#5a4a3a', lineHeight:1.7, margin:'0 0 6px' }}>
+          {parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}
+        </p>
+      );
+    }
+  }
+  return <div>{elements}</div>;
+}
+
+function AiAnalysisCard({ debrief, autoGenerate = false }) {
+  const { analysis, loading, error, generate } = useAiAnalysis(debrief?.id);
+  const [expanded, setExpanded] = useState(!!autoGenerate);
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    if (autoGenerate && debrief && !analysis && !loading && !triggered.current) {
+      triggered.current = true;
+      generate(debrief);
+    }
+  }, [autoGenerate, debrief, analysis, loading, generate]);
+
+  if (!debrief) return null;
+
+  return (
+    <Card style={{ overflow:'hidden' }}>
+      <button type="button" onClick={() => { setExpanded(v => !v); if (!analysis && !loading) generate(debrief); }}
+        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'16px 20px', background: expanded ? 'linear-gradient(135deg,rgba(106,172,206,.12),rgba(232,125,106,.08))' : 'rgba(106,172,206,.06)', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all .2s' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#6aacce,#5a9ac0)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, boxShadow:'0 2px 8px rgba(106,172,206,.3)' }}>🤖</div>
+          <div style={{ textAlign:'left' }}>
+            <span style={{ fontSize:14, fontWeight:700, color:'#5a4a3a' }}>Analyse IA</span>
+            {analysis && <span style={{ fontSize:11, color:'#6aacce', marginLeft:8, fontWeight:500 }}>✓ Générée</span>}
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {loading && <div style={{ width:16, height:16, border:'2px solid rgba(106,172,206,.2)', borderTopColor:'#6aacce', borderRadius:'50%', animation:'spin .75s linear infinite' }}/>}
+          <span style={{ fontSize:13, color:'#c8b8a8', transition:'transform .2s', display:'inline-block', transform: expanded ? 'rotate(180deg)' : 'none' }}>▾</span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div style={{ padding:'0 20px 20px' }}>
+          {loading && !analysis && (
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'32px 16px' }}>
+              <div style={{ width:32, height:32, border:'3px solid rgba(106,172,206,.2)', borderTopColor:'#6aacce', borderRadius:'50%', animation:'spin .75s linear infinite' }}/>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse en cours...</p>
+                <p style={{ fontSize:12, color:'#b09080', margin:0 }}>L'IA évalue le debrief de {debrief.prospect_name}</p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div style={{ padding:16 }}>
+              <AlertBox type="error" message={`Erreur IA : ${error}`}/>
+              <Btn variant="secondary" onClick={() => generate(debrief)} style={{ marginTop:8 }}>🔄 Réessayer</Btn>
+            </div>
+          )}
+
+          {analysis && (
+            <>
+              <div style={{ borderTop:'1px solid rgba(232,125,106,.08)', paddingTop:16, marginTop:4 }}>
+                <AiMarkdown text={analysis}/>
+              </div>
+              <div style={{ display:'flex', gap:8, marginTop:16, paddingTop:12, borderTop:'1px solid rgba(232,125,106,.08)' }}>
+                <Btn variant="secondary" onClick={() => generate(debrief)} disabled={loading} style={{ fontSize:12, padding:'7px 14px' }}>
+                  {loading ? '⏳ Régénération...' : '🔄 Régénérer'}
+                </Btn>
+                <Btn variant="ghost" onClick={() => copy(analysis)} style={{ fontSize:12, padding:'7px 14px' }}>
+                  📋 Copier
+                </Btn>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function useToast() {
@@ -871,7 +1125,178 @@ function ResetPage({ token, onDone }) {
 }
 
 // ─── ACCOUNT SETTINGS ────────────────────────────────────────────────────────
-function AccountSettings({ user, onClose, toast }) {
+
+// ─── DEFAULT DEBRIEF CONFIG ───────────────────────────────────────────────────
+const DEFAULT_DEBRIEF_CONFIG = [
+  { key:'decouverte', title:'Phase de découverte', questions:[
+    { id:'douleur_surface',   label:'Douleur de surface identifiée ?',          type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_douleur',   label:'Couches de douleur creusées',               type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique'},{value:'couche2',label:'Couche 2 : quotidien'},{value:'couche3',label:'Couche 3 : identité'}] },
+    { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}] },
+  ]},
+  { key:'reformulation', title:'Reformulation', questions:[
+    { id:'reformulation',         label:'Reformulation faite ?',       type:'radio',    options:[{value:'oui',label:'✅ Complète'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
+    { id:'prospect_reconnu',      label:"Le prospect s'est reconnu ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_reformulation', label:'Les 3 couches présentes ?',   type:'checkbox', options:[{value:'physique',label:'Physique'},{value:'quotidien',label:'Quotidien'},{value:'identitaire',label:'Identitaire'}] },
+  ]},
+  { key:'projection', title:'Projection', questions:[
+    { id:'projection_posee', label:'Question de projection posée ?',   type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'qualite_reponse',  label:'Qualité de la réponse',            type:'radio', options:[{value:'forte',label:'✅ Forte'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
+    { id:'deadline_levier',  label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
+  ]},
+  { key:'presentation_offre', title:"Présentation de l'offre", questions:[
+    { id:'colle_douleurs',          label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'exemples_transformation', label:'Exemples bien choisis ?',            type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'duree_justifiee',         label:'Durée / Offre justifiée ?',          type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+  ]},
+  { key:'closing', title:'Closing & Objections', questions:[
+    { id:'annonce_prix',     label:'Annonce du prix',                      type:'radio',    options:[{value:'directe',label:'✅ Directe'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
+    { id:'silence_prix',     label:'Silence après le prix ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objections',       label:'Objection rencontrée',                 type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:'Besoin de réfléchir'},{value:'conjoint',label:'Conjoint'},{value:'methode',label:'Méthode'},{value:'aucune',label:'Aucune'}] },
+    { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objection_isolee', label:'Objection bien isolée ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'resultat_closing', label:'Résultat du closing',                  type:'radio',    options:[{value:'close',label:'✅ Closé'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
+  ]},
+];
+
+function useDebriefConfig() {
+  const [config, setConfig] = React.useState(DEFAULT_DEBRIEF_CONFIG);
+  React.useEffect(() => {
+    apiFetch('/debrief-config')
+      .then(d => { if (d && Array.isArray(d.sections) && d.sections.length > 0) setConfig(d.sections); })
+      .catch(() => {});
+  }, []);
+  return [config, setConfig];
+}
+
+
+// ─── DEFAULT DEBRIEF CONFIG ───────────────────────────────────────────────────
+const DEFAULT_DEBRIEF_CONFIG = [
+  { key:'decouverte', title:'Phase de découverte', questions:[
+    { id:'douleur_surface',  label:'Douleur de surface identifiée ?',           type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'douleur_profonde', label:'Douleur profonde / identitaire atteinte ?',  type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiel'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_douleur',  label:'Couches de douleur creusées',                type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique'},{value:'couche2',label:'Couche 2 : quotidien'},{value:'couche3',label:'Couche 3 : identité'}] },
+    { id:'temporalite',      label:'Temporalité demandée ?',                     type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'urgence',          label:'Urgence naturelle identifiée ?',             type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}] },
+  ]},
+  { key:'reformulation', title:'Reformulation', questions:[
+    { id:'reformulation',        label:'Reformulation faite ?',       type:'radio',    options:[{value:'oui',label:'✅ Complète'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
+    { id:'prospect_reconnu',     label:"Le prospect s'est reconnu ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'couches_reformulation',label:'Les 3 couches présentes ?',   type:'checkbox', options:[{value:'physique',label:'Physique'},{value:'quotidien',label:'Quotidien'},{value:'identitaire',label:'Identitaire'}] },
+  ]},
+  { key:'projection', title:'Projection', questions:[
+    { id:'projection_posee',label:'Question de projection posée ?',   type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'qualite_reponse', label:'Qualité de la réponse',            type:'radio', options:[{value:'forte',label:'✅ Forte'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
+    { id:'deadline_levier', label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
+  ]},
+  { key:'presentation_offre', title:"Présentation de l'offre", questions:[
+    { id:'colle_douleurs',         label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'exemples_transformation',label:'Exemples bien choisis ?',            type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'duree_justifiee',        label:'Durée / Offre justifiée ?',          type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+  ]},
+  { key:'closing', title:'Closing & Objections', questions:[
+    { id:'annonce_prix',    label:'Annonce du prix',                      type:'radio',    options:[{value:'directe',label:'✅ Directe'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
+    { id:'silence_prix',    label:'Silence après le prix ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objections',      label:'Objection rencontrée',                 type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:'Besoin de réfléchir'},{value:'conjoint',label:'Conjoint'},{value:'methode',label:'Méthode'},{value:'aucune',label:'Aucune'}] },
+    { id:'douleur_reancree',label:"Douleur réancrée avant l'objection ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'objection_isolee',label:'Objection bien isolée ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'resultat_closing',label:'Résultat du closing',                  type:'radio',    options:[{value:'close',label:'✅ Closé'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
+  ]},
+];
+
+function useDebriefConfig() {
+  const [config, setConfig] = React.useState(DEFAULT_DEBRIEF_CONFIG);
+  React.useEffect(() => {
+    apiFetch('/debrief-config')
+      .then(d => { if (d && Array.isArray(d.sections) && d.sections.length > 0) setConfig(d.sections); })
+      .catch(() => {});
+  }, []);
+  return [config, setConfig];
+}
+
+function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }) {
+  const [config, setLocal] = useState(() => JSON.parse(JSON.stringify(debriefConfig || DEFAULT_DEBRIEF_CONFIG)));
+  const [saving, setSaving] = useState(false);
+  const [ai, setAi] = useState(0);
+  const si = Math.min(ai, config.length-1);
+  const sec = config[si];
+  const updSec = (f,v) => setLocal(p=>p.map((s,i)=>i===si?{...s,[f]:v}:s));
+  const updQ = (qi,f,v) => setLocal(p=>p.map((s,i)=>i!==si?s:{...s,questions:s.questions.map((q,j)=>j===qi?{...q,[f]:v}:q)}));
+  const addQ = () => setLocal(p=>p.map((s,i)=>i!==si?s:{...s,questions:[...s.questions,{id:`q_${Date.now()}`,label:'Nouvelle question',type:'radio',options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}]}]}));
+  const delQ = qi => setLocal(p=>p.map((s,i)=>i!==si?s:{...s,questions:s.questions.filter((_,j)=>j!==qi)}));
+  const addSec = () => { setLocal(p=>[...p,{key:`sec_${Date.now()}`,title:'Nouvelle section',questions:[]}]); setAi(config.length); };
+  const delSec = () => { if(config.length<=1)return; setLocal(p=>p.filter((_,i)=>i!==si)); setAi(Math.max(0,si-1)); };
+  const save = async () => {
+    setSaving(true);
+    try { await apiFetch('/debrief-config',{method:'PUT',body:{sections:config}}); setDebriefConfig(config); toast('Questions sauvegardées !'); onClose(); }
+    catch(e) { toast(e.message,'error'); } finally { setSaving(false); }
+  };
+  const reset = async () => {
+    if(!confirm('Réinitialiser aux questions par défaut ?'))return;
+    try { await apiFetch('/debrief-config',{method:'DELETE'}); setLocal(DEFAULT_DEBRIEF_CONFIG); setDebriefConfig(DEFAULT_DEBRIEF_CONFIG); toast('Questions réinitialisées'); }
+    catch(e) { toast(e.message,'error'); }
+  };
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+        {config.map((s,i)=>(
+          <button type="button" key={s.key} onClick={()=>setAi(i)}
+            style={{padding:'5px 12px',borderRadius:DS.radiusFull,border:'none',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',background:i===ai?DS.bgNavItem:'rgba(253,232,228,.3)',color:i===ai?'white':DS.textSecondary}}>
+            {i+1}. {s.title}
+          </button>
+        ))}
+        <button type="button" onClick={addSec} style={{padding:'5px 12px',borderRadius:DS.radiusFull,border:'1px dashed rgba(232,125,106,.4)',fontSize:12,cursor:'pointer',fontFamily:'inherit',background:'transparent',color:DS.textMuted}}>+ Section</button>
+      </div>
+      {sec && (
+        <Card style={{padding:14}}>
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <input value={sec.title} onChange={e=>updSec('title',e.target.value)} style={{flex:1,padding:'8px 12px',borderRadius:DS.radiusMd,border:'1px solid rgba(232,125,106,.2)',fontSize:13,fontWeight:700,fontFamily:'inherit',outline:'none'}}/>
+            {config.length>1&&<button type="button" onClick={delSec} style={{padding:'8px 10px',borderRadius:DS.radiusSm,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer'}}>🗑</button>}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {sec.questions.map((q,qi)=>(
+              <div key={q.id} style={{background:DS.bgInput,borderRadius:DS.radiusSm,padding:'10px 12px',border:'1px solid rgba(232,125,106,.1)'}}>
+                <div style={{display:'flex',gap:6,marginBottom:6}}>
+                  <input value={q.label} onChange={e=>updQ(qi,'label',e.target.value)} style={{flex:1,padding:'6px 10px',borderRadius:DS.radiusSm,border:'1px solid rgba(232,125,106,.2)',fontSize:12,fontFamily:'inherit',outline:'none'}}/>
+                  <select value={q.type} onChange={e=>updQ(qi,'type',e.target.value)} style={{padding:'6px 8px',borderRadius:DS.radiusSm,border:'1px solid rgba(232,125,106,.2)',fontSize:12,fontFamily:'inherit',outline:'none',flexShrink:0}}>
+                    <option value="radio">Choix unique</option>
+                    <option value="checkbox">Choix multiple</option>
+                    <option value="text">Texte libre</option>
+                  </select>
+                  <button type="button" onClick={()=>delQ(qi)} style={{padding:'6px 8px',borderRadius:DS.radiusSm,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer',flexShrink:0}}>🗑</button>
+                </div>
+                {q.type!=='text'&&(
+                  <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                    {(q.options||[]).map((opt,oi)=>(
+                      <div key={oi} style={{display:'flex',gap:4,alignItems:'center'}}>
+                        <input value={opt.value} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,value:e.target.value}:o))} style={{width:70,padding:'4px 8px',borderRadius:DS.radiusSm,border:'1px solid rgba(232,125,106,.2)',fontSize:11,fontFamily:'inherit',outline:'none'}}/>
+                        <input value={opt.label} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,label:e.target.value}:o))} style={{flex:1,padding:'4px 8px',borderRadius:DS.radiusSm,border:'1px solid rgba(232,125,106,.2)',fontSize:11,fontFamily:'inherit',outline:'none'}}/>
+                        <button type="button" onClick={()=>updQ(qi,'options',q.options.filter((_,k)=>k!==oi))} style={{background:'none',border:'none',color:DS.textMuted,cursor:'pointer',fontSize:13,padding:'0 4px'}}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>updQ(qi,'options',[...(q.options||[]),{value:`opt${Date.now()}`,label:'Nouvelle option'}])} style={{alignSelf:'flex-start',padding:'3px 10px',borderRadius:DS.radiusSm,border:'1px dashed rgba(232,125,106,.3)',background:'transparent',fontSize:11,color:DS.textMuted,cursor:'pointer',fontFamily:'inherit'}}>+ Option</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addQ} style={{padding:'7px 12px',borderRadius:DS.radiusSm,border:'1px dashed rgba(232,125,106,.3)',background:'transparent',fontSize:12,color:DS.textMuted,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>+ Question</button>
+          </div>
+        </Card>
+      )}
+      <div style={{display:'flex',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
+        <button type="button" onClick={reset} style={{padding:'8px 14px',borderRadius:DS.radiusFull,border:'1px solid rgba(192,80,64,.3)',background:'rgba(253,232,228,.5)',color:'#c05040',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Réinitialiser</button>
+        <div style={{display:'flex',gap:8}}>
+          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={save} disabled={saving}>{saving?'Sauvegarde...':'Sauvegarder'}</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountSettings({ user, onClose, toast, debriefConfig, setDebriefConfig }) {
+  const isHOS = user.role === 'head_of_sales';
   const [tab, setTab] = useState('profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
   const [saving, setSaving] = useState(false);
@@ -884,45 +1309,143 @@ function AccountSettings({ user, onClose, toast }) {
     try { await apiFetch('/auth/change-password',{method:'POST',body:{currentPassword:pwd.current,newPassword:pwd.next}}); toast('Mot de passe modifié !'); setPwd({current:'',next:'',confirm:''}); }
     catch(e) { setErr(e.message); } finally { setSaving(false); }
   };
+  const tabs = [{key:'profil',label:'👤 Profil'},{key:'securite',label:'🔒 Sécurité'},...(isHOS?[{key:'questions',label:'📋 Questions'}]:[])];
   return (
     <Modal title="Paramètres du compte" onClose={onClose}>
       <div style={{display:'flex',gap:4,background:'rgba(253,232,228,.2)',padding:4,borderRadius:8,marginBottom:20}}>
-        {[{key:'profil',label:'👤 Profil'},{key:'securite',label:'🔒 Sécurité'}].map(({key,label})=>(
-          <button key={key} onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?'white':'transparent',color:tab===key?'#1e293b':'#64748b',boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit'}}>{label}</button>
+        {tabs.map(({key,label})=>(
+          <button key={key} type="button" onClick={()=>setTab(key)} style={{flex:1,padding:'7px 12px',borderRadius:6,border:'none',fontSize:13,fontWeight:500,cursor:'pointer',background:tab===key?DS.bgCard:'transparent',color:tab===key?DS.textPrimary:DS.textSecondary,boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none',fontFamily:'inherit'}}>{label}</button>
         ))}
       </div>
-      {tab==='profil'&&(
+      {tab==='profil' && (
         <div>
           <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'rgba(253,232,228,.2)',borderRadius:12,marginBottom:20}}>
-            <div style={{width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#e87d6a,#d4604e)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
+            <div style={{width:52,height:52,borderRadius:'50%',background:DS.bgNavItem,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'white',flexShrink:0}}>{user.name.charAt(0)}</div>
             <div>
-              <p style={{fontWeight:700,fontSize:16,color:'#5a4a3a',margin:0}}>{user.name}</p>
-              <p style={{fontSize:13,color:'#6b7280',margin:'2px 0 0'}}>{user.email}</p>
-              <span style={{display:'inline-block',marginTop:4,background:user.role==='head_of_sales'?'#fef3c7':'rgba(253,232,228,.6)',color:user.role==='head_of_sales'?'#92400e':'#4c1d95',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>
-                {user.role==='head_of_sales'?'👑 Head of Sales':'🎯 Closer'}
-              </span>
+              <p style={{fontWeight:700,fontSize:16,color:DS.textPrimary,margin:0}}>{user.name}</p>
+              <p style={{fontSize:13,color:DS.textSecondary,margin:'2px 0 0'}}>{user.email}</p>
+              <span style={{display:'inline-block',marginTop:4,background:isHOS?'#fef3c7':'rgba(253,232,228,.6)',color:isHOS?'#92400e':DS.primary2,fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:4}}>{isHOS?'👑 Head of Sales':'🎯 Closer'}</span>
             </div>
           </div>
-          <p style={{fontSize:13,color:DS.textMuted,textAlign:'center'}}>La modification du profil sera disponible prochainement.</p>
+          <p style={{fontSize:13,color:DS.textMuted,textAlign:'center'}}>Modification du profil bientôt disponible.</p>
         </div>
       )}
-      {tab==='securite'&&(
+      {tab==='securite' && (
         <div>
-          <p style={{fontSize:13,fontWeight:600,color:'#5a4a3a',marginBottom:16}}>Changer le mot de passe</p>
+          <p style={{fontSize:13,fontWeight:600,color:DS.textPrimary,marginBottom:16}}>Changer le mot de passe</p>
           <AlertBox type="error" message={err}/>
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             {[{key:'current',label:'Mot de passe actuel'},{key:'next',label:'Nouveau mot de passe'},{key:'confirm',label:'Confirmer'}].map(({key,label})=>(
-              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#5a4a3a',marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
+              <div key={key}><label style={{display:'block',fontSize:12,fontWeight:600,color:DS.textPrimary,marginBottom:5}}>{label}</label><Input type="password" placeholder="••••••••" value={pwd[key]} onChange={e=>setPwd({...pwd,[key]:e.target.value})}/></div>
             ))}
             <Btn onClick={changePwd} disabled={saving||!pwd.current||!pwd.next||!pwd.confirm} style={{marginTop:4}}>{saving?'Modification...':'Modifier le mot de passe'}</Btn>
           </div>
         </div>
       )}
+      {tab==='questions' && isHOS && (
+        <DebriefConfigEditor debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig} onClose={onClose} toast={toast}/>
+      )}
     </Modal>
   );
 }
 
-// ─── DEBRIEF CARD ─────────────────────────────────────────────────────────────
+function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }) {
+  const [config, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(debriefConfig || DEFAULT_DEBRIEF_CONFIG)));
+  const [saving, setSaving] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const si = Math.min(activeIdx, config.length-1);
+  const sec = config[si];
+
+  const updSec = (field, val) => setLocalConfig(p => p.map((s,i) => i===si ? {...s,[field]:val} : s));
+  const updQ = (qi, field, val) => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:s.questions.map((q,j) => j===qi ? {...q,[field]:val} : q)}));
+  const addQ = () => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:[...s.questions, {id:`q_${Date.now()}`,label:'Nouvelle question',type:'radio',options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}]}]}));
+  const delQ = qi => setLocalConfig(p => p.map((s,i) => i!==si ? s : {...s, questions:s.questions.filter((_,j)=>j!==qi)}));
+  const addSec = () => { setLocalConfig(p => [...p, {key:`sec_${Date.now()}`,title:'Nouvelle section',questions:[]}]); setActiveIdx(config.length); };
+  const delSec = () => { if(config.length<=1) return; setLocalConfig(p=>p.filter((_,i)=>i!==si)); setActiveIdx(Math.max(0,si-1)); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await apiFetch('/debrief-config', {method:'PUT', body:{sections:config}});
+      setDebriefConfig(config);
+      toast('Questions sauvegardées !');
+      onClose();
+    } catch(e) { toast(e.message,'error'); } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    if (!confirm('Réinitialiser aux questions par défaut ?')) return;
+    try {
+      await apiFetch('/debrief-config', {method:'DELETE'});
+      setLocalConfig(DEFAULT_DEBRIEF_CONFIG);
+      setDebriefConfig(DEFAULT_DEBRIEF_CONFIG);
+      toast('Questions réinitialisées');
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+        {config.map((s,i) => (
+          <button type="button" key={s.key} onClick={()=>setActiveIdx(i)}
+            style={{padding:'5px 12px',borderRadius:DS.radiusFull,border:'none',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',background:i===activeIdx?`linear-gradient(135deg,${DS.primary},${DS.primary2})`:'rgba(253,232,228,.3)',color:i===activeIdx?'white':DS.textSecondary}}>
+            {i+1}. {s.title}
+          </button>
+        ))}
+        <button type="button" onClick={addSec} style={{padding:'5px 12px',borderRadius:DS.radiusFull,border:`1px dashed rgba(232,125,106,.4)`,fontSize:12,cursor:'pointer',fontFamily:'inherit',background:'transparent',color:DS.textMuted}}>+ Section</button>
+      </div>
+
+      {sec && (
+        <div style={{background:DS.bgCard,borderRadius:DS.radiusMd,boxShadow:DS.shadowSm,padding:14}}>
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <Input value={sec.title} onChange={e=>updSec('title',e.target.value)} style={{fontSize:13,fontWeight:700}}/>
+            {config.length>1 && <button type="button" onClick={delSec} style={{padding:'8px 10px',borderRadius:DS.radiusSm,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer',flexShrink:0}}>🗑</button>}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {sec.questions.map((q,qi) => (
+              <div key={q.id} style={{background:DS.bgInput,borderRadius:DS.radiusSm,padding:'10px 12px',border:'1px solid rgba(232,125,106,.1)'}}>
+                <div style={{display:'flex',gap:6,marginBottom:6}}>
+                  <Input value={q.label} onChange={e=>updQ(qi,'label',e.target.value)} style={{fontSize:12}}/>
+                  <select value={q.type} onChange={e=>updQ(qi,'type',e.target.value)}
+                    style={{background:DS.bgInput,border:'1px solid rgba(232,125,106,.15)',borderRadius:DS.radiusMd,padding:'8px 10px',fontSize:12,flexShrink:0,fontFamily:'inherit',outline:'none'}}>
+                    <option value="radio">Choix unique</option>
+                    <option value="checkbox">Choix multiple</option>
+                    <option value="text">Texte libre</option>
+                  </select>
+                  <button type="button" onClick={()=>delQ(qi)} style={{padding:'8px 10px',borderRadius:DS.radiusSm,border:'none',background:'rgba(253,232,228,.6)',color:'#c05040',cursor:'pointer',flexShrink:0}}>🗑</button>
+                </div>
+                {q.type !== 'text' && (
+                  <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                    {(q.options||[]).map((opt,oi) => (
+                      <div key={oi} style={{display:'flex',gap:4,alignItems:'center'}}>
+                        <Input value={opt.value} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,value:e.target.value}:o))} style={{fontSize:11,flex:'0 0 80px'}}/>
+                        <Input value={opt.label} onChange={e=>updQ(qi,'options',q.options.map((o,k)=>k===oi?{...o,label:e.target.value}:o))} style={{fontSize:11}}/>
+                        <button type="button" onClick={()=>updQ(qi,'options',q.options.filter((_,k)=>k!==oi))} style={{background:'none',border:'none',color:DS.textMuted,cursor:'pointer',fontSize:13,padding:'0 4px',flexShrink:0}}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>updQ(qi,'options',[...(q.options||[]),{value:`opt${Date.now()}`,label:'Nouvelle option'}])}
+                      style={{alignSelf:'flex-start',padding:'3px 10px',borderRadius:DS.radiusSm,border:`1px dashed rgba(232,125,106,.3)`,background:'transparent',fontSize:11,color:DS.textMuted,cursor:'pointer',fontFamily:'inherit'}}>+ Option</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addQ} style={{padding:'7px 12px',borderRadius:DS.radiusSm,border:`1px dashed rgba(232,125,106,.3)`,background:'transparent',fontSize:12,color:DS.textMuted,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>+ Question</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{display:'flex',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
+        <button type="button" onClick={reset} style={{padding:'8px 14px',borderRadius:DS.radiusFull,border:`1px solid rgba(192,80,64,.3)`,background:'rgba(253,232,228,.5)',color:'#c05040',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Réinitialiser</button>
+        <div style={{display:'flex',gap:8}}>
+          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={save} disabled={saving}>{saving?'Sauvegarde...':'Sauvegarder'}</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DebriefCard({ debrief, onClick, showUser }) {
   const [hov, setHov] = useState(false);
   const pct = Math.round(debrief.percentage || 0);
@@ -1081,11 +1604,11 @@ function HOSPage({ toast, leaderboardKey, allDebriefs }) {
   };
   const genCode = async (teamId) => {
     setGenerating(teamId);
-    try { const inv = await apiFetch(`/teams/${teamId}/invite`,{method:'POST'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:[inv,...t.inviteCodes]}:t)); toast('Code généré !'); }
+    try { const inv = await apiFetch(`/teams/${teamId}/invite`,{method:'POST'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:[inv,...(t.inviteCodes||[])]}:t)); toast('Code généré !'); }
     catch(e) { toast(e.message,'error'); } finally { setGenerating(null); }
   };
   const delCode = async (teamId, codeId) => {
-    try { await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:t.inviteCodes.filter(c=>c.id!==codeId)}:t)); toast('Code supprimé'); }
+    try { await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:(t.inviteCodes||[]).filter(c=>c.id!==codeId)}:t)); toast('Code supprimé'); }
     catch(e) { toast(e.message,'error'); }
   };
   const removeMember = async (teamId, memberId, name) => {
@@ -1738,12 +2261,15 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
       )}
 
       {/* Comments */}
+      {/* AI Analysis */}
+      <AiAnalysisCard debrief={debrief}/>
+
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
 }
 
-function NewDebrief({ navigate, onSave, toast }) {
+function NewDebrief({ navigate, onSave, toast, debriefConfig }) {
   const mob = useIsMobile();
   const [form, setForm] = useState({ prospect_name:'', call_date:new Date().toISOString().split('T')[0], closer_name:'', call_link:'', is_closed:null, notes:'' });
   const [secs,  setSecs]  = useState({ decouverte:{}, reformulation:{}, projection:{}, offre:{}, closing:{} });
@@ -1759,6 +2285,8 @@ function NewDebrief({ navigate, onSave, toast }) {
       const r = await apiFetch('/debriefs',{ method:'POST', body:{ ...form, sections:secs, section_notes:notes, total_score:total, max_score:max, percentage, scores:{}, criteria_notes:{} } });
       onSave(r.debrief, r.gamification);
       toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
+      // Fire AI analysis in background so it's cached when user opens Detail
+      generateAiAnalysis(r.debrief).then(text => setAiCache(r.debrief.id, text)).catch(() => {});
       navigate('Detail', r.debrief.id);
     } catch(e) { toast(e.message,'error'); } finally { setLoading(false); }
   };
@@ -1908,15 +2436,15 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
             </button>
           ))}
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
-          <button onClick={()=>{ const d=document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'light':'dark'); localStorage.setItem('cd_dark',d?'0':'1'); }} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', transition:'background .1s' }}
+          <button onClick={()=>{ const d='light';  localStorage.setItem('cd_dark',d?'0':'1'); }} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, color:'var(--txt,#5a4a3a)', transition:'background .1s' }}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.1)'}
             onMouseLeave={e=>e.currentTarget.style.background='none'}>
             <span style={{ display:'flex', alignItems:'center', gap:10 }}>
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>🌙</span>
               Mode nuit
             </span>
-            <div style={{ width:36, height:20, borderRadius:10, background:document.documentElement.getAttribute('data-theme')==='dark'?'linear-gradient(135deg,#e87d6a,#d4604e)':'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
-              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:document.documentElement.getAttribute('data-theme')==='dark'?18:2, transition:'left .2s', boxShadow:'0 1px 3px rgba(0,0,0,.2)' }}/>
+            <div style={{ width:36, height:20, borderRadius:10, background:'light')':'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
+              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:'light')' }}/>
             </div>
           </button>
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
@@ -2426,51 +2954,90 @@ function LeadSheet({ deal, debriefs, onClose, onSave, onDelete, toast }) {
 }
 
 function DealCard({ deal, onOpen, onMove, stages }) {
-  const [showMenu, setShowMenu] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setShowMenu(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const isOverdue = deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status);
-
+  const [dragging, setDragging] = useState(false);
+  const debriefScore = deal.debrief_score != null ? Math.round(deal.debrief_score) : null;
+  const stageInfo = stages.find(s=>s.key===deal.status)||{color:'#64748b',bg:'#f1f5f9'};
   return (
-    <div onClick={()=>onOpen(deal)}
-      style={{ background:'#ffffff', border:`1px solid ${isOverdue?'#fca5a5':'#e2e8f0'}`, borderRadius:10, padding:'12px 14px', cursor:'pointer', position:'relative', boxShadow:'0 1px 3px rgba(0,0,0,.05)', transition:'box-shadow .15s' }}
-      onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 12px rgba(232,125,106,.12)'}
-      onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
-        <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, flex:1, marginRight:8 }}>{deal.prospect_name}</p>
-        <div ref={ref} style={{ position:'relative' }}>
-          <button onClick={e=>{e.stopPropagation();setShowMenu(v=>!v);}}
-            style={{ background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:16, padding:'0 2px', lineHeight:1 }}>⋮</button>
-          {showMenu && (
-            <div style={{ position:'absolute', right:0, top:'100%', background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,.1)', minWidth:160, zIndex:50, overflow:'hidden' }}>
-              {stages.filter(s=>s.key!==deal.status).map(s => (
-                <button key={s.key} onClick={e=>{e.stopPropagation();onMove(deal.id,s.key);setShowMenu(false);}}
-                  style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 14px', background:'none', border:'none', fontSize:12, cursor:'pointer', fontFamily:'inherit', color:'#5a4a3a', textAlign:'left' }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
-                  onMouseLeave={e=>e.currentTarget.style.background='none'}>
-                  {s.icon} → {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
-        {deal.value > 0 && <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#d1fae5', padding:'2px 7px', borderRadius:6 }}>{deal.value.toLocaleString('fr-FR')} €</span>}
-        {deal.source && <span style={{ fontSize:11, color:'#6b7280', background:'rgba(253,232,228,.2)', padding:'2px 7px', borderRadius:6 }}>{deal.source}</span>}
-        {deal.follow_up_date && (
-          <span style={{ fontSize:11, color:isOverdue?'#dc2626':'#94a3b8', background:isOverdue?'#fee2e2':'transparent', padding:'2px 4px', borderRadius:4, fontWeight:isOverdue?600:400 }}>
-            {isOverdue?'⚠️ ':''}{deal.follow_up_date}
+    <div
+      draggable
+      onDragStart={e => { e.dataTransfer.setData('dealId', deal.id); setDragging(true); }}
+      onDragEnd={()=>setDragging(false)}
+      onClick={()=>onOpen(deal)}
+      style={{
+        background:'white', borderRadius:10, padding:'10px 12px', cursor:'pointer',
+        boxShadow: dragging ? '0 8px 24px rgba(0,0,0,.15)' : '0 1px 4px rgba(0,0,0,.08)',
+        opacity: dragging ? 0.5 : 1,
+        border:'1px solid rgba(232,125,106,.1)',
+        transition:'all .15s', userSelect:'none'
+      }}
+    >
+      <p style={{ fontWeight:600, fontSize:13, color:'#1e293b', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{deal.prospect_name}</p>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+        {deal.value > 0 && <span style={{ fontSize:12, fontWeight:700, color:'#059669' }}>{deal.value.toLocaleString('fr-FR')} €</span>}
+        {debriefScore != null && (
+          <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:6,
+            background: debriefScore>=70?'#d1fae5':debriefScore>=40?'#fef3c7':'#fee2e2',
+            color: debriefScore>=70?'#059669':debriefScore>=40?'#d97706':'#dc2626' }}>
+            {debriefScore}%
           </span>
         )}
-        {deal.debrief_id && <span style={{ fontSize:11, color:'#e87d6a', background:'rgba(255,245,242,.85)', padding:'2px 7px', borderRadius:6 }}>📞 debrief</span>}
       </div>
-      {deal.user_name && <p style={{ fontSize:11, color:DS.textMuted, margin:'6px 0 0' }}>👤 {deal.user_name}</p>}
+      {deal.closer_name && <p style={{ fontSize:11, color:'#94a3b8', margin:'4px 0 0' }}>👤 {deal.closer_name}</p>}
+      {deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !['signe','perdu'].includes(deal.status) && (
+        <p style={{ fontSize:10, color:'#ef4444', margin:'3px 0 0', fontWeight:600 }}>⚠️ Relance en retard</p>
+      )}
+    </div>
+  );
+}
+
+function DropColumn({ stage, deals, onOpen, onMove }) {
+  const [over, setOver] = useState(false);
+  const totalValue = deals.reduce((s,d)=>s+(d.value||0),0);
+  return (
+    <div
+      style={{ flex:1, minWidth:180, display:'flex', flexDirection:'column', gap:8 }}
+      onDragOver={e=>{ e.preventDefault(); setOver(true); }}
+      onDragLeave={()=>setOver(false)}
+      onDrop={e=>{ e.preventDefault(); setOver(false); const id=e.dataTransfer.getData('dealId'); if(id) onMove(id,stage.key); }}
+    >
+      <div style={{ padding:'8px 12px', background:over?stage.color+'22':stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between', border:over?`2px solid ${stage.color}`:'2px solid transparent', transition:'all .15s' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:13 }}>{stage.icon}</span>
+          <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
+          <span style={{ background:'white', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{deals.length}</span>
+        </div>
+        {totalValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{totalValue.toLocaleString('fr-FR')} €</span>}
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:60, borderRadius:10, padding:over?'6px':'0', background:over?'rgba(232,125,106,.04)':'transparent', transition:'all .15s' }}>
+        {deals.map(deal => (
+          <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove} stages={PIPELINE_STAGES}/>
+        ))}
+        {deals.length === 0 && (
+          <div style={{ border:'2px dashed', borderColor:over?stage.color:'#e2e8f0', borderRadius:10, padding:'20px 10px', textAlign:'center', color:over?stage.color:'#cbd5e1', fontSize:11, transition:'all .15s' }}>{over?'Déposer ici':'Vide'}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AccordionColumn({ stage, deals, onOpen, onMove }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderRadius:10, background:'white', boxShadow:'0 1px 4px rgba(0,0,0,.08)', overflow:'hidden' }}>
+      <button type="button" onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:stage.bg, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span>{stage.icon}</span>
+          <span style={{ fontWeight:700, fontSize:13, color:stage.color }}>{stage.label}</span>
+          <span style={{ background:'white', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{deals.length}</span>
+        </div>
+        <span style={{ color:stage.color, fontSize:12 }}>{open?'▲':'▼'}</span>
+      </button>
+      {open && (
+        <div style={{ padding:'8px 10px', display:'flex', flexDirection:'column', gap:7 }}>
+          {deals.length === 0 ? <p style={{ textAlign:'center', color:'#94a3b8', fontSize:12, margin:'8px 0' }}>Vide</p>
+          : deals.map(deal => <DealCard key={deal.id} deal={deal} onOpen={onOpen} onMove={onMove} stages={PIPELINE_STAGES}/>)}
+        </div>
+      )}
     </div>
   );
 }
@@ -2553,39 +3120,23 @@ function PipelinePage({ user, toast, debriefs }) {
 
       {/* Kanban */}
       {deals.length === 0 ? (
-        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead ou soumettez un debrief" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}/>
+        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}/>
+      ) : mob ? (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {PIPELINE_STAGES.map(stage => (
+            <AccordionColumn key={stage.key} stage={stage} deals={displayDeals.filter(d=>d.status===stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
+          ))}
+        </div>
       ) : (
         <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', paddingBottom:8 }}>
-          <div style={{ display:'flex', gap:12, minWidth:mob?`${PIPELINE_STAGES.length*220}px`:'auto' }}>
-            {PIPELINE_STAGES.map(stage => {
-              const stageDeals = displayDeals.filter(d => d.status===stage.key);
-              const stageValue = stageDeals.reduce((s,d)=>s+(d.value||0),0);
-              return (
-                <div key={stage.key} style={{ flex:1, minWidth:mob?210:0, display:'flex', flexDirection:'column', gap:8 }}>
-                  <div style={{ padding:'8px 12px', background:stage.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <span style={{ fontSize:13 }}>{stage.icon}</span>
-                      <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
-                      <span style={{ background:'#ffffff', color:stage.color, fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10 }}>{stageDeals.length}</span>
-                    </div>
-                    {stageValue > 0 && <span style={{ fontSize:10, fontWeight:600, color:stage.color }}>{stageValue.toLocaleString('fr-FR')} €</span>}
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:50 }}>
-                    {stageDeals.map(deal => (
-                      <DealCard key={deal.id} deal={deal} onOpen={setOpenLead} onMove={handleMove} stages={PIPELINE_STAGES}/>
-                    ))}
-                    {stageDeals.length === 0 && (
-                      <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, padding:'16px 10px', textAlign:'center', color:'#cbd5e1', fontSize:11 }}>Vide</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display:'flex', gap:12, minWidth:`${PIPELINE_STAGES.length*200}px` }}>
+            {PIPELINE_STAGES.map(stage => (
+              <DropColumn key={stage.key} stage={stage} deals={displayDeals.filter(d=>d.status===stage.key)} onOpen={setOpenLead} onMove={handleMove}/>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Fiche lead */}
       {openLead !== null && (
         <LeadSheet
           deal={openLead?.id ? openLead : null}
@@ -2618,6 +3169,7 @@ export default function App() {
   const [lbKey,   setLbKey]   = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const mob = useIsMobile();
+  const [debriefConfig, setDebriefConfig] = useDebriefConfig();
 
   // Detect reset token in URL
   useEffect(() => {
@@ -2700,7 +3252,7 @@ export default function App() {
   const Content = () => (
     <>
       {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
-      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast}/>}
+      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast} debriefConfig={debriefConfig}/>}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
@@ -2734,37 +3286,13 @@ export default function App() {
           --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
           --sidebar: rgba(255,248,244,.97);
         }
-        [data-theme='dark'] {
-          --bg: linear-gradient(160deg,#1a1410 0%,#0f1a22 100%);
-          --card: #1e1a16;
-          --input: #2a2218;
-          --txt: #e8d8c8;
-          --txt2: #a89080;
-          --txt3: #705848;
-          --border: rgba(232,125,106,.15);
-          --sh-card: 5px 5px 15px rgba(0,0,0,.35), -2px -2px 8px rgba(255,255,255,.04);
-          --sh-sm: 3px 3px 8px rgba(0,0,0,.3), -1px -1px 5px rgba(255,255,255,.03);
-          --sh-in: inset 2px 2px 6px rgba(0,0,0,.3), inset -1px -1px 4px rgba(255,255,255,.04);
-          --sidebar: #1a1510;
-        }
-        [data-theme='light'] {
-          --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
-          --card: #ffffff;
-          --input: #f5ede6;
-          --txt: #5a4a3a;
-          --txt2: #b09080;
-          --txt3: #c8b8a8;
-          --border: rgba(232,125,106,.1);
-          --sh-card: 5px 5px 15px rgba(174,130,100,.18), -3px -3px 10px rgba(255,255,255,.9);
-          --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
-          --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
-          --sidebar: rgba(255,248,244,.97);
-        }
+        
+        
       `}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
       <Toasts list={toasts}/>
-      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
+      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig}/>}
 
       {mob ? (
         <>
