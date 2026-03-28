@@ -210,145 +210,124 @@ function avgSectionScores(debriefs) {
   return Object.fromEntries(keys.map(k => [k, Math.round((sums[k] / n) * 10) / 10]));
 }
 
-// ─── UTILS ────────────────────────────────────────────────────────────────────
-const fmtDate  = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch { return s||''; }};
-const fmtShort = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); }             catch { return s||''; }};
-const copy     = t => navigator.clipboard.writeText(t).catch(()=>{});
-
 // ─── AI ANALYSIS ─────────────────────────────────────────────────────────────
-const AI_CACHE_PREFIX = 'cd_ai_';
-function getAiCache(debriefId) {
-  try { const raw = localStorage.getItem(AI_CACHE_PREFIX + debriefId); return raw ? JSON.parse(raw) : null; }
-  catch { return null; }
-}
-function setAiCache(debriefId, analysis) {
-  try { localStorage.setItem(AI_CACHE_PREFIX + debriefId, JSON.stringify({ analysis, ts: Date.now() })); } catch {}
-}
+const AI_SYSTEM_PROMPT = `Tu es un expert senior en analyse d'appels de vente (sales call analysis) et en coaching commercial. Tu agis comme un directeur commercial chevronné avec 15 ans d'expérience en closing B2B et B2C.
 
-const SECTION_LABELS = { decouverte:'Découverte', reformulation:'Reformulation', projection:'Projection', presentation_offre:"Présentation de l'offre", closing:'Closing & Objections' };
-const RESULT_LABELS = { close:'Closé en direct', retrograde:'Rétrogradé', relance:'Relance planifiée', porte_ouverte:'Porte ouverte', perdu:'Perdu' };
+Tu analyses les debriefs post-appel remplis par des closers. Chaque debrief contient des sections évaluées : Découverte, Reformulation, Projection, Présentation de l'offre, et Closing & Objections. Chaque section a un score sur 5.
 
-function buildAiPrompt(debrief) {
-  const s = debrief.sections || {};
-  const scores = computeSectionScores(s);
-  const pct = Math.round(debrief.percentage || 0);
+Tu es "CloserDebrief AI" et tu combines trois expertises :
+1. ANALYSTE : Tu identifies les patterns, forces et faiblesses
+2. COACH : Tu fournis des recommandations actionnables et personnalisées
+3. STRATÈGE : Tu détectes les tendances pour optimiser le processus de vente
+
+Pour chaque debrief, produis une analyse structurée en suivant ce format :
+
+## ANALYSE DU DEBRIEF — [nom_prospect] — [date]
+
+### 1. SCORE DE PERFORMANCE GLOBAL : [X/100]
+Décomposition :
+- Découverte : [X/5]
+- Reformulation : [X/5]
+- Projection : [X/5]
+- Présentation offre : [X/5]
+- Closing : [X/5]
+
+### 2. POINTS FORTS (ce qui a bien fonctionné)
+[2-3 points spécifiques avec justification]
+
+### 3. AXES D'AMÉLIORATION PRIORITAIRES
+[2-3 recommandations actionnables classées par impact]
+
+### 4. ANALYSE DES OBJECTIONS
+Pour chaque objection identifiée :
+- Objection : [texte]
+- Évaluation : [Efficace / Partielle / Insuffisante]
+- Réponse alternative suggérée : [suggestion concrète]
+
+### 5. PATTERN DÉTECTÉ
+[Comparaison avec les debriefs précédents si disponibles — tendances récurrentes]
+
+### 6. COACHING PERSONNALISÉ
+[1 exercice ou technique spécifique à pratiquer avant le prochain appel]
+
+### 7. SCRIPT SUGGÉRÉ
+[Reformulation d'un moment clé de l'appel avec un script amélioré]
+
+**ACTION PRIORITAIRE : [Une action claire et mesurable]**
+
+Contraintes :
+- Sois direct et factuel. Pas de flatterie gratuite.
+- Ne jamais inventer de données. Si une information manque, signale-le.
+- Si le résultat est "Closé", analyse quand même ce qui peut être optimisé.
+- Langue : Français.`;
+
+const SECTION_LABELS_AI = {
+  decouverte: 'Découverte',
+  reformulation: 'Reformulation',
+  projection: 'Projection',
+  presentation_offre: "Présentation de l'offre",
+  closing: 'Closing & Objections'
+};
+
+function buildAIPrompt(debrief, scores, prevDebriefs) {
+  const sections = debrief.sections || {};
   const sNotes = debrief.section_notes || {};
 
-  let prompt = `Voici le debrief post-appel à analyser :\n\n`;
+  let prompt = `Voici le debrief à analyser :\n\n`;
   prompt += `- Prospect : ${debrief.prospect_name || 'Non renseigné'}\n`;
   prompt += `- Date : ${debrief.call_date || 'Non renseignée'}\n`;
   prompt += `- Closer : ${debrief.closer_name || 'Non renseigné'}\n`;
-  prompt += `- Résultat : ${debrief.is_closed ? 'CLOSÉ ✅' : 'NON CLOSÉ ❌'}\n`;
-  prompt += `- Score global : ${pct}% (${debrief.total_score || 0}/${debrief.max_score || 0})\n\n`;
+  prompt += `- Résultat : ${debrief.is_closed ? 'Closé ✅' : 'Non closé ❌'}\n`;
+  prompt += `- Score global : ${Math.round(debrief.percentage || 0)}%\n\n`;
 
-  prompt += `### Scores par section :\n`;
-  SECTIONS.forEach(sec => {
-    prompt += `- ${SECTION_LABELS[sec.key] || sec.key} : ${scores[sec.key] || 0}/5\n`;
+  prompt += `Scores par section :\n`;
+  SECTIONS.forEach(({ key }) => {
+    prompt += `- ${SECTION_LABELS_AI[key] || key} : ${scores[key] || 0}/5\n`;
   });
 
-  prompt += `\n### Détail des réponses par section :\n`;
+  prompt += `\nDétails des sections :\n`;
+  const sectionKeys = ['decouverte', 'reformulation', 'projection', 'offre', 'closing'];
+  sectionKeys.forEach(key => {
+    const data = sections[key] || {};
+    const notes = sNotes[key] || {};
+    if (Object.keys(data).length > 0) {
+      prompt += `\n[${SECTION_LABELS_AI[key] || key}]\n`;
+      Object.entries(data).forEach(([k, v]) => {
+        if (k.endsWith('_note') && v) prompt += `  Note: ${v}\n`;
+        else if (Array.isArray(v)) prompt += `  ${k}: ${v.join(', ')}\n`;
+        else if (v) prompt += `  ${k}: ${v}\n`;
+      });
+      if (notes.strength) prompt += `  Point fort noté par le closer: ${notes.strength}\n`;
+      if (notes.weakness) prompt += `  Point faible noté: ${notes.weakness}\n`;
+      if (notes.improvement) prompt += `  Amélioration notée: ${notes.improvement}\n`;
+    }
+  });
 
-  // Découverte
-  const d = s.decouverte || {};
-  prompt += `\n**1. Découverte**\n`;
-  prompt += `- Douleur de surface identifiée : ${d.douleur_surface || 'non renseigné'}${d.douleur_surface_note ? ` (${d.douleur_surface_note})` : ''}\n`;
-  prompt += `- Douleur profonde atteinte : ${d.douleur_profonde || 'non renseigné'}${d.douleur_profonde_note ? ` (${d.douleur_profonde_note})` : ''}\n`;
-  prompt += `- Couches creusées : ${Array.isArray(d.couches_douleur) && d.couches_douleur.length > 0 ? d.couches_douleur.join(', ') : 'aucune'}\n`;
-  prompt += `- Temporalité demandée : ${d.temporalite || 'non renseigné'}\n`;
-  prompt += `- Urgence identifiée : ${d.urgence || 'non renseigné'}${d.urgence_note ? ` (${d.urgence_note})` : ''}\n`;
+  if (debrief.notes) prompt += `\nNotes globales du closer : ${debrief.notes}\n`;
+  if (debrief.strengths) prompt += `Points forts notés : ${debrief.strengths}\n`;
+  if (debrief.improvements) prompt += `Améliorations notées : ${debrief.improvements}\n`;
 
-  // Reformulation
-  const r = s.reformulation || {};
-  prompt += `\n**2. Reformulation**\n`;
-  prompt += `- Reformulation faite : ${r.reformulation || 'non renseigné'}\n`;
-  prompt += `- Prospect reconnu : ${r.prospect_reconnu || 'non renseigné'}\n`;
-  prompt += `- Couches reformulées : ${Array.isArray(r.couches_reformulation) && r.couches_reformulation.length > 0 ? r.couches_reformulation.join(', ') : 'aucune'}\n`;
-
-  // Projection
-  const p = s.projection || {};
-  prompt += `\n**3. Projection**\n`;
-  prompt += `- Projection posée : ${p.projection_posee || 'non renseigné'}\n`;
-  prompt += `- Qualité réponse : ${p.qualite_reponse || 'non renseigné'}\n`;
-  prompt += `- Deadline comme levier : ${p.deadline_levier || 'non renseigné'}\n`;
-
-  // Offre
-  const o = s.offre || {};
-  prompt += `\n**4. Présentation de l'offre**\n`;
-  prompt += `- Collée aux douleurs : ${o.colle_douleurs || 'non renseigné'}\n`;
-  prompt += `- Exemples transformation : ${o.exemples_transformation || 'non renseigné'}\n`;
-  prompt += `- Durée justifiée : ${o.duree_justifiee || 'non renseigné'}\n`;
-
-  // Closing
-  const c = s.closing || {};
-  prompt += `\n**5. Closing & Objections**\n`;
-  prompt += `- Annonce prix : ${c.annonce_prix || 'non renseigné'}\n`;
-  prompt += `- Silence après prix : ${c.silence_prix || 'non renseigné'}\n`;
-  prompt += `- Objections rencontrées : ${Array.isArray(c.objections) && c.objections.length > 0 ? c.objections.join(', ') : 'aucune'}\n`;
-  prompt += `- Douleur réancrée : ${c.douleur_reancree || 'non renseigné'}\n`;
-  prompt += `- Objection isolée : ${c.objection_isolee || 'non renseigné'}\n`;
-  prompt += `- Résultat closing : ${RESULT_LABELS[c.resultat_closing] || c.resultat_closing || 'non renseigné'}\n`;
-
-  // Notes de section
-  const hasNotes = Object.values(sNotes).some(n => n && (n.strength || n.weakness || n.improvement));
-  if (hasNotes) {
-    prompt += `\n### Notes du closer par section :\n`;
-    Object.entries(sNotes).forEach(([key, n]) => {
-      if (!n || (!n.strength && !n.weakness && !n.improvement)) return;
-      prompt += `\n**${SECTION_LABELS[key] || key}**\n`;
-      if (n.strength) prompt += `- Point fort : ${n.strength}\n`;
-      if (n.weakness) prompt += `- Point faible : ${n.weakness}\n`;
-      if (n.improvement) prompt += `- Amélioration : ${n.improvement}\n`;
+  if (prevDebriefs && prevDebriefs.length > 0) {
+    prompt += `\nHistorique des ${Math.min(prevDebriefs.length, 5)} derniers debriefs :\n`;
+    prevDebriefs.slice(0, 5).forEach(d => {
+      const pScores = computeSectionScores(d.sections || {});
+      prompt += `- ${d.prospect_name} (${d.call_date}) : ${Math.round(d.percentage || 0)}% — ${d.is_closed ? 'Closé' : 'Non closé'}`;
+      prompt += ` [Déc:${pScores.decouverte} Ref:${pScores.reformulation} Proj:${pScores.projection} Offre:${pScores.presentation_offre} Clos:${pScores.closing}]\n`;
     });
   }
-
-  if (debrief.notes) prompt += `\n### Notes globales du closer :\n${debrief.notes}\n`;
 
   return prompt;
 }
 
-const AI_SYSTEM = `Tu es un expert senior en analyse d'appels de vente (sales call analysis) et en coaching commercial. Tu agis comme un directeur commercial chevronné avec 15 ans d'expérience en closing B2B et B2C.
-
-Tu analyses les debriefs post-appel remplis par des closers. Chaque debrief contient les évaluations du closer après un appel de vente structuré en 5 sections : Découverte, Reformulation, Projection, Présentation de l'offre, Closing & Objections.
-
-Pour chaque debrief soumis, produis une analyse structurée en suivant EXACTEMENT ce format :
-
-## 🎯 SCORE DE PERFORMANCE : [reprendre le score global]
-Résumé en 1 phrase de la performance.
-
-## ✅ POINTS FORTS
-[2-3 points spécifiques avec justification — basés sur les scores et notes]
-
-## ⚠️ AXES D'AMÉLIORATION PRIORITAIRES
-[2-3 recommandations actionnables classées par impact, avec des exemples concrets de scripts ou formulations]
-
-## 🔍 ANALYSE PAR SECTION
-Pour chaque section scorée faiblement (≤ 3/5), donne :
-- Ce qui manque
-- Une action concrète pour s'améliorer
-- Un exemple de script ou formulation
-
-## 🎓 COACHING PERSONNALISÉ
-[1 exercice ou technique spécifique à pratiquer avant le prochain appel]
-
-## 📋 ACTION PRIORITAIRE
-[UNE seule action mesurable et concrète]
-
-Règles :
-- Sois direct et factuel. Pas de flatterie gratuite.
-- Si le résultat est "Closé", analyse quand même ce qui peut être optimisé.
-- Ne jamais inventer de données manquantes — signale-les.
-- Adapte le ton : si les scores sont bas, sois plus pédagogique ; si élevés, sois plus stratégique.
-- Langue : Français.`;
-
-async function generateAiAnalysis(debrief) {
-  const userPrompt = buildAiPrompt(debrief);
+async function fetchAIAnalysis(debrief, scores, prevDebriefs) {
+  const userPrompt = buildAIPrompt(debrief, scores, prevDebriefs);
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: AI_SYSTEM,
+      max_tokens: 4000,
+      system: AI_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     }),
   });
@@ -357,135 +336,13 @@ async function generateAiAnalysis(debrief) {
     throw new Error(err.error?.message || 'Erreur API IA');
   }
   const data = await response.json();
-  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-  if (!text) throw new Error('Réponse IA vide');
-  return text;
+  return data.content?.map(b => b.text || '').join('\n') || '';
 }
 
-function useAiAnalysis(debriefId) {
-  const [analysis, setAnalysis] = useState(() => getAiCache(debriefId)?.analysis || null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const generate = useCallback(async (debrief) => {
-    setLoading(true); setError(null);
-    try {
-      const text = await generateAiAnalysis(debrief);
-      setAnalysis(text);
-      setAiCache(debrief.id, text);
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
-  }, []);
-
-  return { analysis, loading, error, generate };
-}
-
-// Simple markdown-ish renderer for AI output
-function AiMarkdown({ text }) {
-  if (!text) return null;
-  const lines = text.split('\n');
-  const elements = [];
-  let i = 0;
-  for (const line of lines) {
-    i++;
-    if (line.startsWith('## ')) {
-      elements.push(<h3 key={i} style={{ fontSize:15, fontWeight:700, color:'#5a4a3a', margin:'20px 0 8px', borderBottom:'1px solid rgba(232,125,106,.12)', paddingBottom:8 }}>{line.replace(/^## /, '')}</h3>);
-    } else if (line.startsWith('### ')) {
-      elements.push(<h4 key={i} style={{ fontSize:13, fontWeight:700, color:'#e87d6a', margin:'14px 0 6px' }}>{line.replace(/^### /, '')}</h4>);
-    } else if (line.startsWith('- ')) {
-      const content = line.replace(/^- /, '').replace(/\*\*(.+?)\*\*/g, '⟨$1⟩');
-      const parts = content.split(/⟨(.+?)⟩/);
-      elements.push(
-        <div key={i} style={{ display:'flex', gap:8, marginBottom:4, paddingLeft:4 }}>
-          <span style={{ color:'#e87d6a', flexShrink:0, marginTop:2 }}>•</span>
-          <span style={{ fontSize:13, color:'#5a4a3a', lineHeight:1.6 }}>
-            {parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}
-          </span>
-        </div>
-      );
-    } else if (line.trim()) {
-      const content = line.replace(/\*\*(.+?)\*\*/g, '⟨$1⟩');
-      const parts = content.split(/⟨(.+?)⟩/);
-      elements.push(
-        <p key={i} style={{ fontSize:13, color:'#5a4a3a', lineHeight:1.7, margin:'0 0 6px' }}>
-          {parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}
-        </p>
-      );
-    }
-  }
-  return <div>{elements}</div>;
-}
-
-function AiAnalysisCard({ debrief, autoGenerate = false }) {
-  const { analysis, loading, error, generate } = useAiAnalysis(debrief?.id);
-  const [expanded, setExpanded] = useState(!!autoGenerate);
-  const triggered = useRef(false);
-
-  useEffect(() => {
-    if (autoGenerate && debrief && !analysis && !loading && !triggered.current) {
-      triggered.current = true;
-      generate(debrief);
-    }
-  }, [autoGenerate, debrief, analysis, loading, generate]);
-
-  if (!debrief) return null;
-
-  return (
-    <Card style={{ overflow:'hidden' }}>
-      <button type="button" onClick={() => { setExpanded(v => !v); if (!analysis && !loading) generate(debrief); }}
-        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'16px 20px', background: expanded ? 'linear-gradient(135deg,rgba(106,172,206,.12),rgba(232,125,106,.08))' : 'rgba(106,172,206,.06)', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all .2s' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#6aacce,#5a9ac0)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, boxShadow:'0 2px 8px rgba(106,172,206,.3)' }}>🤖</div>
-          <div style={{ textAlign:'left' }}>
-            <span style={{ fontSize:14, fontWeight:700, color:'#5a4a3a' }}>Analyse IA</span>
-            {analysis && <span style={{ fontSize:11, color:'#6aacce', marginLeft:8, fontWeight:500 }}>✓ Générée</span>}
-          </div>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {loading && <div style={{ width:16, height:16, border:'2px solid rgba(106,172,206,.2)', borderTopColor:'#6aacce', borderRadius:'50%', animation:'spin .75s linear infinite' }}/>}
-          <span style={{ fontSize:13, color:'#c8b8a8', transition:'transform .2s', display:'inline-block', transform: expanded ? 'rotate(180deg)' : 'none' }}>▾</span>
-        </div>
-      </button>
-
-      {expanded && (
-        <div style={{ padding:'0 20px 20px' }}>
-          {loading && !analysis && (
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'32px 16px' }}>
-              <div style={{ width:32, height:32, border:'3px solid rgba(106,172,206,.2)', borderTopColor:'#6aacce', borderRadius:'50%', animation:'spin .75s linear infinite' }}/>
-              <div style={{ textAlign:'center' }}>
-                <p style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse en cours...</p>
-                <p style={{ fontSize:12, color:'#b09080', margin:0 }}>L'IA évalue le debrief de {debrief.prospect_name}</p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div style={{ padding:16 }}>
-              <AlertBox type="error" message={`Erreur IA : ${error}`}/>
-              <Btn variant="secondary" onClick={() => generate(debrief)} style={{ marginTop:8 }}>🔄 Réessayer</Btn>
-            </div>
-          )}
-
-          {analysis && (
-            <>
-              <div style={{ borderTop:'1px solid rgba(232,125,106,.08)', paddingTop:16, marginTop:4 }}>
-                <AiMarkdown text={analysis}/>
-              </div>
-              <div style={{ display:'flex', gap:8, marginTop:16, paddingTop:12, borderTop:'1px solid rgba(232,125,106,.08)' }}>
-                <Btn variant="secondary" onClick={() => generate(debrief)} disabled={loading} style={{ fontSize:12, padding:'7px 14px' }}>
-                  {loading ? '⏳ Régénération...' : '🔄 Régénérer'}
-                </Btn>
-                <Btn variant="ghost" onClick={() => copy(analysis)} style={{ fontSize:12, padding:'7px 14px' }}>
-                  📋 Copier
-                </Btn>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+const fmtDate  = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); } catch { return s||''; }};
+const fmtShort = s => { try { return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); }             catch { return s||''; }};
+const copy     = t => navigator.clipboard.writeText(t).catch(()=>{});
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function useToast() {
@@ -2156,7 +2013,7 @@ function History({ debriefs, navigate, user }) {
   );
 }
 
-function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
+function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
   const mob = useIsMobile();
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
@@ -2260,10 +2117,10 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast }) {
         </div>
       )}
 
-      {/* Comments */}
       {/* AI Analysis */}
-      <AiAnalysisCard debrief={debrief}/>
+      <AIAnalysisCard debrief={debrief} allDebriefs={allDebriefs} autoTrigger={autoAI} toast={toast}/>
 
+      {/* Comments */}
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
     </div>
   );
@@ -2285,9 +2142,7 @@ function NewDebrief({ navigate, onSave, toast, debriefConfig }) {
       const r = await apiFetch('/debriefs',{ method:'POST', body:{ ...form, sections:secs, section_notes:notes, total_score:total, max_score:max, percentage, scores:{}, criteria_notes:{} } });
       onSave(r.debrief, r.gamification);
       toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
-      // Fire AI analysis in background so it's cached when user opens Detail
-      generateAiAnalysis(r.debrief).then(text => setAiCache(r.debrief.id, text)).catch(() => {});
-      navigate('Detail', r.debrief.id);
+      navigate('Detail', r.debrief.id, null, { autoAI: true });
     } catch(e) { toast(e.message,'error'); } finally { setLoading(false); }
   };
 
@@ -2443,8 +2298,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false }) {
               <span style={{ fontSize:16, width:20, textAlign:'center' }}>🌙</span>
               Mode nuit
             </span>
-            <div style={{ width:36, height:20, borderRadius:10, background:'light')':'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
-              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:'light')' }}/>
+            <div style={{ width:36, height:20, borderRadius:10, background:'rgba(200,184,168,.4)', position:'relative', transition:'background .2s' }}>
+              <div style={{ width:16, height:16, borderRadius:'50%', background:'white', position:'absolute', top:2, left:2 }}/>
             </div>
           </button>
           <div style={{ height:1, background:'rgba(232,125,106,.1)', margin:'4px 0' }}/>
@@ -2679,6 +2534,126 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ─── AI ANALYSIS CARD ────────────────────────────────────────────────────────
+function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const triggered = useRef(false);
+
+  const scores = computeSectionScores(debrief?.sections || {});
+  const prevDebriefs = (allDebriefs || [])
+    .filter(d => d.id !== debrief?.id)
+    .sort((a, b) => new Date(b.call_date) - new Date(a.call_date));
+
+  // Try to load cached analysis
+  useEffect(() => {
+    if (!debrief?.id) return;
+    try {
+      const cached = localStorage.getItem(`cd_ai_${debrief.id}`);
+      if (cached) setAnalysis(cached);
+    } catch {}
+  }, [debrief?.id]);
+
+  const generate = useCallback(async () => {
+    if (!debrief || loading) return;
+    setLoading(true);
+    setCollapsed(false);
+    try {
+      const result = await fetchAIAnalysis(debrief, scores, prevDebriefs);
+      setAnalysis(result);
+      try { localStorage.setItem(`cd_ai_${debrief.id}`, result); } catch {}
+      toast('Analyse IA générée !');
+    } catch (e) {
+      toast(e.message || 'Erreur lors de l\'analyse IA', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [debrief, scores, prevDebriefs, loading, toast]);
+
+  // Auto-trigger on mount if requested
+  useEffect(() => {
+    if (autoTrigger && !triggered.current && !analysis && debrief?.id) {
+      triggered.current = true;
+      generate();
+    }
+  }, [autoTrigger, analysis, debrief?.id, generate]);
+
+  if (!debrief) return null;
+
+  // Simple markdown-like renderer
+  const renderMarkdown = (text) => {
+    const lines = text.split('\n');
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={i} style={{ height: 8 }}/>;
+      if (trimmed.startsWith('## ')) return <h2 key={i} style={{ fontSize: 18, fontWeight: 700, color: '#5a4a3a', margin: '20px 0 12px', borderBottom: '2px solid rgba(232,125,106,.2)', paddingBottom: 8 }}>{trimmed.slice(3)}</h2>;
+      if (trimmed.startsWith('### ')) return <h3 key={i} style={{ fontSize: 15, fontWeight: 700, color: '#e87d6a', margin: '16px 0 8px' }}>{trimmed.slice(4)}</h3>;
+      if (trimmed.startsWith('**') && trimmed.endsWith('**')) return <p key={i} style={{ fontWeight: 700, fontSize: 14, color: '#5a4a3a', margin: '12px 0 6px', background: 'rgba(253,232,228,.3)', padding: '10px 14px', borderRadius: 8, borderLeft: '3px solid #e87d6a' }}>{trimmed.slice(2, -2)}</p>;
+      if (trimmed.startsWith('- ')) return <div key={i} style={{ display: 'flex', gap: 8, padding: '3px 0', fontSize: 13, color: '#5a4a3a', lineHeight: 1.6 }}><span style={{ color: '#e87d6a', flexShrink: 0, marginTop: 2 }}>•</span><span>{renderBold(trimmed.slice(2))}</span></div>;
+      return <p key={i} style={{ fontSize: 13, color: '#5a4a3a', lineHeight: 1.6, margin: '4px 0' }}>{renderBold(trimmed)}</p>;
+    });
+  };
+
+  const renderBold = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) return <strong key={i} style={{ fontWeight: 700, color: '#d4604e' }}>{part.slice(2, -2)}</strong>;
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  return (
+    <Card style={{ overflow: 'hidden' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(232,125,106,.08)', background: 'linear-gradient(135deg,rgba(253,232,228,.5),rgba(218,237,245,.3))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#e87d6a,#d4604e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤖</div>
+          <div>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#5a4a3a', margin: 0 }}>Analyse IA</h3>
+            <p style={{ fontSize: 11, color: DS.textMuted, margin: 0 }}>CloserDebrief AI</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {analysis && (
+            <button onClick={() => setCollapsed(v => !v)} style={{ background: 'none', border: 'none', color: DS.textMuted, cursor: 'pointer', fontSize: 14, padding: '4px 8px' }}>
+              {collapsed ? '▼' : '▲'}
+            </button>
+          )}
+          <Btn onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '7px 14px' }}>
+            {loading ? '⏳ Analyse en cours...' : analysis ? '🔄 Relancer' : '🤖 Analyser'}
+          </Btn>
+        </div>
+      </div>
+
+      {loading && (
+        <div style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+          <Spinner size={28}/>
+          <p style={{ fontSize: 13, color: DS.textMuted, margin: 0, textAlign: 'center' }}>L'IA analyse votre debrief...<br/>Cela peut prendre quelques secondes.</p>
+        </div>
+      )}
+
+      {analysis && !loading && !collapsed && (
+        <div style={{ padding: '16px 20px', maxHeight: 600, overflowY: 'auto' }}>
+          {renderMarkdown(analysis)}
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(232,125,106,.1)' }}>
+            <Btn variant="secondary" onClick={() => { copy(analysis); toast('Analyse copiée !'); }} style={{ fontSize: 12, padding: '6px 12px' }}>📋 Copier</Btn>
+            <Btn variant="secondary" onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '6px 12px' }}>🔄 Régénérer</Btn>
+          </div>
+        </div>
+      )}
+
+      {!analysis && !loading && (
+        <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+          <p style={{ fontSize: 36, margin: '0 0 10px' }}>🤖</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#5a4a3a', margin: '0 0 6px' }}>Analyse IA disponible</p>
+          <p style={{ fontSize: 13, color: DS.textMuted, margin: '0 0 16px' }}>Obtenez un coaching personnalisé basé sur ce debrief</p>
+          <Btn onClick={generate} style={{ fontSize: 13 }}>🤖 Lancer l'analyse</Btn>
         </div>
       )}
     </Card>
@@ -3168,6 +3143,7 @@ export default function App() {
   const [burst,   setBurst]   = useState(null);
   const [lbKey,   setLbKey]   = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [autoAI, setAutoAI] = useState(false);
   const mob = useIsMobile();
   const [debriefConfig, setDebriefConfig] = useDebriefConfig();
 
@@ -3201,10 +3177,11 @@ export default function App() {
       .finally(() => setDataLoading(false));
   }, [user]);
 
-  const navigate = (p, id=null, from=null) => {
+  const navigate = (p, id=null, from=null, opts={}) => {
     setPage(p); setSelId(id);
     if (from) setFrom(from);
     else if (p !== 'Detail') setFrom(null);
+    setAutoAI(!!opts.autoAI);
     window.scrollTo({ top:0, behavior:'smooth' });
   };
 
@@ -3254,7 +3231,7 @@ export default function App() {
       {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
       {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast} debriefConfig={debriefConfig}/>}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast}/>}
+      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
       {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
     </>
