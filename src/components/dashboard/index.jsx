@@ -10,6 +10,28 @@ import { DebriefCard } from '../debrief/DebriefCard';
 import { ObjectiveBanner } from '../gamification/Objectives';
 import { ActionPlanCard } from '../gamification/Objectives';
 
+const OBJECTION_LABELS = {
+  budget: 'Budget',
+  reflechir: 'Besoin de réfléchir',
+  conjoint: 'Conjoint / tiers',
+  methode: 'Méthode / doute',
+};
+
+const PROSPECT_TYPE_LABELS = {
+  froid: 'Prospect froid',
+  tiède: 'Prospect tiède',
+  chaud: 'Prospect chaud',
+  inbound: 'Inbound',
+  outbound: 'Outbound',
+};
+
+const SCORE_FILTERS = [
+  { key:'all', label:'Tous les scores' },
+  { key:'low', label:'0-49%' },
+  { key:'mid', label:'50-74%' },
+  { key:'high', label:'75-100%' },
+];
+
 function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
   const isHOS = user.role === 'head_of_sales';
@@ -142,11 +164,45 @@ function MiniPipeline({ navigate, user }) {
 
 function History({ debriefs, navigate, user }) {
   const [q, setQ] = useState('');
+  const [resultFilter, setResultFilter] = useState('all');
+  const [scoreFilter, setScoreFilter] = useState('all');
+  const [objectionFilter, setObjectionFilter] = useState('all');
+  const [prospectTypeFilter, setProspectTypeFilter] = useState('all');
   const isHOS = user.role==='head_of_sales';
+  const objectionOptions = [...new Set(
+    debriefs.flatMap(d => (d.sections?.closing?.objections || []).filter(obj => obj && obj !== 'aucune'))
+  )];
+  const prospectTypeOptions = [...new Set(
+    debriefs.map(d => String(d.sections?.__meta?.prospect_type || '').trim()).filter(Boolean)
+  )];
+
+  const matchesScoreFilter = (percentage, filterKey) => {
+    const pct = Number(percentage || 0);
+    if (filterKey === 'low') return pct < 50;
+    if (filterKey === 'mid') return pct >= 50 && pct < 75;
+    if (filterKey === 'high') return pct >= 75;
+    return true;
+  };
+
   const filtered = debriefs.filter(d => {
     const s = q.toLowerCase();
-    return d.prospect_name?.toLowerCase().includes(s) || d.closer_name?.toLowerCase().includes(s) || d.user_name?.toLowerCase().includes(s);
+    const objections = (d.sections?.closing?.objections || []).filter(obj => obj && obj !== 'aucune');
+    const prospectType = String(d.sections?.__meta?.prospect_type || '').trim();
+    const resultMatch = resultFilter === 'all'
+      ? true
+      : (resultFilter === 'closed' ? !!d.is_closed : !d.is_closed);
+    const scoreMatch = matchesScoreFilter(d.percentage, scoreFilter);
+    const objectionMatch = objectionFilter === 'all' ? true : objections.includes(objectionFilter);
+    const prospectTypeMatch = prospectTypeFilter === 'all' ? true : prospectType === prospectTypeFilter;
+    const searchMatch = !s
+      || d.prospect_name?.toLowerCase().includes(s)
+      || d.closer_name?.toLowerCase().includes(s)
+      || d.user_name?.toLowerCase().includes(s)
+      || objections.some(obj => (OBJECTION_LABELS[obj] || obj).toLowerCase().includes(s))
+      || PROSPECT_TYPE_LABELS[prospectType]?.toLowerCase().includes(s);
+    return resultMatch && scoreMatch && objectionMatch && prospectTypeMatch && searchMatch;
   });
+  const hasAdvancedFilters = resultFilter !== 'all' || scoreFilter !== 'all' || objectionFilter !== 'all' || prospectTypeFilter !== 'all';
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div>
@@ -158,8 +214,75 @@ function History({ debriefs, navigate, user }) {
         <input placeholder="Rechercher..." value={q} onChange={e=>setQ(e.target.value)} style={{ width:'100%', padding:'12px 36px', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
         {q && <button onClick={()=>setQ('')} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:18 }}>✕</button>}
       </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:8 }}>
+        <select
+          value={resultFilter}
+          onChange={e=>setResultFilter(e.target.value)}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+        >
+          <option value="all">Résultat: Tous</option>
+          <option value="closed">Résultat: Closés</option>
+          <option value="open">Résultat: Non closés</option>
+        </select>
+
+        <select
+          value={scoreFilter}
+          onChange={e=>setScoreFilter(e.target.value)}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+        >
+          {SCORE_FILTERS.map(filter => (
+            <option key={filter.key} value={filter.key}>
+              Score: {filter.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={objectionFilter}
+          onChange={e=>setObjectionFilter(e.target.value)}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+        >
+          <option value="all">Objection: Toutes</option>
+          {objectionOptions.map(objection => (
+            <option key={objection} value={objection}>
+              {OBJECTION_LABELS[objection] || objection}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={prospectTypeFilter}
+          onChange={e=>setProspectTypeFilter(e.target.value)}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+        >
+          <option value="all">Type prospect: Tous</option>
+          {prospectTypeOptions.map(type => (
+            <option key={type} value={type}>
+              {PROSPECT_TYPE_LABELS[type] || type}
+            </option>
+          ))}
+        </select>
+      </div>
       {filtered.length===0
-        ? <Empty icon="🔍" title="Aucun résultat" subtitle={q?`Aucun debrief pour "${q}"`:'Aucun debrief'} action={q?<Btn variant="secondary" onClick={()=>setQ('')}>Effacer</Btn>:null}/>
+        ? <Empty
+            icon="🔍"
+            title="Aucun résultat"
+            subtitle={q ? `Aucun debrief pour "${q}"` : 'Aucun debrief'}
+            action={(q || hasAdvancedFilters) ? (
+              <Btn
+                variant="secondary"
+                onClick={() => {
+                  setQ('');
+                  setResultFilter('all');
+                  setScoreFilter('all');
+                  setObjectionFilter('all');
+                  setProspectTypeFilter('all');
+                }}
+              >
+                Réinitialiser les filtres
+              </Btn>
+            ) : null}
+          />
         : (
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {filtered.map(d => (

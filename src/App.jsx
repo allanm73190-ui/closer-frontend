@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch, getToken, clearToken, setOnExpired } from './config/api';
 import { P, P2, TXT, TXT2, TXT3, R_MD, SH_BTN, SH_CARD, GLOBAL_CSS } from './styles/designSystem';
 import { useIsMobile, useToast, useDebriefConfig } from './hooks';
+import { normalizeDebriefTemplateCatalog, getDefaultTemplateCatalog } from './config/debriefTemplates';
 
 // ─── UI Components ───────────────────────────────────────────────────────────
 import { Toasts, Burst, Spinner } from './components/ui';
@@ -43,6 +44,7 @@ export default function App() {
     const saved = localStorage.getItem('cd_theme');
     return saved === 'dark' ? 'dark' : 'light';
   });
+  const [debriefTemplates, setDebriefTemplates] = useState(() => getDefaultTemplateCatalog());
   const mob = useIsMobile();
   const [debriefConfig, setDebriefConfig] = useDebriefConfig();
 
@@ -87,11 +89,16 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       setDebriefConfig(null);
+      setDebriefTemplates(getDefaultTemplateCatalog());
       return;
     }
     apiFetch('/debrief-config')
       .then(data => setDebriefConfig(data.sections || null))
       .catch(() => setDebriefConfig(null));
+
+    apiFetch('/debrief-templates')
+      .then(data => setDebriefTemplates(normalizeDebriefTemplateCatalog(data)))
+      .catch(() => setDebriefTemplates(getDefaultTemplateCatalog()));
   }, [user, setDebriefConfig]);
 
   const navigate = (p, id=null, from=null, opts={}) => {
@@ -159,6 +166,7 @@ export default function App() {
           toast={toast}
           user={user}
           debriefConfig={debriefConfig}
+          debriefTemplates={debriefTemplates}
           setDebriefConfig={setDebriefConfig}
           leadContext={leadContext}
         />
@@ -171,6 +179,7 @@ export default function App() {
           toast={toast}
           user={user}
           debriefConfig={debriefConfig}
+          debriefTemplates={debriefTemplates}
           setDebriefConfig={setDebriefConfig}
           existingDebrief={selDebrief}
           fromPage={from || 'History'}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
@@ -6,6 +6,7 @@ import { computeScore } from '../../utils/scoring';
 import { Btn, Input, Textarea, Card, ScoreGauge, ClosedBadge, Modal } from '../ui';
 import { RadioGroup, CheckboxGroup, SectionNotes, CatCard } from './FormPrimitives';
 import { DebriefConfigEditor, DEFAULT_DEBRIEF_CONFIG } from './Settings';
+import { normalizeDebriefTemplateCatalog, buildTemplateSections, getDefaultTemplateCatalog } from '../../config/debriefTemplates';
 
 function normalizeSectionKey(rawKey) {
   if (!rawKey) return rawKey;
@@ -39,6 +40,29 @@ function getConfigSections(config) {
   });
 }
 
+function getDebriefMeta(allSections) {
+  const meta = allSections?.__meta;
+  return meta && typeof meta === 'object' ? meta : {};
+}
+
+function normalizeTemplateKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+const PROSPECT_TYPE_OPTIONS = [
+  { value:'', label:'Non renseigné' },
+  { value:'froid', label:'Prospect froid' },
+  { value:'tiède', label:'Prospect tiède' },
+  { value:'chaud', label:'Prospect chaud' },
+  { value:'inbound', label:'Inbound' },
+  { value:'outbound', label:'Outbound' },
+];
+
 function buildSectionsState(configSections, previous = null) {
   const next = {};
   for (const section of configSections) {
@@ -57,22 +81,29 @@ function buildNotesState(configSections, previous = null) {
   return next;
 }
 
-function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, setDebriefConfig, existingDebrief, fromPage, leadContext }) {
+function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, setDebriefConfig, existingDebrief, fromPage, leadContext }) {
   const mob = useIsMobile();
   const isHOS = user?.role === 'head_of_sales';
   const isEditing = !!existingDebrief?.id;
   const [showDebriefSettings, setShowDebriefSettings] = useState(false);
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
+  const templateCatalog = useMemo(
+    () => normalizeDebriefTemplateCatalog(debriefTemplates || getDefaultTemplateCatalog()),
+    [debriefTemplates]
+  );
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState(() => templateCatalog.defaultTemplateKey || 'standard');
   const [form, setForm] = useState({
     prospect_name:'',
     call_date:new Date().toISOString().split('T')[0],
     closer_name:'',
+    prospect_type:'',
     call_link:'',
     is_closed:null,
     notes:'',
   });
 
-  const configSections = getConfigSections(debriefConfig);
+  const templateSections = buildTemplateSections(selectedTemplateKey, debriefConfig || DEFAULT_DEBRIEF_CONFIG);
+  const configSections = getConfigSections(templateSections);
 
   const [secs, setSecs] = useState(() => buildSectionsState(configSections));
   const [notes, setNotes] = useState(() => buildNotesState(configSections));
@@ -80,23 +111,34 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
   const { total, max, percentage } = computeScore(secs);
 
   useEffect(() => {
-    const freshSections = getConfigSections(debriefConfig);
+    if (templateCatalog.templates.some(template => template.key === selectedTemplateKey)) return;
+    setSelectedTemplateKey(templateCatalog.defaultTemplateKey || templateCatalog.templates[0]?.key || 'standard');
+  }, [templateCatalog, selectedTemplateKey]);
+
+  useEffect(() => {
+    const freshSections = getConfigSections(buildTemplateSections(selectedTemplateKey, debriefConfig || DEFAULT_DEBRIEF_CONFIG));
     setSecs(prev => buildSectionsState(freshSections, prev));
     setNotes(prev => buildNotesState(freshSections, prev));
-  }, [debriefConfig]);
+  }, [debriefConfig, selectedTemplateKey]);
 
   useEffect(() => {
     if (!isEditing) return;
+    const meta = getDebriefMeta(existingDebrief.sections);
+    const existingTemplateKey = normalizeTemplateKey(meta.offer_template_key || meta.offer_type || '');
+    if (existingTemplateKey && templateCatalog.templates.some(template => template.key === existingTemplateKey)) {
+      setSelectedTemplateKey(existingTemplateKey);
+    }
     setForm({
       prospect_name: existingDebrief.prospect_name || '',
       call_date: existingDebrief.call_date || new Date().toISOString().split('T')[0],
       closer_name: existingDebrief.closer_name || '',
+      prospect_type: meta.prospect_type || '',
       call_link: existingDebrief.call_link || '',
       is_closed: typeof existingDebrief.is_closed === 'boolean' ? existingDebrief.is_closed : null,
       notes: existingDebrief.notes || '',
     });
 
-    const freshSections = getConfigSections(debriefConfig);
+    const freshSections = getConfigSections(buildTemplateSections(selectedTemplateKey, debriefConfig || DEFAULT_DEBRIEF_CONFIG));
     const filledSections = buildSectionsState(freshSections);
     const filledNotes = buildNotesState(freshSections);
 
@@ -108,7 +150,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
     setSecs(filledSections);
     setNotes(filledNotes);
     setLinkedDealId(null);
-  }, [isEditing, existingDebrief?.id, debriefConfig]);
+  }, [isEditing, existingDebrief?.id, debriefConfig, selectedTemplateKey, templateCatalog]);
 
   useEffect(() => {
     if (isEditing || !leadContext) return;
@@ -118,6 +160,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
       prospect_name: leadContext.prospect_name || fullName || prev.prospect_name,
       call_date: leadContext.contact_date || prev.call_date,
       closer_name: prev.closer_name || user?.name || '',
+      prospect_type: prev.prospect_type || '',
       is_closed: typeof leadContext.deal_closed === 'boolean' ? leadContext.deal_closed : prev.is_closed,
       notes: prev.notes || leadContext.note || '',
     }));
@@ -145,6 +188,12 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
       const mergedSections = isEditing
         ? { ...(existingDebrief.sections || {}), ...secs }
         : secs;
+      const mergedMeta = {
+        ...(isEditing ? getDebriefMeta(existingDebrief.sections) : {}),
+        offer_template_key: selectedTemplateKey,
+        prospect_type: form.prospect_type || '',
+      };
+      mergedSections.__meta = mergedMeta;
       const mergedSectionNotes = isEditing
         ? { ...(existingDebrief.section_notes || {}), ...notes }
         : notes;
@@ -278,12 +327,46 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
         </div>
       )}
 
+      <Card style={{ padding:14, border:'1px solid rgba(232,125,106,.14)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 2fr', gap:10, alignItems:'center' }}>
+          <div>
+            <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'#5a4a3a', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
+            <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>Le formulaire s’adapte selon votre type de produit.</p>
+          </div>
+          <div>
+            <select
+              value={selectedTemplateKey}
+              onChange={e=>setSelectedTemplateKey(e.target.value)}
+              style={{
+                width:'100%',
+                background:'white',
+                border:'1px solid rgba(232,125,106,.2)',
+                borderRadius:10,
+                padding:'10px 12px',
+                fontSize:13,
+                fontFamily:'inherit',
+                color:'#5a4a3a',
+              }}
+            >
+              {templateCatalog.templates.map(template => (
+                <option key={template.key} value={template.key}>
+                  {template.label}
+                </option>
+              ))}
+            </select>
+            <p style={{ margin:'6px 2px 0', fontSize:11, color:DS.textMuted }}>
+              {templateCatalog.templates.find(template => template.key === selectedTemplateKey)?.description || ''}
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <form onSubmit={submit}>
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 300px', gap:mob?16:24, alignItems:'start' }}>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <Card style={{ padding:16 }}>
               <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Informations de l'appel</h3>
-              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(4,1fr)', gap:12, marginBottom:14 }}>
                 <div>
                   <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Prospect *</label>
                   <Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({ ...form, prospect_name:e.target.value })} />
@@ -295,6 +378,28 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
                 <div>
                   <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Date *</label>
                   <Input type="date" required value={form.call_date} onChange={e=>setForm({ ...form, call_date:e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Type de prospect</label>
+                  <select
+                    value={form.prospect_type}
+                    onChange={e=>setForm({ ...form, prospect_type:e.target.value })}
+                    style={{
+                      width:'100%',
+                      background:'white',
+                      border:'1px solid rgba(232,125,106,.2)',
+                      borderRadius:10,
+                      padding:'10px 12px',
+                      fontSize:13,
+                      fontFamily:'inherit',
+                      color:'#5a4a3a',
+                      boxShadow:'0 1px 4px rgba(28,26,40,.05)',
+                    }}
+                  >
+                    {PROSPECT_TYPE_OPTIONS.map(option => (
+                      <option key={option.value || 'none'} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>

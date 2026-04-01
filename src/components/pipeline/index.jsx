@@ -24,6 +24,20 @@ function getOpenStatusKey(stages) {
   return stages.find(stage => !stage.closed)?.key || 'prospect';
 }
 
+function parseISODate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function diffDaysFromNow(value) {
+  const date = parseISODate(value);
+  if (!date) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+}
+
 function StatusBadge({ stage, compact=false }) {
   if (!stage) return null;
   return (
@@ -567,6 +581,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const [loading, setLoading] = useState(true);
   const [openLead, setOpenLead] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [alertFocus, setAlertFocus] = useState('all');
   const [showSettings, setShowSettings] = useState(false);
   const [pipelineConfig, setPipelineConfig] = useState(DEFAULT_PIPELINE_CONFIG);
   const mob = useIsMobile();
@@ -618,10 +633,59 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   const isHOS = user.role === 'head_of_sales';
   const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
-  const displayDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
+  const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
 
   const closedKeys = statuses.filter(status => status.closed).map(status => status.key);
   const wonKeys = statuses.filter(status => status.won).map(status => status.key);
+  const openDeals = deals.filter(deal => !closedKeys.includes(deal.status));
+  const overdueDeals = openDeals.filter(deal => {
+    const dateValue = deal.contact_date || deal.follow_up_date;
+    const dueDate = parseISODate(dateValue);
+    if (!dueDate) return false;
+    const today = new Date();
+    dueDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return dueDate.getTime() < today.getTime();
+  });
+  const noDateDeals = openDeals.filter(deal => !(deal.contact_date || deal.follow_up_date));
+  const blockedDeals = openDeals.filter(deal => {
+    const stalenessDays = diffDaysFromNow(deal.updated_at || deal.created_at);
+    return stalenessDays !== null && stalenessDays >= 8;
+  });
+  const alertGroups = [
+    {
+      key:'risk',
+      title:'Deals à risque',
+      subtitle:'Date dépassée sur un deal non closé',
+      count: overdueDeals.length,
+      ids: new Set(overdueDeals.map(deal => deal.id)),
+      color:'#dc2626',
+      bg:'rgba(254,226,226,.65)',
+    },
+    {
+      key:'no_date',
+      title:'Sans date',
+      subtitle:'Aucun prochain jalon planifié',
+      count: noDateDeals.length,
+      ids: new Set(noDateDeals.map(deal => deal.id)),
+      color:'#d97706',
+      bg:'rgba(254,243,199,.65)',
+    },
+    {
+      key:'blocked',
+      title:'Deals bloqués',
+      subtitle:'Inactifs depuis 8+ jours',
+      count: blockedDeals.length,
+      ids: new Set(blockedDeals.map(deal => deal.id)),
+      color:'#3b82f6',
+      bg:'rgba(219,234,254,.7)',
+    },
+  ];
+  const activeAlert = alertGroups.find(alert => alert.key === alertFocus) || null;
+  const displayDeals = alertFocus === 'all'
+    ? closerFilteredDeals
+    : closerFilteredDeals.filter(deal => activeAlert?.ids.has(deal.id));
+
   const totalValue = deals.filter(deal => wonKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
   const totalPipe = deals.filter(deal => !closedKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
   const noDateCount = deals.filter(deal => !(deal.contact_date || deal.follow_up_date)).length;
@@ -681,6 +745,56 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         ))}
       </div>
 
+      <Card style={{ padding:14, border:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+          <div>
+            <p style={{ margin:'0 0 3px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Relance intelligente</p>
+            <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+              Priorisez automatiquement les deals à traiter en premier.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={()=>setAlertFocus('all')}
+            style={{
+              border:'none',
+              borderRadius:999,
+              padding:'6px 10px',
+              background:alertFocus === 'all' ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
+              color:alertFocus === 'all' ? 'white' : 'var(--txt2,#b09080)',
+              fontSize:11,
+              fontWeight:700,
+              cursor:'pointer',
+              fontFamily:'inherit',
+            }}
+          >
+            Tous les deals
+          </button>
+        </div>
+        <div style={{ marginTop:10, display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(3,1fr)', gap:8 }}>
+          {alertGroups.map(alert => (
+            <button
+              key={alert.key}
+              type="button"
+              onClick={()=>setAlertFocus(alert.key)}
+              style={{
+                border:'1px solid var(--border)',
+                borderRadius:10,
+                padding:'10px 11px',
+                background:alertFocus === alert.key ? alert.bg : 'var(--card,#fff)',
+                textAlign:'left',
+                cursor:'pointer',
+                fontFamily:'inherit',
+              }}
+            >
+              <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:alert.color }}>{alert.title}</p>
+              <p style={{ margin:'0 0 8px', fontSize:11, color:DS.textMuted }}>{alert.subtitle}</p>
+              <p style={{ margin:0, fontSize:20, fontWeight:700, color:alert.color }}>{alert.count}</p>
+            </button>
+          ))}
+        </div>
+      </Card>
+
       {isHOS && closers.length > 1 && (
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
@@ -701,8 +815,24 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
       )}
 
+      {alertFocus !== 'all' && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+            Focus actif: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{activeAlert?.title || 'Alerte'}</strong> ({displayDeals.length} deal{displayDeals.length > 1 ? 's' : ''})
+          </p>
+          <Btn variant="secondary" onClick={()=>setAlertFocus('all')} style={{ fontSize:12, padding:'6px 11px' }}>
+            Retirer le focus
+          </Btn>
+        </div>
+      )}
+
       {displayDeals.length === 0 ? (
-        <Empty icon="🎯" title="Pipeline vide" subtitle="Créez votre premier lead" action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>} />
+        <Empty
+          icon="🎯"
+          title={deals.length === 0 ? 'Pipeline vide' : 'Aucun deal sur ce filtre'}
+          subtitle={deals.length === 0 ? 'Créez votre premier lead' : 'Ajustez le closer ou le focus d’alerte pour voir plus de résultats.'}
+          action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}
+        />
       ) : mob ? (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {statuses.map(stage => (
