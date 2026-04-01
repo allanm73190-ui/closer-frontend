@@ -366,9 +366,6 @@ function DealCard({ deal, stages, onOpen }) {
         {deal.closer_name && <span style={{ fontSize:11, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>👤 {deal.closer_name}</span>}
         <StatusBadge stage={stage} compact />
       </div>
-      {deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !stage.closed && (
-        <p style={{ margin:'6px 0 0', fontSize:10, fontWeight:700, color:'#dc2626' }}>⚠️ Relance en retard</p>
-      )}
     </div>
   );
 }
@@ -498,7 +495,7 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
     onSave({
       ...draft,
       statuses: normalizedStatuses,
-      importantFields: ['source', 'value', 'follow_up_date', 'debrief_id', 'notes'],
+      importantFields: ['first_name', 'last_name', 'email', 'phone', 'source', 'deal_closed', 'value', 'contact_date', 'note'],
     });
   };
 
@@ -626,7 +623,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const wonKeys = statuses.filter(status => status.won).map(status => status.key);
   const totalValue = deals.filter(deal => wonKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
   const totalPipe = deals.filter(deal => !closedKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
-  const overdueCount = deals.filter(deal => deal.follow_up_date && new Date(deal.follow_up_date) < new Date() && !closedKeys.includes(deal.status)).length;
+  const noDateCount = deals.filter(deal => !(deal.contact_date || deal.follow_up_date)).length;
   const closed = deals.filter(deal => closedKeys.includes(deal.status));
   const winRate = closed.length > 0 ? Math.round((deals.filter(deal => wonKeys.includes(deal.status)).length / closed.length) * 100) : 0;
 
@@ -673,7 +670,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
           { label:'CA signé', value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', color:'#059669' },
           { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'🧭', color:'#e87d6a' },
           { label:'Taux win', value:`${winRate}%`, icon:'🏆', color:'#d97706' },
-          { label:'Relances en retard', value:overdueCount, icon:'⏰', color:overdueCount > 0 ? '#dc2626' : '#64748b' },
+          { label:'Sans date', value:noDateCount, icon:'🗓️', color:noDateCount > 0 ? '#d97706' : '#64748b' },
         ].map(kpi => (
           <Card key={kpi.label} style={{ padding:'12px 13px' }}>
             <p style={{ margin:'0 0 6px', fontSize:11, textTransform:'uppercase', letterSpacing:'.05em', color:DS.textMuted }}>{kpi.label}</p>

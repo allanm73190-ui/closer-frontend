@@ -88,7 +88,7 @@ function MiniPipeline({ navigate, user }) {
   const pipeline = deals.filter(d=>!closedKeys.includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
   const closed   = deals.filter(d=>closedKeys.includes(d.status));
   const winRate  = closed.length ? Math.round(deals.filter(d=>wonKeys.includes(d.status)).length/closed.length*100) : 0;
-  const late     = deals.filter(d=>d.follow_up_date && new Date(d.follow_up_date)<new Date() && !closedKeys.includes(d.status)).length;
+  const noDate   = deals.filter(d => !(d.contact_date || d.follow_up_date)).length;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -98,7 +98,7 @@ function MiniPipeline({ navigate, user }) {
           { label:'CA Signé',  value:`${signed.toLocaleString('fr-FR')} €`,  color:'#5a9858' },
           { label:'Pipeline',  value:`${pipeline.toLocaleString('fr-FR')} €`, color:'#e87d6a' },
           { label:'Taux win',  value:`${winRate}%`,                           color:'#6aacce' },
-          { label:'En retard', value:late,                                    color:late>0?'#c05040':'#c8b8a8' },
+          { label:'Sans date', value:noDate,                                  color:noDate>0?'#c07830':'#c8b8a8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...cardSm(), padding:'12px 14px' }}>
             <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>

@@ -8,11 +8,15 @@ export const DEFAULT_PIPELINE_STATUSES = [
 ];
 
 export const LEAD_FIELD_OPTIONS = [
+  { key:'first_name', label:'Prénom', type:'text', placeholder:'Prénom' },
+  { key:'last_name', label:'Nom', type:'text', placeholder:'Nom' },
+  { key:'email', label:'Email', type:'email', placeholder:'email@domaine.com' },
+  { key:'phone', label:'Téléphone', type:'text', placeholder:'+33...' },
   { key:'source', label:'Source', type:'text', placeholder:'LinkedIn, Inbound...' },
+  { key:'deal_closed', label:'Deal closé', type:'boolean' },
   { key:'value', label:'Montant (€)', type:'number', placeholder:'0' },
-  { key:'follow_up_date', label:'Date relance', type:'date' },
-  { key:'debrief_id', label:'Debrief lié', type:'debrief' },
-  { key:'notes', label:'Notes', type:'textarea', placeholder:'Informations utiles sur ce lead...' },
+  { key:'contact_date', label:'Date', type:'date' },
+  { key:'note', label:'Note', type:'textarea', placeholder:'Informations utiles sur ce lead...' },
 ];
 
 export const DEFAULT_PIPELINE_CONFIG = {

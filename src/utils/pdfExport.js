@@ -59,8 +59,8 @@ function extractKeyBullets(text) {
     .filter(line => /^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line))
     .map(line => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim())
     .filter(Boolean);
-  if (bullets.length > 0) return bullets.slice(0, 5);
-  return lines.filter(Boolean).slice(0, 3);
+  if (bullets.length > 0) return bullets.slice(0, 4);
+  return lines.filter(Boolean).slice(0, 2);
 }
 
 function getDominantObjection(debrief) {
@@ -451,7 +451,7 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
   const prioritySections = getPrioritySections(scores);
   const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
-  const latestComments = [...comments].slice(-3).reverse();
+  const latestComments = [...comments].slice(-2).reverse();
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
@@ -547,9 +547,9 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
     writeBullet(`${label.replace(/^[^\p{L}\p{N}]+/u, '').trim()}: ${value}/5${note?.improvement ? ` — ${note.improvement}` : ''}`);
   });
 
-  sectionTitle('Synthèse IA');
+  sectionTitle('Synthèse IA (points clés)');
   if (keyBullets.length > 0) {
-    keyBullets.slice(0, 6).forEach(item => writeBullet(item));
+    keyBullets.slice(0, 4).forEach(item => writeBullet(item));
   } else {
     writeBullet('Aucune synthèse IA disponible.');
   }
