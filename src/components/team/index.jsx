@@ -1,553 +1,501 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../../config/api';
-import { DS, P, P2, TXT, TXT2, TXT3, R_SM, R_MD, R_LG, R_FULL, SH_SM, SH_BTN, SH_CARD, card, cardSm, inp } from '../../styles/designSystem';
-import { useIsMobile, useBreakpoint } from '../../hooks';
-import { computeLevel, computeSectionScores, avgSectionScores, fmtDate, copy } from '../../utils/scoring';
-import { SECTIONS } from '../../config/ai';
-import { Btn, Input, Textarea, Card, Modal, Spinner, Empty, AlertBox, ScoreGauge, ScoreBadge, ClosedBadge } from '../ui';
+import { DS } from '../../styles/designSystem';
+import { useIsMobile } from '../../hooks';
+import { avgSectionScores, copy } from '../../utils/scoring';
+import { Btn, Card, Modal, Spinner, Empty } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
-import { DebriefCard } from '../debrief/DebriefCard';
-import { GamCard, Leaderboard } from '../gamification';
-import { ObjectiveModal, ActionPlanCard } from '../gamification/Objectives';
 import { Chart } from '../dashboard/StatsChart';
+import { ObjectiveModal } from '../gamification/Objectives';
 
-function MemberRow({ member, teams, currentTeamId, onRemove, onMove, selected, onSelect, onObjectives }) {
-  const [movingTo, setMovingTo] = useState('');
-  const mob = useIsMobile();
-  const otherTeams = teams.filter(t => t.id !== currentTeamId);
-  return (
-    <>
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', cursor:'pointer', background:selected?'rgba(255,248,245,.8)':'white', transition:'background .1s' }} onClick={onSelect}>
-        <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.85)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:14, color:'#e87d6a', flexShrink:0 }}>{member.name.charAt(0)}</div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</p>
-          <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{member.level.icon} {member.level.name} · {member.totalDebriefs} debriefs · {member.avgScore}%</p>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-          {!mob && otherTeams.length > 0 && (
-            <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} onClick={e=>e.stopPropagation()}
-              style={{ fontSize:12, border:'1px solid rgba(232,125,106,.12)', borderRadius:6, padding:'4px 8px', fontFamily:'inherit', color:'#5a4a3a', background:'#ffffff', cursor:'pointer' }}>
-              <option value="">Déplacer...</option>
-              {otherTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          )}
-          {movingTo && <Btn variant="green" onClick={e=>{e.stopPropagation();onMove(member.id,movingTo);setMovingTo('');}} style={{fontSize:12,padding:'4px 10px'}}>✓</Btn>}
-          <Btn variant="danger" onClick={e=>{e.stopPropagation();onRemove(member.id,member.name);}} style={{width:30,height:30,padding:0,borderRadius:8,fontSize:12}}>✕</Btn>
-          <span style={{ color:selected?'#e87d6a':'#d1d5db', fontSize:14 }}>{selected?'▲':'▼'}</span>
-        </div>
-      </div>
-      {selected && (
-        <div style={{ padding:'14px 16px 18px', background:'rgba(253,232,228,.15)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
-          {mob && otherTeams.length > 0 && (
-            <div style={{ marginBottom:12, display:'flex', gap:8 }}>
-              <select value={movingTo} onChange={e=>setMovingTo(e.target.value)} style={{ flex:1, fontSize:13, border:'1px solid rgba(232,125,106,.12)', borderRadius:8, padding:'8px 10px', fontFamily:'inherit', color:'#5a4a3a', background:'#ffffff' }}>
-                <option value="">Déplacer vers une autre équipe...</option>
-                {otherTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              {movingTo && <Btn variant="green" onClick={()=>{onMove(member.id,movingTo);setMovingTo('');}} style={{fontSize:13,padding:'8px 14px'}}>✓</Btn>}
-            </div>
-          )}
-          {member.chartData.length > 0
-            ? <><p style={{fontSize:13,fontWeight:600,color:'#5a4a3a',marginBottom:10}}>📈 Évolution</p><Chart debriefs={member.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></>
-            : <p style={{color:DS.textMuted,fontSize:13,textAlign:'center',padding:'16px 0'}}>Aucun debrief enregistré</p>
-          }
-          {member.badges.length > 0 && <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:10}}>{member.badges.map(b=><span key={b.id} style={{background:'rgba(255,245,242,.85)',color:'#5a4a3a',padding:'3px 10px',borderRadius:20,fontSize:12}}>{b.icon} {b.label}</span>)}</div>}
-        </div>
-      )}
-    </>
-  );
+function getTeamDebriefs(team, allDebriefs) {
+  if (!team) return [];
+  const ids = (team.members || []).map(m => m.id);
+  return (allDebriefs || []).filter(d => ids.includes(d.user_id));
 }
 
-// ─── TEAM CARD (composant dédié — pas de hook dans les maps) ─────────────────
-function TeamCard({ team, allDebriefs, onClick }) {
-  const [hov, setHov] = useState(false);
-  const td = (allDebriefs||[]).filter(d => team.members.some(m => m.id === d.user_id));
-  const avg  = td.length > 0 ? Math.round(td.reduce((s,d)=>s+(d.percentage||0),0)/td.length) : 0;
-  const cls  = td.filter(d => d.is_closed).length;
-  const rate = td.length > 0 ? Math.round((cls/td.length)*100) : 0;
+function computeTeamStats(team, allDebriefs) {
+  const debriefs = getTeamDebriefs(team, allDebriefs);
+  const total = debriefs.length;
+  const avg = total > 0 ? Math.round(debriefs.reduce((sum, d) => sum + (d.percentage || 0), 0) / total) : 0;
+  const closed = debriefs.filter(d => d.is_closed).length;
+  const closeRate = total > 0 ? Math.round((closed / total) * 100) : 0;
+  return { total, avg, closed, closeRate, debriefs };
+}
+
+function TeamTile({ team, active, allDebriefs, onSelect }) {
+  const stats = computeTeamStats(team, allDebriefs);
   return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClick}
-      style={{ background:'#ffffff', border:`2px solid ${hov?'#e87d6a':'rgba(255,255,255,.9)'}`, borderRadius:16, padding:20, cursor:'pointer', transition:'all .2s', boxShadow:hov?'0 12px 40px rgba(232,125,106,.2), 0 2px 10px rgba(232,125,106,.1)':'0 6px 24px rgba(100,80,200,.1), 0 2px 8px rgba(100,80,200,.06)', position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:4, background:'linear-gradient(90deg,#e87d6a,#6aacce)' }}/>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16, marginTop:4 }}>
-        <div>
-          <h3 style={{ fontSize:17, fontWeight:700, color:'#5a4a3a', margin:'0 0 4px' }}>{team.name}</h3>
-          <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{team.members.length} membre{team.members.length!==1?'s':''} · {td.length} debrief{td.length!==1?'s':''}</p>
-        </div>
-        <span style={{ fontSize:20, color:hov?'#e87d6a':'#d1d5db', transition:'color .2s' }}>→</span>
-      </div>
+    <button
+      type="button"
+      onClick={onSelect}
+      style={{
+        border:'none',
+        borderRadius:14,
+        padding:'16px 18px',
+        textAlign:'left',
+        cursor:'pointer',
+        background:active ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'white',
+        color:active ? 'white' : '#5a4a3a',
+        boxShadow:active ? '0 10px 30px rgba(232,125,106,.35)' : '0 4px 16px rgba(28,26,40,.08)',
+        transition:'all .2s',
+      }}
+    >
+      <p style={{ margin:'0 0 4px', fontSize:16, fontWeight:700 }}>{team.name}</p>
+      <p style={{ margin:'0 0 10px', fontSize:12, color:active ? 'rgba(255,255,255,.8)' : DS.textMuted }}>
+        {(team.members || []).length} membre{(team.members || []).length > 1 ? 's' : ''} · {stats.total} debrief{stats.total > 1 ? 's' : ''}
+      </p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-        {[{ l:'Score moy.', v:`${avg}%`,  c:avg>=80?'#059669':avg>=60?'#d97706':'#e87d6a' },
-          { l:'Closings',   v:cls,         c:'#059669' },
-          { l:'Taux',       v:`${rate}%`,  c:rate>=40?'#059669':'#d97706' },
-        ].map(({ l, v, c }) => (
-          <div key={l} style={{ background:'rgba(253,232,228,.2)', borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
-            <p style={{ fontSize:10, color:DS.textMuted, margin:'0 0 2px', textTransform:'uppercase', letterSpacing:'.04em' }}>{l}</p>
-            <p style={{ fontWeight:700, fontSize:15, color:c, margin:0 }}>{v}</p>
+        {[{ label:'Score', value:`${stats.avg}%` }, { label:'Closings', value:stats.closed }, { label:'Taux', value:`${stats.closeRate}%` }].map(kpi => (
+          <div key={kpi.label} style={{ background:active ? 'rgba(255,255,255,.16)' : 'rgba(253,232,228,.3)', borderRadius:8, padding:'6px 8px' }}>
+            <p style={{ margin:'0 0 2px', fontSize:10, textTransform:'uppercase', letterSpacing:'.04em', opacity:active ? .82 : .64 }}>
+              {kpi.label}
+            </p>
+            <p style={{ margin:0, fontSize:14, fontWeight:700 }}>{kpi.value}</p>
           </div>
         ))}
       </div>
-      {team.members.length > 0 && (
-        <div style={{ display:'flex', marginTop:12 }}>
-          {team.members.slice(0,5).map((m,i) => (
-            <div key={m.id} style={{ width:28, height:28, borderRadius:'50%', background:`hsl(${(i*67)%360},60%,70%)`, border:'2px solid white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'white', marginLeft:i>0?-8:0, zIndex:10-i }}>{m.name.charAt(0)}</div>
-          ))}
-          {team.members.length > 5 && (
-            <div style={{ width:28, height:28, borderRadius:'50%', background:'#e2e8f0', border:'2px solid white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:600, color:'#6b7280', marginLeft:-8 }}>+{team.members.length-5}</div>
+    </button>
+  );
+}
+
+function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, onRemove, onMove, onObjectives }) {
+  const [targetTeamId, setTargetTeamId] = useState('');
+  const otherTeams = teams.filter(t => t.id !== teamId);
+  const memberDebriefs = (allDebriefs || []).filter(d => d.user_id === member.id);
+  const sectionScores = avgSectionScores(memberDebriefs);
+  const closeRate = member.totalDebriefs > 0 ? Math.round((member.closed / member.totalDebriefs) * 100) : 0;
+
+  return (
+    <div style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:12, overflow:'hidden', background:'white' }}>
+      <div
+        onClick={onToggle}
+        style={{
+          display:'flex',
+          alignItems:'center',
+          gap:12,
+          padding:'12px 14px',
+          cursor:'pointer',
+          background:selected ? 'rgba(255,248,245,.85)' : 'white',
+        }}
+      >
+        <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.9)', color:'#e87d6a', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, flexShrink:0 }}>
+          {member.name?.charAt(0)}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ margin:'0 0 2px', fontSize:14, fontWeight:700, color:'#5a4a3a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</p>
+          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+            {member.totalDebriefs} debrief{member.totalDebriefs > 1 ? 's' : ''} · {member.avgScore}% · {closeRate}% de closing
+          </p>
+        </div>
+        <span style={{ color:selected ? '#e87d6a' : '#cbd5e1', fontSize:13 }}>{selected ? '▲' : '▼'}</span>
+      </div>
+
+      {selected && (
+        <div style={{ padding:'14px 14px 16px', borderTop:'1px solid rgba(232,125,106,.08)', background:'rgba(255,248,245,.45)', display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+            {[{ label:'Debriefs', value:member.totalDebriefs }, { label:'Closings', value:member.closed }, { label:'Taux', value:`${closeRate}%` }].map(stat => (
+              <div key={stat.label} style={{ background:'white', border:'1px solid rgba(232,125,106,.1)', borderRadius:8, padding:'8px 10px' }}>
+                <p style={{ margin:'0 0 2px', fontSize:11, color:DS.textMuted }}>{stat.label}</p>
+                <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#5a4a3a' }}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {sectionScores && <SectionBars scores={sectionScores} />}
+
+          {member.chartData?.length > 0 && (
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:12, color:DS.textMuted }}>Évolution</p>
+              <Chart
+                debriefs={member.chartData.map((d, i) => ({
+                  id:i,
+                  date:d.date,
+                  score:d.score,
+                  prospect:d.prospect,
+                }))}
+              />
+            </div>
           )}
+
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <Btn variant="secondary" onClick={()=>onObjectives(member)} style={{ fontSize:12, padding:'7px 12px' }}>
+              🎯 Objectifs
+            </Btn>
+            {otherTeams.length > 0 && (
+              <>
+                <select
+                  value={targetTeamId}
+                  onChange={e=>setTargetTeamId(e.target.value)}
+                  style={{
+                    background:'white',
+                    border:'1px solid rgba(232,125,106,.2)',
+                    borderRadius:8,
+                    padding:'8px 10px',
+                    fontSize:12,
+                    fontFamily:'inherit',
+                    color:'#5a4a3a',
+                  }}
+                >
+                  <option value="">Déplacer vers...</option>
+                  {otherTeams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
+                </select>
+                <Btn variant="secondary" onClick={()=>{ onMove(member.id, targetTeamId); setTargetTeamId(''); }} disabled={!targetTeamId} style={{ fontSize:12, padding:'7px 12px' }}>
+                  Déplacer
+                </Btn>
+              </>
+            )}
+            <Btn variant="danger" onClick={()=>onRemove(member.id, member.name)} style={{ fontSize:12, padding:'7px 12px' }}>
+              Retirer
+            </Btn>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ─── HOS PAGE ─────────────────────────────────────────────────────────────────
-function HOSPage({ toast, leaderboardKey, allDebriefs }) {
-  const [tab,  setTab]  = useState('dashboard');
+function HOSPage({ toast, allDebriefs }) {
+  const mob = useIsMobile();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTeamId, setActiveTeamId] = useState(null);  // null = liste, string = détail
-  const [selMember, setSelMember] = useState(null);
-  const [scope, setScope] = useState('all');
-  const [generating, setGenerating] = useState(null);
-  const [copied, setCopied] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTeamId, setActiveTeamId] = useState(null);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [editingTeam, setEditingTeam] = useState(null);
+  const [newTeamName, setNewTeamName] = useState('');
   const [creating, setCreating] = useState(false);
-  const [objectiveTarget, setObjectiveTarget] = useState(null);
-  const mob = useIsMobile();
+  const [editingName, setEditingName] = useState('');
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [generatingCodeFor, setGeneratingCodeFor] = useState(null);
+  const [copiedCode, setCopiedCode] = useState('');
+  const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [objectiveCloser, setObjectiveCloser] = useState(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    apiFetch('/teams').then(d=>setTeams((d||[]).map(t=>({...t,inviteCodes:Array.isArray(t.inviteCodes)?t.inviteCodes:[],members:Array.isArray(t.members)?t.members:[]})))).catch(()=>setTeams([])).finally(()=>setLoading(false));
-  }, []);
-  useEffect(() => { load(); }, [load]);
+  const loadTeams = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const data = await apiFetch('/teams');
+      const normalized = (data || []).map(team => ({
+        ...team,
+        members: Array.isArray(team.members) ? team.members : [],
+        inviteCodes: Array.isArray(team.inviteCodes) ? team.inviteCodes : [],
+      }));
+      setTeams(normalized);
+      setLastSyncAt(new Date());
+      if (!activeTeamId && normalized.length > 0) {
+        setActiveTeamId(normalized[0].id);
+      }
+      if (activeTeamId && !normalized.some(team => team.id === activeTeamId)) {
+        setActiveTeamId(normalized[0]?.id || null);
+      }
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [toast, activeTeamId]);
 
-  // Reset activeTeamId if tab changes
-  useEffect(() => { if (tab !== 'equipes') setActiveTeamId(null); }, [tab]);
+  useEffect(() => { loadTeams(); }, [loadTeams]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadTeams(true);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [loadTeams]);
 
   const createTeam = async () => {
-    if (!newName.trim()) return;
+    const name = newTeamName.trim();
+    if (!name) return;
     setCreating(true);
-    try { const t = await apiFetch('/teams',{method:'POST',body:{name:newName.trim()}}); setTeams(p=>[...p,t]); setNewName(''); setShowCreate(false); toast(`Équipe "${t.name}" créée !`); }
-    catch(e) { toast(e.message,'error'); } finally { setCreating(false); }
-  };
-  const renameTeam = async () => {
-    if (!editingTeam?.name.trim()) return;
-    try { await apiFetch(`/teams/${editingTeam.id}`,{method:'PATCH',body:{name:editingTeam.name.trim()}}); setTeams(p=>p.map(t=>t.id===editingTeam.id?{...t,name:editingTeam.name.trim()}:t)); setEditingTeam(null); toast('Équipe renommée'); }
-    catch(e) { toast(e.message,'error'); }
-  };
-  const deleteTeam = async (id, name) => {
-    if (!confirm(`Supprimer l'équipe "${name}" ? Les membres seront libérés.`)) return;
-    try { await apiFetch(`/teams/${id}`,{method:'DELETE'}); setTeams(p=>p.filter(t=>t.id!==id)); setActiveTeamId(null); toast('Équipe supprimée'); }
-    catch(e) { toast(e.message,'error'); }
-  };
-  const genCode = async (teamId) => {
-    setGenerating(teamId);
-    try { const inv = await apiFetch(`/teams/${teamId}/invite`,{method:'POST'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:[inv,...(t.inviteCodes||[])]}:t)); toast('Code généré !'); }
-    catch(e) { toast(e.message,'error'); } finally { setGenerating(null); }
-  };
-  const delCode = async (teamId, codeId) => {
-    try { await apiFetch(`/teams/${teamId}/invite/${codeId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,inviteCodes:(t.inviteCodes||[]).filter(c=>c.id!==codeId)}:t)); toast('Code supprimé'); }
-    catch(e) { toast(e.message,'error'); }
-  };
-  const removeMember = async (teamId, memberId, name) => {
-    if (!confirm(`Retirer ${name} ?`)) return;
-    try { await apiFetch(`/teams/${teamId}/members/${memberId}`,{method:'DELETE'}); setTeams(p=>p.map(t=>t.id===teamId?{...t,members:t.members.filter(m=>m.id!==memberId)}:t)); setSelMember(null); toast(`${name} retiré`); }
-    catch(e) { toast(e.message,'error'); }
-  };
-  const moveMember = async (memberId, toTeamId) => {
-    const fromTeam = teams.find(t => t.members.some(m => m.id===memberId));
-    if (!fromTeam) return;
-    const member = fromTeam.members.find(m => m.id===memberId);
-    try { await apiFetch(`/teams/${toTeamId}/members/${memberId}`,{method:'PATCH'}); setTeams(p=>p.map(t=>{ if(t.id===fromTeam.id)return{...t,members:t.members.filter(m=>m.id!==memberId)}; if(t.id===toTeamId)return{...t,members:[...t.members,{...member,team_id:toTeamId}]}; return t;})); const tt=teams.find(t=>t.id===toTeamId); toast(`${member.name} déplacé vers "${tt?.name}"`); setSelMember(null); }
-    catch(e) { toast(e.message,'error'); }
-  };
-  const doCopy = code => { copy(code); setCopied(code); toast('Code copié !'); setTimeout(()=>setCopied(null),2000); };
-
-  if (loading) return <Spinner full/>;
-
-  const allMembers = teams.flatMap(t => t.members);
-
-  // Debriefs filtrés selon scope
-  const scopedDebriefs = (() => {
-    if (!allDebriefs?.length) return [];
-    if (scope === 'all') return allDebriefs;
-    if (scope.startsWith('team:')) {
-      const t = teams.find(t => t.id===scope.split(':')[1]);
-      const ids = (t?.members||[]).map(m => m.id);
-      return allDebriefs.filter(d => ids.includes(d.user_id));
+    try {
+      const team = await apiFetch('/teams', { method:'POST', body:{ name } });
+      setShowCreate(false);
+      setNewTeamName('');
+      setActiveTeamId(team.id);
+      toast(`Équipe "${team.name}" créée`);
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setCreating(false);
     }
-    if (scope.startsWith('closer:')) return allDebriefs.filter(d => d.user_id===scope.split(':')[1]);
-    return allDebriefs;
-  })();
+  };
 
-  const scopeLabel = scope==='all' ? "Toute l'équipe"
-    : scope.startsWith('team:')   ? teams.find(t=>t.id===scope.split(':')[1])?.name || 'Équipe'
-    : allMembers.find(m=>m.id===scope.split(':')[1])?.name || 'Closer';
+  const renameTeam = async () => {
+    const name = editingName.trim();
+    if (!editingTeamId || !name) return;
+    try {
+      await apiFetch(`/teams/${editingTeamId}`, { method:'PATCH', body:{ name } });
+      setEditingTeamId(null);
+      setEditingName('');
+      toast('Équipe renommée');
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
 
-  const fTotal  = scopedDebriefs.length;
-  const fAvg    = fTotal>0 ? Math.round(scopedDebriefs.reduce((s,d)=>s+(d.percentage||0),0)/fTotal) : 0;
-  const fCls    = scopedDebriefs.filter(d=>d.is_closed).length;
-  const fRate   = fTotal>0 ? Math.round((fCls/fTotal)*100) : 0;
+  const deleteTeam = async (team) => {
+    if (!confirm(`Supprimer l'équipe "${team.name}" ? Les membres seront retirés mais leurs données seront conservées.`)) return;
+    try {
+      await apiFetch(`/teams/${team.id}`, { method:'DELETE' });
+      toast('Équipe supprimée');
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
 
-  const globalSS = avgSectionScores(allDebriefs||[]);
-  const scopedSS = avgSectionScores(scopedDebriefs);
+  const generateInviteCode = async (teamId) => {
+    setGeneratingCodeFor(teamId);
+    try {
+      await apiFetch(`/teams/${teamId}/invite`, { method:'POST' });
+      toast("Code d'invitation généré");
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setGeneratingCodeFor(null);
+    }
+  };
 
-  const SLABELS = { decouverte:'Découverte', reformulation:'Reformulation', projection:'Projection', presentation_offre:"Présentation offre", closing:'Closing' };
-  const weakest  = scopedSS ? SECTIONS.reduce((w,s)=>(scopedSS[s.key]||0)<(scopedSS[w.key]||0)?s:w, SECTIONS[0]) : null;
-  const strongest= scopedSS ? SECTIONS.reduce((w,s)=>(scopedSS[s.key]||0)>(scopedSS[w.key]||0)?s:w, SECTIONS[0]) : null;
+  const deleteInviteCode = async (teamId, codeId) => {
+    try {
+      await apiFetch(`/teams/${teamId}/invite/${codeId}`, { method:'DELETE' });
+      toast('Code supprimé');
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
 
-  const bc = color => color==='#e87d6a'?'rgba(232,125,106,.15)':color==='#059669'?'rgba(5,150,105,.15)':'rgba(217,119,6,.15)';
+  const removeMember = async (teamId, memberId, memberName) => {
+    if (!confirm(`Retirer ${memberName} de l'équipe ? Ses debriefs seront conservés.`)) return;
+    try {
+      await apiFetch(`/teams/${teamId}/members/${memberId}`, { method:'DELETE' });
+      setSelectedMemberId(null);
+      toast(`${memberName} retiré`);
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const moveMember = async (memberId, toTeamId) => {
+    if (!toTeamId) return;
+    try {
+      await apiFetch(`/teams/${toTeamId}/members/${memberId}`, { method:'PATCH' });
+      setSelectedMemberId(null);
+      toast('Membre déplacé');
+      await loadTeams(true);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const activeTeam = teams.find(team => team.id === activeTeamId) || null;
+  const teamStats = computeTeamStats(activeTeam, allDebriefs);
+  const teamSectionScores = avgSectionScores(teamStats.debriefs);
+  const globalSectionScores = avgSectionScores(allDebriefs || []);
+
+  if (loading) return <Spinner full />;
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-
-      {/* ─── HEADER ─── */}
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
-          <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>👑 Head of Sales</h1>
-          <p style={{ color:'#6b7280', fontSize:13, marginTop:4 }}>{teams.length} équipe{teams.length!==1?'s':''} · {allMembers.length} closer{allMembers.length!==1?'s':''}</p>
+          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'#5a4a3a' }}>👥 Espace Équipe</h1>
+          <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
+            Dashboard synchronisé par équipe · {teams.length} équipe{teams.length > 1 ? 's' : ''}
+            {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
+          </p>
         </div>
-        <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusMd }}>
-          {[{key:'dashboard',label:'📊'},{key:'equipes',label:'👥'}].map(({key,label})=>(
-            <button key={key} onClick={()=>setTab(key)} style={{ padding:'8px 16px', borderRadius:8, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all .2s', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', boxShadow:tab===key?'0 1px 4px rgba(0,0,0,.08)':'none', fontFamily:'inherit' }}>
-              {label}{!mob&&<span> {key==='dashboard'?'Dashboard':'Équipes'}</span>}
-            </button>
-          ))}
+        <div style={{ display:'flex', gap:8 }}>
+          <Btn variant="secondary" onClick={()=>loadTeams(true)} disabled={refreshing}>{refreshing ? 'Synchro...' : '↻ Synchroniser'}</Btn>
+          <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
         </div>
       </div>
 
-      {/* ─── DASHBOARD ─── */}
-      {tab==='dashboard' && (
-        allMembers.length===0
-          ? <Empty icon="👥" title="Aucun closer" subtitle="Créez des équipes et générez des codes" action={<Btn onClick={()=>setTab('equipes')}>Gérer les équipes</Btn>}/>
-          : <>
-              {/* Sélecteur scope */}
-              <Card style={{ padding:'14px 16px' }}>
-                <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>Filtrer les données</p>
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                  <button onClick={()=>setScope('all')} style={{ padding:'7px 14px', borderRadius:20, border:`1.5px solid ${scope==='all'?'#e87d6a':'#e2e8f0'}`, background:scope==='all'?'rgba(253,232,228,.6)':'white', color:scope==='all'?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>🌍 Toute l'équipe</button>
-                  {teams.map(t => <button key={t.id} onClick={()=>setScope(`team:${t.id}`)} style={{ padding:'7px 14px', borderRadius:20, border:`1.5px solid ${scope===`team:${t.id}`?'#059669':'rgba(232,125,106,.15)'}`, background:scope===`team:${t.id}`?'#d1fae5':'white', color:scope===`team:${t.id}`?'#065f46':'#6b7280', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>👥 {t.name}</button>)}
-                  {allMembers.map(m => <button key={m.id} onClick={()=>setScope(`closer:${m.id}`)} style={{ padding:'7px 14px', borderRadius:20, border:`1.5px solid ${scope===`closer:${m.id}`?'#8b5cf6':'rgba(232,125,106,.15)'}`, background:scope===`closer:${m.id}`?'rgba(255,248,245,.8)':'white', color:scope===`closer:${m.id}`?'#4c1d95':'#64748b', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit' }}>👤 {m.name}</button>)}
-                </div>
-              </Card>
+      {teams.length === 0 ? (
+        <Empty
+          icon="👥"
+          title="Aucune équipe"
+          subtitle="Créez votre première équipe pour inviter des closers."
+          action={<Btn onClick={()=>setShowCreate(true)}>Créer une équipe</Btn>}
+        />
+      ) : (
+        <>
+          <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(auto-fill,minmax(260px,1fr))', gap:12 }}>
+            {teams.map(team => (
+              <TeamTile
+                key={team.id}
+                team={team}
+                allDebriefs={allDebriefs}
+                active={team.id === activeTeamId}
+                onSelect={() => {
+                  setActiveTeamId(team.id);
+                  setSelectedMemberId(null);
+                }}
+              />
+            ))}
+          </div>
 
-              {/* KPIs */}
-              <div>
-                <p style={{ fontSize:13, fontWeight:600, color:'#6b7280', margin:'0 0 10px' }}>📊 {scopeLabel} · {fTotal} debrief{fTotal!==1?'s':''}</p>
-                <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
-                  {[{l:'Debriefs',value:fTotal,icon:'📋',bg:'rgba(253,232,228,.6)',c:'#e87d6a'},{l:'Score moyen',value:`${fAvg}%`,icon:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',value:`${fRate}%`,icon:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',value:fCls,icon:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,value,icon,bg,c})=>(
-                    <Card key={l} style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
-                      <div style={{ width:38, height:38, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{icon}</div>
-                      <div>
-                        <p style={{ fontSize:10, color:'#6b7280', margin:0, fontWeight:500, textTransform:'uppercase', letterSpacing:'.04em' }}>{l}</p>
-                        <p style={{ fontSize:20, fontWeight:700, color:c, margin:0 }}>{value}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              {/* Axe fort / faible */}
-              {weakest && strongest && (
-                <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:12 }}>
-                  <div style={{ background:'linear-gradient(135deg,#fee2e2,#fca5a5)', border:'1px solid #f87171', borderRadius:12, padding:16 }}>
-                    <p style={{ fontSize:11, color:'#7f1d1d', fontWeight:600, textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 6px' }}>⚠️ Axe à travailler</p>
-                    <p style={{ fontWeight:700, fontSize:18, color:'#5a4a3a', margin:'0 0 2px' }}>{SLABELS[weakest.key]}</p>
-                    <p style={{ fontSize:13, color:'#7f1d1d', margin:0 }}>Score moyen : <strong>{scopedSS[weakest.key]}/5</strong></p>
-                  </div>
-                  <div style={{ background:'linear-gradient(135deg,#d1fae5,#6ee7b7)', border:'1px solid #34d399', borderRadius:12, padding:16 }}>
-                    <p style={{ fontSize:11, color:'#064e3b', fontWeight:600, textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 6px' }}>✅ Point fort</p>
-                    <p style={{ fontWeight:700, fontSize:18, color:'#5a4a3a', margin:'0 0 2px' }}>{SLABELS[strongest.key]}</p>
-                    <p style={{ fontSize:13, color:'#064e3b', margin:0 }}>Score moyen : <strong>{scopedSS[strongest.key]}/5</strong></p>
-                  </div>
-                </div>
-              )}
-
-              {/* Radar + Barres */}
-              {scopedSS && fTotal > 0 && (
-                <Card style={{ padding:20 }}>
-                  <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse par section</h3>
-                  <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 20px' }}>{scopeLabel}{scope!=='all'?' · vs moyenne globale':''}</p>
-                  <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:24, alignItems:'center' }}>
-                    <div style={{ display:'flex', justifyContent:'center' }}>
-                      <Radar scores={scopedSS} color={scope.startsWith('closer:')?'#8b5cf6':scope.startsWith('team:')?'#059669':'#e87d6a'}/>
-                    </div>
-                    <SectionBars scores={scopedSS} globalScores={scope!=='all'?globalSS:null}/>
-                  </div>
-                </Card>
-              )}
-
-              {/* Évolution */}
-              {fTotal > 0 && (
-                <Card style={{ padding:20 }}>
-                  <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Évolution du score</h3>
-                  <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 16px' }}>{scopeLabel} · {fTotal} appel{fTotal!==1?'s':''}</p>
-                  <Chart debriefs={scopedDebriefs}/>
-                </Card>
-              )}
-
-              {/* Tableau performance */}
-              {(() => {
-                const displayMembers = scope==='all' ? allMembers
-                  : scope.startsWith('team:') ? (teams.find(t=>t.id===scope.split(':')[1])?.members||[])
-                  : allMembers.filter(m => m.id===scope.split(':')[1]);
-                if (!displayMembers.length) return null;
-                return (
-                  <Card style={{ overflow:'hidden' }}>
-                    <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)' }}>
-                      <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Performance individuelle</h3>
-                    </div>
-                    {mob ? (
-                      <div>
-                        {[...displayMembers].sort((a,b)=>b.avgScore-a.avgScore).map((m,i) => {
-                          const cr = m.totalDebriefs>0 ? Math.round((m.closed/m.totalDebriefs)*100) : 0;
-                          const mTeam = teams.find(t=>t.members.some(x=>x.id===m.id));
-                          const isSel = selMember===m.id;
-                          const ms = avgSectionScores((allDebriefs||[]).filter(d=>d.user_id===m.id));
-                          return (
-                            <div key={m.id} style={{ borderBottom:i<displayMembers.length-1?'1px solid rgba(232,125,106,.08)':'none' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 16px', cursor:'pointer', background:isSel?'rgba(255,248,245,.8)':'white' }} onClick={()=>setSelMember(isSel?null:m.id)}>
-                                <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.85)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:14, color:'#e87d6a', flexShrink:0 }}>{m.name.charAt(0)}</div>
-                                <div style={{ flex:1, minWidth:0 }}>
-                                  <p style={{ fontWeight:600, fontSize:14, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.name}</p>
-                                  <p style={{ fontSize:12, color:DS.textMuted, margin:0 }}>{mTeam?.name} · {m.avgScore}%</p>
-                                </div>
-                                <div style={{ textAlign:'right', flexShrink:0 }}>
-                                  <p style={{ fontWeight:700, fontSize:14, color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':'#ef4444', margin:0 }}>{m.avgScore}%</p>
-                                  <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{m.totalDebriefs} debriefs</p>
-                                </div>
-                                <span style={{ color:isSel?'#e87d6a':'#d1d5db', fontSize:14 }}>{isSel?'▲':'▼'}</span>
-                              </div>
-                              {isSel && (
-                                <div style={{ padding:'12px 16px 16px', background:'rgba(253,232,228,.15)', borderTop:'1px solid rgba(232,125,106,.08)' }}>
-                                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:14 }}>
-                                    {[{l:'Debriefs',v:m.totalDebriefs},{l:'Closings',v:m.closed},{l:'Taux',v:`${cr}%`}].map(({l,v})=>(
-                                      <div key={l} style={{ background:'#ffffff', borderRadius:8, padding:'8px 10px', textAlign:'center', border:'1px solid rgba(232,125,106,.12)' }}>
-                                        <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{l}</p>
-                                        <p style={{ fontWeight:700, color:'#5a4a3a', margin:0, fontSize:14 }}>{v}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {ms && <SectionBars scores={ms} globalScores={globalSS}/>}
-                                  {m.chartData.length>0 && <div style={{marginTop:14}}><Chart debriefs={m.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/></div>}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+          {activeTeam && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <Card style={{ padding:16 }}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                  <div>
+                    {editingTeamId === activeTeam.id ? (
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <Input
+                          value={editingName}
+                          onChange={e=>setEditingName(e.target.value)}
+                          onKeyDown={e=>{ if (e.key === 'Enter') renameTeam(); if (e.key === 'Escape') { setEditingTeamId(null); setEditingName(''); } }}
+                          style={{ minWidth:220 }}
+                        />
+                        <Btn onClick={renameTeam} style={{ fontSize:12, padding:'7px 10px' }}>✓</Btn>
+                        <Btn variant="secondary" onClick={()=>{ setEditingTeamId(null); setEditingName(''); }} style={{ fontSize:12, padding:'7px 10px' }}>✕</Btn>
                       </div>
                     ) : (
-                      <div style={{ overflowX:'auto' }}>
-                        <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                          <thead>
-                            <tr style={{ background:'rgba(253,232,228,.2)' }}>
-                              {['Closer','Équipe','Debriefs','Score','Découv.','Reform.','Proj.','Offre','Closing','Closings','Taux'].map(h=>(
-                                <th key={h} style={{ padding:'10px 12px', fontSize:11, fontWeight:600, color:'#6b7280', textAlign:'left', textTransform:'uppercase', letterSpacing:'.04em', borderBottom:'1px solid rgba(232,125,106,.12)', whiteSpace:'nowrap' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[...displayMembers].sort((a,b)=>b.avgScore-a.avgScore).map((m,i) => {
-                              const cr    = m.totalDebriefs>0 ? Math.round((m.closed/m.totalDebriefs)*100) : 0;
-                              const mTeam = teams.find(t=>t.members.some(x=>x.id===m.id));
-                              const isSel = selMember===m.id;
-                              const ms    = avgSectionScores((allDebriefs||[]).filter(d=>d.user_id===m.id));
-                              const sc    = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
-                              return (
-                                <React.Fragment key={m.id}>
-                                  <tr onClick={()=>setSelMember(isSel?null:m.id)} style={{ cursor:'pointer', background:isSel?'rgba(255,248,245,.8)':i%2===0?'white':'#fafafa', borderBottom:'1px solid rgba(232,125,106,.08)' }}>
-                                    <td style={{ padding:'10px 12px' }}>
-                                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                        <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(255,245,242,.85)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:11, color:'#e87d6a', flexShrink:0 }}>{m.name.charAt(0)}</div>
-                                        <span style={{ fontWeight:600, fontSize:13, color:'#5a4a3a' }}>{m.name}</span>
-                                      </div>
-                                    </td>
-                                    <td style={{ padding:'10px 12px' }}><span style={{ fontSize:11, background:'rgba(253,232,228,.2)', padding:'2px 6px', borderRadius:5, color:'#6b7280' }}>{mTeam?.name||'—'}</span></td>
-                                    <td style={{ padding:'10px 12px', fontSize:13, fontWeight:600, color:'#5a4a3a' }}>{m.totalDebriefs}</td>
-                                    <td style={{ padding:'10px 12px' }}><span style={{ fontWeight:700, fontSize:13, color:m.avgScore>=80?'#059669':m.avgScore>=60?'#d97706':'#ef4444' }}>{m.avgScore}%</span></td>
-                                    {ms ? ['decouverte','reformulation','projection','presentation_offre','closing'].map(k=>(
-                                      <td key={k} style={{ padding:'10px 12px' }}><span style={{ fontWeight:700, fontSize:12, color:sc(ms[k]) }}>{ms[k]}/5</span></td>
-                                    )) : [...Array(5)].map((_,j)=><td key={j} style={{ padding:'10px 12px', color:DS.textMuted, fontSize:12 }}>—</td>)}
-                                    <td style={{ padding:'10px 12px', fontSize:13, fontWeight:600, color:'#059669' }}>{m.closed}</td>
-                                    <td style={{ padding:'10px 12px' }}>
-                                      <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                                        <div style={{ width:44, height:5, background:'rgba(253,232,228,.2)', borderRadius:3, overflow:'hidden' }}>
-                                          <div style={{ height:'100%', width:`${cr}%`, background:cr>=50?'#059669':cr>=30?'#d97706':'#ef4444', borderRadius:3 }}/>
-                                        </div>
-                                        <span style={{ fontSize:11, fontWeight:600, color:'#5a4a3a' }}>{cr}%</span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  {isSel && (
-                                    <tr>
-                                      <td colSpan={11} style={{ padding:0, background:'rgba(253,232,228,.15)', borderBottom:'1px solid rgba(232,125,106,.08)' }}>
-                                        <div style={{ padding:'20px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
-                                          <div>
-                                            <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Scores par section</p>
-                                            {ms ? <SectionBars scores={ms} globalScores={globalSS}/> : <p style={{ color:DS.textMuted, fontSize:13 }}>Pas assez de données</p>}
-                                          </div>
-                                          <div>
-                                            <p style={{ fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>Évolution</p>
-                                            {m.chartData.length > 0 ? <Chart debriefs={m.chartData.map((d,i)=>({...d,id:i,percentage:d.score,prospect_name:d.prospect,call_date:d.date}))}/> : <p style={{ color:DS.textMuted, fontSize:13 }}>Aucun debrief</p>}
-                                          </div>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <h2 style={{ margin:0, fontSize:20, color:'#5a4a3a' }}>{activeTeam.name}</h2>
+                        <button onClick={()=>{ setEditingTeamId(activeTeam.id); setEditingName(activeTeam.name); }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16, color:DS.textMuted }}>✏️</button>
                       </div>
                     )}
-                  </Card>
-                );
-              })()}
-            </>
-      )}
-
-      {/* ─── ÉQUIPES — LISTE ─── */}
-      {tab==='equipes' && !activeTeamId && (
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-          <div style={{ display:'flex', justifyContent:'flex-end' }}>
-            <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
-          </div>
-          {teams.length === 0
-            ? <Empty icon="👥" title="Aucune équipe" subtitle="Créez votre première équipe pour inviter des closers" action={<Btn onClick={()=>setShowCreate(true)}>+ Créer une équipe</Btn>}/>
-            : <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
-                {teams.map(team => (
-                  <TeamCard key={team.id} team={team} allDebriefs={allDebriefs} onClick={()=>setActiveTeamId(team.id)}/>
-                ))}
-              </div>
-          }
-        </div>
-      )}
-
-      {/* ─── ÉQUIPES — DÉTAIL ─── */}
-      {tab==='equipes' && activeTeamId && (() => {
-        const team = teams.find(t => t.id===activeTeamId);
-        if (!team) return null;
-        const td   = (allDebriefs||[]).filter(d => team.members.some(m => m.id===d.user_id));
-        const tAvg  = td.length>0 ? Math.round(td.reduce((s,d)=>s+(d.percentage||0),0)/td.length) : 0;
-        const tCls  = td.filter(d=>d.is_closed).length;
-        const tRate = td.length>0 ? Math.round((tCls/td.length)*100) : 0;
-        const tSS   = avgSectionScores(td);
-        return (
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <Btn variant="secondary" onClick={()=>setActiveTeamId(null)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16}}>←</Btn>
-                <div>
-                  {editingTeam?.id===team.id ? (
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <input value={editingTeam.name} onChange={e=>setEditingTeam({...editingTeam,name:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')renameTeam();if(e.key==='Escape')setEditingTeam(null);}} style={{ fontSize:18, fontWeight:700, border:'2px solid #e87d6a', borderRadius:8, padding:'4px 10px', fontFamily:'inherit', outline:'none' }} autoFocus/>
-                      <Btn onClick={renameTeam} style={{padding:'5px 12px',fontSize:12}}>✓</Btn>
-                      <Btn variant="ghost" onClick={()=>setEditingTeam(null)} style={{padding:'5px 8px',fontSize:12}}>✕</Btn>
-                    </div>
-                  ) : (
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <h1 style={{ fontSize:20, fontWeight:700, color:'#5a4a3a', margin:0 }}>{team.name}</h1>
-                      <button onClick={()=>setEditingTeam({id:team.id,name:team.name})} style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:DS.textMuted, padding:'2px 4px' }}>✏️</button>
-                    </div>
-                  )}
-                  <p style={{ color:'#6b7280', fontSize:13, marginTop:2 }}>{team.members.length} membre{team.members.length!==1?'s':''} · {td.length} debrief{td.length!==1?'s':''}</p>
-                </div>
-              </div>
-              <div style={{ display:'flex', gap:8 }}>
-                <Btn onClick={()=>genCode(team.id)} disabled={generating===team.id} style={{fontSize:13,padding:'8px 14px'}}>{generating===team.id?'Génération...':'🔑 Générer un code'}</Btn>
-                <Btn variant="danger" onClick={()=>deleteTeam(team.id,team.name)} style={{padding:'8px 12px',fontSize:13}}>🗑</Btn>
-              </div>
-            </div>
-
-            {/* KPIs équipe */}
-            <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
-              {[{l:'Debriefs',v:td.length,i:'📋',bg:'rgba(253,232,228,.6)',c:'#e87d6a'},{l:'Score moyen',v:`${tAvg}%`,i:'🎯',bg:'#d1fae5',c:'#059669'},{l:'Taux closing',v:`${tRate}%`,i:'✅',bg:'#fef3c7',c:'#d97706'},{l:'Closings',v:tCls,i:'🏆',bg:'#f0fdf4',c:'#059669'}].map(({l,v,i,bg,c})=>(
-                <Card key={l} style={{padding:'12px 14px',display:'flex',alignItems:'center',gap:12}}>
-                  <div style={{width:38,height:38,borderRadius:10,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{i}</div>
-                  <div><p style={{fontSize:10,color:'#6b7280',margin:0,fontWeight:500,textTransform:'uppercase',letterSpacing:'.04em'}}>{l}</p><p style={{fontSize:20,fontWeight:700,color:c,margin:0}}>{v}</p></div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Codes */}
-            <Card style={{ padding:20 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 12px' }}>🔑 Codes d'invitation actifs</h3>
-              {team.inviteCodes.length === 0
-                ? <p style={{ color:DS.textMuted, fontSize:13, margin:0 }}>Aucun code actif — cliquez sur "Générer un code" ci-dessus</p>
-                : <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                    {team.inviteCodes.map(inv => (
-                      <div key={inv.id} style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(253,232,228,.2)', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'8px 12px' }}>
-                        <span style={{ fontFamily:'monospace', fontSize:16, fontWeight:700, color:'#e87d6a', letterSpacing:'.12em' }}>{inv.code}</span>
-                        <button onClick={()=>doCopy(inv.code)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:copied===inv.code?'#059669':'#94a3b8', padding:2 }}>{copied===inv.code?'✓':'📋'}</button>
-                        <button onClick={()=>delCode(team.id,inv.id)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'#dc2626', padding:2 }}>✕</button>
-                      </div>
-                    ))}
+                    <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
+                      Dashboard de l'équipe sélectionnée
+                    </p>
                   </div>
-              }
-            </Card>
+                  <Btn variant="danger" onClick={()=>deleteTeam(activeTeam)} style={{ fontSize:12, padding:'8px 12px' }}>
+                    Supprimer l'équipe
+                  </Btn>
+                </div>
 
-            {/* Radar équipe */}
-            {tSS && td.length > 0 && (
-              <Card style={{ padding:20 }}>
-                <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:'0 0 4px' }}>Analyse par section — {team.name}</h3>
-                <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 20px' }}>Score moyen · comparé à la moyenne globale</p>
-                <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 1fr', gap:24, alignItems:'center' }}>
-                  <div style={{ display:'flex', justifyContent:'center' }}><Radar scores={tSS} color="#059669"/></div>
-                  <SectionBars scores={tSS} globalScores={globalSS}/>
+                <div style={{ marginTop:14, display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
+                  {[{ label:'Debriefs', value:teamStats.total, color:'#e87d6a' }, { label:'Score moyen', value:`${teamStats.avg}%`, color:'#059669' }, { label:'Closings', value:teamStats.closed, color:'#059669' }, { label:'Taux closing', value:`${teamStats.closeRate}%`, color:'#d97706' }].map(kpi => (
+                    <div key={kpi.label} style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'10px 12px', background:'rgba(255,248,245,.6)' }}>
+                      <p style={{ margin:'0 0 3px', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{kpi.label}</p>
+                      <p style={{ margin:0, fontSize:20, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
+                    </div>
+                  ))}
                 </div>
               </Card>
-            )}
 
-            {/* Membres */}
-            <Card style={{ overflow:'hidden' }}>
-              <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)' }}>
-                <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Membres ({team.members.length})</h3>
-              </div>
-              {team.members.length === 0
-                ? <div style={{ padding:'32px 16px', textAlign:'center', color:DS.textMuted, fontSize:13 }}>Aucun membre — partagez un code d'invitation !</div>
-                : team.members.map((m,i) => (
-                    <div key={m.id} style={{ borderBottom:i<team.members.length-1?'1px solid rgba(232,125,106,.08)':'none' }}>
-                      <MemberRow member={m} teams={teams} currentTeamId={team.id} onRemove={(id,name)=>removeMember(team.id,id,name)} onMove={(mid,tid)=>moveMember(mid,tid)} selected={selMember===m.id} onSelect={()=>setSelMember(selMember===m.id?null:m.id)} onObjectives={()=>setObjectiveTarget(m)} onActionPlans={()=>setSelMember(selMember===m.id?null:m.id)}/>
-                      {selMember===m.id && (
-                        <div style={{ padding:'14px 16px 18px', borderTop:'1px solid #f5f3ff', background:'rgba(253,232,228,.15)', display:'flex', flexDirection:'column', gap:14 }}>
-                          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                            <Btn onClick={e=>{e.stopPropagation();setObjectiveTarget(m);}} style={{ fontSize:12, padding:'7px 14px' }}>🎯 Objectifs</Btn>
-                          </div>
-                          <ActionPlanCard closerId={m.id} isHOS={true} toast={toast}/>
-                        </div>
-                      )}
+              {teamSectionScores && teamStats.total > 0 && (
+                <Card style={{ padding:16 }}>
+                  <h3 style={{ margin:'0 0 4px', fontSize:14, color:'#5a4a3a' }}>Analyse de performance par section</h3>
+                  <p style={{ margin:'0 0 16px', fontSize:12, color:DS.textMuted }}>Comparaison équipe vs global</p>
+                  <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1fr 1fr', gap:20, alignItems:'center' }}>
+                    <div style={{ display:'flex', justifyContent:'center' }}>
+                      <Radar scores={teamSectionScores} color="#059669" />
                     </div>
-                  ))
-              }
-            </Card>
-          </div>
-        );
-      })()}
+                    <SectionBars scores={teamSectionScores} globalScores={globalSectionScores} />
+                  </div>
+                </Card>
+              )}
 
-      {/* Objective modal */}
-      {objectiveTarget && <ObjectiveModal closer={objectiveTarget} onClose={()=>setObjectiveTarget(null)} toast={toast}/>}
+              {teamStats.total > 0 && (
+                <Card style={{ padding:16 }}>
+                  <h3 style={{ margin:'0 0 10px', fontSize:14, color:'#5a4a3a' }}>Évolution de l'équipe</h3>
+                  <Chart debriefs={teamStats.debriefs} />
+                </Card>
+              )}
 
-      {/* Modal créer équipe */}
+              <Card style={{ padding:16 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+                  <div>
+                    <h3 style={{ margin:'0 0 3px', fontSize:14, color:'#5a4a3a' }}>Codes d'invitation</h3>
+                    <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+                      Ajoutez des membres via code, avec synchronisation HOS ↔ closer.
+                    </p>
+                  </div>
+                  <Btn onClick={()=>generateInviteCode(activeTeam.id)} disabled={generatingCodeFor === activeTeam.id} style={{ fontSize:12, padding:'8px 12px' }}>
+                    {generatingCodeFor === activeTeam.id ? 'Génération...' : '🔑 Générer un code'}
+                  </Btn>
+                </div>
+
+                <div style={{ marginTop:12, display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {activeTeam.inviteCodes.length === 0 && (
+                    <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>Aucun code actif.</p>
+                  )}
+                  {activeTeam.inviteCodes.map(code => (
+                    <div key={code.id} style={{ display:'flex', alignItems:'center', gap:8, border:'1px solid rgba(232,125,106,.18)', background:'rgba(255,248,245,.85)', borderRadius:10, padding:'8px 10px' }}>
+                      <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight:700, letterSpacing:'.08em', color:'#e87d6a' }}>{code.code}</span>
+                      <button
+                        onClick={() => { copy(code.code); setCopiedCode(code.code); toast('Code copié'); setTimeout(() => setCopiedCode(''), 1500); }}
+                        style={{ border:'none', background:'none', cursor:'pointer', color:copiedCode === code.code ? '#059669' : '#64748b' }}
+                        title="Copier"
+                      >
+                        {copiedCode === code.code ? '✓' : '📋'}
+                      </button>
+                      <button onClick={()=>deleteInviteCode(activeTeam.id, code.id)} style={{ border:'none', background:'none', cursor:'pointer', color:'#dc2626' }} title="Supprimer">✕</button>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card style={{ padding:16 }}>
+                <h3 style={{ margin:'0 0 8px', fontSize:14, color:'#5a4a3a' }}>
+                  Closer de l'équipe ({activeTeam.members.length})
+                </h3>
+                {activeTeam.members.length === 0 ? (
+                  <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>Aucun membre. Partagez un code d'invitation.</p>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    {[...activeTeam.members].sort((a, b) => b.avgScore - a.avgScore).map(member => (
+                      <MemberCard
+                        key={member.id}
+                        member={member}
+                        teamId={activeTeam.id}
+                        teams={teams}
+                        allDebriefs={allDebriefs}
+                        selected={selectedMemberId === member.id}
+                        onToggle={()=>setSelectedMemberId(selectedMemberId === member.id ? null : member.id)}
+                        onRemove={(memberId, memberName)=>removeMember(activeTeam.id, memberId, memberName)}
+                        onMove={moveMember}
+                        onObjectives={closer=>setObjectiveCloser(closer)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
       {showCreate && (
         <Modal title="Créer une nouvelle équipe" onClose={()=>setShowCreate(false)}>
           <div style={{ marginBottom:20 }}>
             <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Nom de l'équipe</label>
-            <Input placeholder="Ex: Équipe Paris, Closers B2B..." value={newName} onChange={e=>setNewName(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==='Enter')createTeam();}}/>
+            <Input
+              placeholder="Ex: Team Setter FR"
+              value={newTeamName}
+              onChange={e=>setNewTeamName(e.target.value)}
+              onKeyDown={e=>{ if (e.key === 'Enter') createTeam(); }}
+              autoFocus
+            />
           </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <Btn onClick={createTeam} disabled={creating||!newName.trim()} style={{flex:1}}>{creating?'Création...':'Créer'}</Btn>
-            <Btn variant="secondary" onClick={()=>setShowCreate(false)} style={{flex:1}}>Annuler</Btn>
+          <div style={{ display:'flex', gap:8 }}>
+            <Btn onClick={createTeam} disabled={creating || !newTeamName.trim()} style={{ flex:1 }}>
+              {creating ? 'Création...' : 'Créer'}
+            </Btn>
+            <Btn variant="secondary" onClick={()=>setShowCreate(false)} style={{ flex:1 }}>
+              Annuler
+            </Btn>
           </div>
         </Modal>
+      )}
+
+      {objectiveCloser && (
+        <ObjectiveModal closer={objectiveCloser} onClose={()=>setObjectiveCloser(null)} toast={toast}/>
       )}
     </div>
   );
 }
 
-
-export { MemberRow, TeamCard, HOSPage };
+export { HOSPage };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../config/api';
 import { DS, P, P2, TXT, TXT2, TXT3, R_SM, R_MD, R_LG, R_FULL, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, card, cardSm, inp } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
@@ -30,36 +30,18 @@ function ObjectionCard({ objection, toast }) {
   const generateVariant = async () => {
     setAiLoading(true);
     try {
-      const prompt = `Tu es un expert en closing commercial. Génère UNE réponse alternative et efficace pour cette objection de vente :
-
-Objection : "${objection.label}"
-Catégorie : ${objection.type}
-Taux de closing actuel : ${objection.closingRate}%
-Nombre de fois rencontrée : ${objection.count}
-
-${best ? `Meilleure réponse connue (${objection.closingRate}% de closing) : "${best.notes || best.section_notes_closing?.improvement || 'Non documentée'}"` : ''}
-
-Génère une réponse alternative qui :
-1. Utilise une approche différente de la meilleure réponse connue
-2. Inclut une question ouverte pour engager le prospect
-3. Réancre la douleur identifiée en découverte
-4. Est prête à l'emploi (verbatim)
-
-Format : Donne UNIQUEMENT le script de réponse, sans explication. Max 3 phrases.`;
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const best_response = best ? (best.notes || best.section_notes_closing?.improvement || null) : null;
+      const data = await apiFetch('/ai/objection-variant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 500,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: {
+          objection_type:  objection.type,
+          objection_label: objection.label,
+          closing_rate:    objection.closingRate,
+          count:           objection.count,
+          best_response,
+        },
       });
-      if (!response.ok) throw new Error('Erreur API');
-      const data = await response.json();
-      const text = data.content?.map(b => b.text || '').join('\n') || '';
-      setAiResponse(text);
+      setAiResponse(data.variant || '');
       toast('Variante IA générée !');
     } catch (e) {
       toast(e.message || 'Erreur IA', 'error');

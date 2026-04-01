@@ -150,7 +150,20 @@ function History({ debriefs, navigate, user }) {
       </div>
       {filtered.length===0
         ? <Empty icon="🔍" title="Aucun résultat" subtitle={q?`Aucun debrief pour "${q}"`:'Aucun debrief'} action={q?<Btn variant="secondary" onClick={()=>setQ('')}>Effacer</Btn>:null}/>
-        : <div style={{display:'flex',flexDirection:'column',gap:10}}>{filtered.map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isHOS}/>)}</div>
+        : (
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {filtered.map(d => (
+              <div key={d.id} style={{ display:'flex', alignItems:'stretch', gap:8 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <DebriefCard debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isHOS}/>
+                </div>
+                <Btn variant="secondary" onClick={()=>navigate('EditDebrief', d.id, 'History')} style={{ fontSize:12, padding:'0 12px' }}>
+                  ✏️ Modifier
+                </Btn>
+              </div>
+            ))}
+          </div>
+        )
       }
     </div>
   );

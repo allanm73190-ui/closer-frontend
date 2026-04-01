@@ -18,12 +18,14 @@ function ObjectiveBanner({ userId }) {
   const render = (obj, label) => {
     if (!obj) return null;
     const p = obj.progress || {};
+    const targetReecoutes = Number(obj.target_reecoutes ?? obj.target_debriefs ?? 0);
+    const targetPerformance = Number(obj.target_performance ?? obj.target_score ?? 0);
     return (
       <div style={{ flex:1 }}>
         <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>{label}</p>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-          {obj.target_debriefs > 0 && <ProgBar label="Debriefs" current={p.debriefs||0} target={obj.target_debriefs} color='#e87d6a'/>}
-          {obj.target_score    > 0 && <ProgBar label="Score moy." current={p.score||0} target={obj.target_score} color='#d97706'/>}
+          {targetReecoutes > 0 && <ProgBar label="Réécoutes" current={p.reecoutes ?? p.debriefs ?? 0} target={targetReecoutes} color='#e87d6a'/>}
+          {targetPerformance > 0 && <ProgBar label="Performance (%)" current={p.performance ?? p.score ?? 0} target={targetPerformance} color='#d97706'/>}
           {obj.target_closings > 0 && <ProgBar label="Closings" current={p.closings||0} target={obj.target_closings} color='#059669'/>}
           {obj.target_revenue  > 0 && <ProgBar label="CA (€)" current={p.revenue||0} target={obj.target_revenue} color='#8b5cf6'/>}
         </div>
@@ -52,8 +54,33 @@ function ObjectiveModal({ closer, onClose, toast }) {
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - day + 1);
   const weekStartStr = weekStart.toISOString().split('T')[0];
 
-  const [form, setForm] = useState({ target_debriefs:'', target_score:'', target_closings:'', target_revenue:'' });
+  const [objectives, setObjectives] = useState([]);
+  const [loadingExisting, setLoadingExisting] = useState(true);
+  const [form, setForm] = useState({ target_reecoutes:'', target_score:'', target_closings:'', target_revenue:'' });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingExisting(true);
+    apiFetch(`/objectives/closer/${closer.id}`)
+      .then(data => { if (mounted) setObjectives(Array.isArray(data) ? data : []); })
+      .catch(() => { if (mounted) setObjectives([]); })
+      .finally(() => { if (mounted) setLoadingExisting(false); });
+    return () => { mounted = false; };
+  }, [closer.id]);
+
+  useEffect(() => {
+    const targetStart = tab === 'monthly' ? monthStart : weekStartStr;
+    const existing = objectives.find(obj => obj.period_type === tab && obj.period_start === targetStart)
+      || objectives.find(obj => obj.period_type === tab);
+
+    setForm({
+      target_reecoutes: String(Number(existing?.target_reecoutes ?? existing?.target_debriefs ?? 0) || ''),
+      target_score: String(Number(existing?.target_score ?? existing?.target_performance ?? 0) || ''),
+      target_closings: String(Number(existing?.target_closings ?? 0) || ''),
+      target_revenue: String(Number(existing?.target_revenue ?? 0) || ''),
+    });
+  }, [tab, objectives, monthStart, weekStartStr]);
 
   const save = async () => {
     setSaving(true);
@@ -62,8 +89,10 @@ function ObjectiveModal({ closer, onClose, toast }) {
         closer_id: closer.id,
         period_type: tab,
         period_start: tab === 'monthly' ? monthStart : weekStartStr,
-        target_debriefs: Number(form.target_debriefs) || 0,
+        target_reecoutes: Number(form.target_reecoutes) || 0,
+        target_debriefs: Number(form.target_reecoutes) || 0,
         target_score:    Number(form.target_score) || 0,
+        target_performance: Number(form.target_score) || 0,
         target_closings: Number(form.target_closings) || 0,
         target_revenue:  Number(form.target_revenue) || 0,
       }});
@@ -79,19 +108,25 @@ function ObjectiveModal({ closer, onClose, toast }) {
           <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
-        {[
-          { key:'target_debriefs', label:'📋 Debriefs', ph:'Ex: 20' },
-          { key:'target_score',    label:'🎯 Score moyen (%)', ph:'Ex: 70' },
-          { key:'target_closings', label:'✅ Closings', ph:'Ex: 5' },
-          { key:'target_revenue',  label:'💶 CA (€)', ph:'Ex: 15000' },
-        ].map(({ key, label, ph }) => (
-          <div key={key}>
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:5 }}>{label}</label>
-            <Input type="number" placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
-          </div>
-        ))}
-      </div>
+      {loadingExisting ? (
+        <div style={{ padding:'18px 0', display:'flex', justifyContent:'center' }}>
+          <Spinner size={22}/>
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
+          {[
+            { key:'target_reecoutes', label:'🎧 Réécoutes', ph:'Ex: 20' },
+            { key:'target_score',    label:'📈 Performance (%)', ph:'Ex: 70' },
+            { key:'target_closings', label:'✅ Closings', ph:'Ex: 5' },
+            { key:'target_revenue',  label:'💶 CA (€)', ph:'Ex: 15000' },
+          ].map(({ key, label, ph }) => (
+            <div key={key}>
+              <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:5 }}>{label}</label>
+              <Input type="number" placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
+            </div>
+          ))}
+        </div>
+      )}
       <p style={{ fontSize:12, color:DS.textMuted, margin:'0 0 16px' }}>Laissez 0 pour ne pas suivre un indicateur.</p>
       <div style={{ display:'flex', gap:10 }}>
         <Btn onClick={save} disabled={saving} style={{ flex:1 }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Btn>

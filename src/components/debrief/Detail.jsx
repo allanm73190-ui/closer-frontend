@@ -65,6 +65,9 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
           <ClosedBadge isClosed={debrief.is_closed}/>
+          <Btn variant="secondary" onClick={()=>navigate('EditDebrief', debrief.id, fromPage || 'History')} style={{ padding:'8px 14px', fontSize:12 }}>
+            ✏️ Modifier
+          </Btn>
           <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
             {exportingPdf ? 'Préparation PDF...' : '📄 Exporter en PDF'}
           </Btn>

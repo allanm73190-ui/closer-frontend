@@ -74,6 +74,17 @@ export default function App() {
       .finally(() => setDataLoading(false));
   }, [user]);
 
+  // Keep debrief config synchronized for all pages
+  useEffect(() => {
+    if (!user) {
+      setDebriefConfig(null);
+      return;
+    }
+    apiFetch('/debrief-config')
+      .then(data => setDebriefConfig(data.sections || null))
+      .catch(() => setDebriefConfig(null));
+  }, [user, setDebriefConfig]);
+
   const navigate = (p, id=null, from=null, opts={}) => {
     setPage(p); setSelId(id);
     if (from) setFrom(from);
@@ -88,6 +99,11 @@ export default function App() {
   const onSave = (debrief, g) => {
     setDebriefs(p => [debrief, ...p]);
     if (g) { setGam(g); setLbKey(k=>k+1); if (g.pointsEarned>0) setBurst({ points:g.pointsEarned, levelUp:g.levelUp, newLevel:g.level.name }); }
+  };
+
+  const onUpdateDebrief = (debrief, g) => {
+    setDebriefs(prev => prev.map(d => d.id === debrief.id ? debrief : d));
+    if (g) setGam(g);
   };
 
   const onDelete = async id => {
@@ -126,7 +142,30 @@ export default function App() {
   const Content = () => (
     <>
       {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
-      {page==='NewDebrief' && <NewDebrief navigate={navigate} onSave={onSave} toast={toast} debriefConfig={debriefConfig}/>}
+      {page==='NewDebrief' && (
+        <NewDebrief
+          navigate={navigate}
+          onSave={onSave}
+          onUpdate={onUpdateDebrief}
+          toast={toast}
+          user={user}
+          debriefConfig={debriefConfig}
+          setDebriefConfig={setDebriefConfig}
+        />
+      )}
+      {page==='EditDebrief' && (
+        <NewDebrief
+          navigate={navigate}
+          onSave={onSave}
+          onUpdate={onUpdateDebrief}
+          toast={toast}
+          user={user}
+          debriefConfig={debriefConfig}
+          setDebriefConfig={setDebriefConfig}
+          existingDebrief={selDebrief}
+          fromPage={from || 'History'}
+        />
+      )}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
@@ -141,7 +180,7 @@ export default function App() {
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
       <Toasts list={toasts}/>
-      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig}/>}
+      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
 
       {mob ? (
         <>
@@ -155,7 +194,7 @@ export default function App() {
             </div>
           </header>
           <main style={{ padding:'16px 14px 90px' }}>
-            {dataLoading ? <Spinner full/> : <Content/>}
+            {dataLoading ? <Spinner full/> : Content()}
           </main>
           <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
@@ -194,7 +233,7 @@ export default function App() {
             </div>
           </aside>
           <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>
-            {dataLoading ? <Spinner full/> : <Content/>}
+            {dataLoading ? <Spinner full/> : Content()}
           </main>
         </div>
       )}
