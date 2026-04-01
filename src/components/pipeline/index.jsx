@@ -6,8 +6,7 @@ import {
   DEFAULT_PIPELINE_CONFIG,
   DEFAULT_PIPELINE_STATUSES,
   LEAD_FIELD_OPTIONS,
-  loadPipelineConfig,
-  savePipelineConfig,
+  normalizePipelineConfig,
   makeStatusKey,
 } from '../../config/pipeline';
 import { DS } from '../../styles/designSystem';
@@ -546,8 +545,19 @@ function PipelinePage({ user, toast, debriefs }) {
   const mob = useIsMobile();
 
   useEffect(() => {
-    setPipelineConfig(loadPipelineConfig(user?.id));
-  }, [user?.id]);
+    let mounted = true;
+    apiFetch('/pipeline-config')
+      .then(data => {
+        if (!mounted) return;
+        setPipelineConfig(normalizePipelineConfig(data || DEFAULT_PIPELINE_CONFIG));
+      })
+      .catch(err => {
+        if (!mounted) return;
+        setPipelineConfig(DEFAULT_PIPELINE_CONFIG);
+        toast(err.message, 'error');
+      });
+    return () => { mounted = false; };
+  }, [user?.id, toast]);
 
   useEffect(() => {
     apiFetch('/deals')
@@ -596,10 +606,13 @@ function PipelinePage({ user, toast, debriefs }) {
   const winRate = closed.length > 0 ? Math.round((deals.filter(deal => wonKeys.includes(deal.status)).length / closed.length) * 100) : 0;
 
   const savePipelineSettings = (nextConfig) => {
-    const saved = savePipelineConfig(user?.id, nextConfig);
-    setPipelineConfig(saved);
-    setShowSettings(false);
-    toast('Pipeline personnalisé');
+    apiFetch('/pipeline-config', { method:'PUT', body: nextConfig })
+      .then(saved => {
+        setPipelineConfig(normalizePipelineConfig(saved || nextConfig));
+        setShowSettings(false);
+        toast('Pipeline personnalisé');
+      })
+      .catch(err => toast(err.message, 'error'));
   };
 
   if (loading) return <Spinner full />;
@@ -615,7 +628,7 @@ function PipelinePage({ user, toast, debriefs }) {
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <Btn variant="secondary" onClick={()=>setShowSettings(true)}>⚙️ Paramètres</Btn>
+            {isHOS && <Btn variant="secondary" onClick={()=>setShowSettings(true)}>⚙️ Paramètres</Btn>}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
           </div>
         </div>
@@ -693,7 +706,7 @@ function PipelinePage({ user, toast, debriefs }) {
         />
       )}
 
-      {showSettings && (
+      {showSettings && isHOS && (
         <PipelineSettingsModal
           config={pipelineConfig}
           deals={deals}

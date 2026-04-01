@@ -1,5 +1,3 @@
-const STORAGE_PREFIX = 'cd_pipeline_config_v1';
-
 export const DEFAULT_PIPELINE_STATUSES = [
   { key:'prospect', label:'Prospects', icon:'👤', color:'#6b7280', bg:'#f1f5f9', closed:false, won:false },
   { key:'premier_appel', label:'1er appel', icon:'📞', color:'#e87d6a', bg:'rgba(253,232,228,.6)', closed:false, won:false },
@@ -61,34 +59,11 @@ function normalizeImportantFields(fields) {
   return list.length > 0 ? list : DEFAULT_PIPELINE_CONFIG.importantFields;
 }
 
-function normalizePipelineConfig(config) {
+export function normalizePipelineConfig(config) {
   return {
     statuses: normalizeStatuses(config?.statuses),
     importantFields: normalizeImportantFields(config?.importantFields),
   };
-}
-
-function storageKey(userId) {
-  return `${STORAGE_PREFIX}_${userId || 'anon'}`;
-}
-
-export function loadPipelineConfig(userId) {
-  try {
-    const raw = localStorage.getItem(storageKey(userId));
-    if (!raw) return DEFAULT_PIPELINE_CONFIG;
-    const parsed = JSON.parse(raw);
-    return normalizePipelineConfig(parsed);
-  } catch {
-    return DEFAULT_PIPELINE_CONFIG;
-  }
-}
-
-export function savePipelineConfig(userId, config) {
-  const normalized = normalizePipelineConfig(config);
-  try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(normalized));
-  } catch {}
-  return normalized;
 }
 
 export function makeStatusKey(label, fallback = 'status') {

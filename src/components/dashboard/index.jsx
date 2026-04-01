@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../config/api';
-import { loadPipelineConfig, DEFAULT_PIPELINE_STATUSES } from '../../config/pipeline';
+import { DEFAULT_PIPELINE_STATUSES, normalizePipelineConfig } from '../../config/pipeline';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, SH_BTN, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
@@ -58,18 +58,27 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 // ─── MINI PIPELINE (Dashboard) ────────────────────────────────────────────────
 function MiniPipeline({ navigate, user }) {
   const [deals, setDeals] = React.useState([]);
+  const [stages, setStages] = React.useState(DEFAULT_PIPELINE_STATUSES);
   const [loading, setLoading] = React.useState(true);
-  const stages = React.useMemo(() => {
-    try {
-      return loadPipelineConfig(user?.id).statuses || DEFAULT_PIPELINE_STATUSES;
-    } catch {
-      return DEFAULT_PIPELINE_STATUSES;
-    }
-  }, [user?.id, deals.length]);
 
   React.useEffect(() => {
     apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
   }, []);
+
+  React.useEffect(() => {
+    let mounted = true;
+    apiFetch('/pipeline-config')
+      .then(data => {
+        if (!mounted) return;
+        const normalized = normalizePipelineConfig(data || {});
+        setStages(normalized.statuses || DEFAULT_PIPELINE_STATUSES);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setStages(DEFAULT_PIPELINE_STATUSES);
+      });
+    return () => { mounted = false; };
+  }, [user?.id]);
 
   if (loading) return <Spinner/>;
 
