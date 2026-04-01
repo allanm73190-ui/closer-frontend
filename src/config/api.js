@@ -3,6 +3,7 @@ const RAW_API_BASE = String(import.meta.env.VITE_API_BASE || 'https://closer-bac
 const NORMALIZED_API_BASE = RAW_API_BASE.replace(/\/+$/, '');
 export const API_BASE = NORMALIZED_API_BASE.endsWith('/api') ? NORMALIZED_API_BASE : `${NORMALIZED_API_BASE}/api`;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000);
+const AI_REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_AI_TIMEOUT_MS || 90000);
 
 // ─── AUTH TOKENS ─────────────────────────────────────────────────────────────
 export function getToken()  { return localStorage.getItem('cd_token'); }
@@ -16,23 +17,33 @@ export function setOnExpired(fn) { _onExpired = fn; }
 // ─── API FETCH ───────────────────────────────────────────────────────────────
 export async function apiFetch(path, opts = {}) {
   const token = getToken();
+  const { timeoutMs, ...fetchOpts } = opts;
+  const isAiPath = typeof path === 'string' && path.startsWith('/ai/');
+  const preferredTimeout = timeoutMs ?? (isAiPath ? AI_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
+  const resolvedTimeoutMs = Number.isFinite(Number(preferredTimeout)) && Number(preferredTimeout) > 0
+    ? Number(preferredTimeout)
+    : REQUEST_TIMEOUT_MS;
   let res;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), resolvedTimeoutMs);
   try {
     res = await fetch(`${API_BASE}${path}`, {
-      ...opts,
+      ...fetchOpts,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...opts.headers,
+        ...fetchOpts.headers,
       },
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      body: fetchOpts.body ? JSON.stringify(fetchOpts.body) : undefined,
     });
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error('Le serveur met trop de temps à répondre. Réessayez.');
+      throw new Error(
+        isAiPath
+          ? "L'analyse IA prend plus de temps que prévu. Réessayez dans quelques secondes."
+          : 'Le serveur met trop de temps à répondre. Réessayez.'
+      );
     }
     throw new Error('Impossible de contacter le serveur. Vérifiez votre connexion.');
   } finally {
