@@ -60,6 +60,7 @@ function getSectionData(sections, key) {
 
 function formatFieldLabel(rawKey = '') {
   return String(rawKey || '')
+    .replace(/_note$/i, '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, char => char.toUpperCase());
 }
@@ -69,7 +70,11 @@ function formatFieldValue(value) {
   if (Array.isArray(value)) return value.map(item => String(item)).join(', ');
   if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
   if (typeof value === 'object') {
-    try { return JSON.stringify(value); } catch { return ''; }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
   }
   return String(value);
 }
@@ -115,8 +120,8 @@ function extractKeyBullets(text) {
     .filter(line => /^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line))
     .map(line => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim())
     .filter(Boolean);
-  if (bullets.length > 0) return bullets.slice(0, 4);
-  return lines.filter(Boolean).slice(0, 2);
+  if (bullets.length > 0) return bullets.slice(0, 6);
+  return lines.filter(Boolean).slice(0, 4);
 }
 
 function getDominantObjection(debrief) {
@@ -140,6 +145,217 @@ function getPrioritySections(scores) {
     .slice(0, 2);
 }
 
+function cleanSectionLabel(label = '') {
+  return String(label || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
+
+function truncateText(value = '', max = 120) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trim()}…`;
+}
+
+function dedupeStrings(values = []) {
+  const seen = new Set();
+  return values.filter(value => {
+    const key = String(value || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isLowSignalValue(value = '') {
+  const raw = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+  if (!raw) return true;
+  return (
+    raw === 'oui' ||
+    raw === 'non' ||
+    raw === 'partiellement' ||
+    raw === 'aucune' ||
+    raw === 'aucun' ||
+    raw === 'moyen' ||
+    raw === 'faible' ||
+    raw === 'forte' ||
+    raw === 'fort' ||
+    raw === 'complete' ||
+    raw === 'partielle' ||
+    raw === 'directe' ||
+    raw === 'hesitante' ||
+    raw === 'trop rapide' ||
+    raw === 'close' ||
+    raw === 'perdu' ||
+    raw === 'relance' ||
+    raw === 'porte ouverte'
+  );
+}
+
+function getRiskMeta(percentage = 0, isClosed = false) {
+  if (percentage >= 80 && isClosed) return { label: 'Risque faible', tone: 'good' };
+  if (percentage >= 62) return { label: 'Risque modéré', tone: 'warn' };
+  return { label: 'Risque élevé', tone: 'danger' };
+}
+
+function getScoreReading(percentage = 0) {
+  if (percentage >= 85) return 'Très solide';
+  if (percentage >= 72) return 'Solide';
+  if (percentage >= 58) return 'À stabiliser';
+  return 'Prioritaire à corriger';
+}
+
+function toRgb(color = '#e87d6a') {
+  const map = {
+    '#059669': [5, 150, 105],
+    '#d97706': [217, 119, 6],
+    '#e87d6a': [232, 125, 106],
+    '#ef4444': [239, 68, 68],
+  };
+  return map[color] || [232, 125, 106];
+}
+
+function formatEvidenceLabel(rawKey = '') {
+  const base = String(rawKey || '').replace(/_note$/i, '');
+  if (/^q\d+$/i.test(base) || /^question[_-]?\d+$/i.test(base)) return 'Signal prospect';
+  return formatFieldLabel(base);
+}
+
+function extractSectionEvidence(sectionData = {}, maxItems = 3) {
+  const entries = Object.entries(sectionData || {});
+  const explicit = [];
+
+  for (const [key, value] of entries) {
+    if (!/_note$/i.test(key)) continue;
+    if (typeof value !== 'string' || !value.trim()) continue;
+    explicit.push({
+      label: formatEvidenceLabel(key),
+      value: value.trim(),
+    });
+  }
+
+  if (explicit.length > 0) return explicit.slice(0, maxItems);
+
+  const fallback = [];
+  for (const [key, value] of entries) {
+    if (/_note$/i.test(key)) continue;
+    const formatted = formatFieldValue(value).trim();
+    if (!formatted || isLowSignalValue(formatted)) continue;
+    if (formatted.length < 5) continue;
+    fallback.push({
+      label: formatEvidenceLabel(key),
+      value: formatted,
+    });
+  }
+  return fallback.slice(0, maxItems);
+}
+
+function buildSectionInsights(debrief, scores) {
+  return SECTION_DETAILS_ORDER.map(({ key, label }) => {
+    const score = scores[key] || 0;
+    const sectionLabel = cleanSectionLabel(label);
+    const note = getSectionNote(debrief?.section_notes, key);
+    const strength = readSectionNote(note, ['strength', 'strengths']);
+    const weakness = readSectionNote(note, ['weakness', 'weaknesses']);
+    const improvement = readSectionNote(note, ['improvement', 'improvements']);
+    const focus = improvement || weakness || strength || '';
+    const evidence = extractSectionEvidence(getSectionData(debrief?.sections, key), 2);
+
+    return {
+      key,
+      label: sectionLabel,
+      score,
+      strength,
+      weakness,
+      improvement,
+      focus,
+      evidence,
+    };
+  });
+}
+
+function buildExecutiveHighlights({ keyBullets, topSections, prioritySections, dominantObjection, actionPriority, sectionInsights }) {
+  const evidenceLine = sectionInsights
+    .flatMap(section => (section.evidence || []).map(item => `${section.label}: ${truncateText(item.value, 88)}`))
+    .find(Boolean);
+
+  const highlights = [
+    ...keyBullets.slice(0, 2),
+    topSections[0]
+      ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
+      : '',
+    prioritySections[0]
+      ? `Point de vigilance: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
+      : '',
+    dominantObjection.toLowerCase().includes('aucune')
+      ? ''
+      : `Objection dominante: ${dominantObjection}.`,
+    evidenceLine ? `Verbatim clé: "${evidenceLine}"` : '',
+    `Action à exécuter: ${actionPriority}`,
+  ];
+
+  return dedupeStrings(highlights).slice(0, 6);
+}
+
+function buildExportContext({ debrief, comments = [], analysis = '' }) {
+  const safeDebrief = debrief || {};
+  const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
+  const percentage = Math.round(safeDebrief.percentage || 0);
+  const score20 = toScore20FromPercentage(percentage);
+  const scores = computeSectionScores(safeDebrief.sections || {});
+  const topSections = getTopSections(scores);
+  const prioritySections = getPrioritySections(scores);
+  const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
+  const keyBullets = extractKeyBullets(analysis);
+  const analysisLines = extractAnalysisLines(analysis);
+  const latestComments = [...comments].slice(-4).reverse();
+  const dominantObjection = getDominantObjection(safeDebrief);
+  const risk = getRiskMeta(percentage, !!safeDebrief.is_closed);
+  const sectionInsights = buildSectionInsights(safeDebrief, scores);
+  const signals = sectionInsights
+    .flatMap(section =>
+      (section.evidence || []).map(item => ({
+        section: section.label,
+        label: item.label,
+        value: item.value,
+      }))
+    )
+    .slice(0, 8);
+  const executiveHighlights = buildExecutiveHighlights({
+    keyBullets,
+    topSections,
+    prioritySections,
+    dominantObjection,
+    actionPriority,
+    sectionInsights,
+  });
+  const analysisDigest = dedupeStrings([...keyBullets, ...analysisLines]).slice(0, 6);
+
+  return {
+    title,
+    debrief: safeDebrief,
+    percentage,
+    score20,
+    scores,
+    topSections,
+    prioritySections,
+    actionPriority,
+    keyBullets,
+    analysisLines,
+    latestComments,
+    dominantObjection,
+    risk,
+    sectionInsights,
+    signals,
+    executiveHighlights,
+    analysisDigest,
+    scoreReading: getScoreReading(percentage),
+  };
+}
+
 function buildLoadingHtml(title) {
   return `<!doctype html>
   <html lang="fr">
@@ -158,7 +374,7 @@ function buildLoadingHtml(title) {
           color: #5a4a3a;
         }
         .loading {
-          width: min(460px, calc(100vw - 40px));
+          width: min(500px, calc(100vw - 40px));
           padding: 24px;
           border-radius: 18px;
           background: white;
@@ -194,91 +410,96 @@ function buildLoadingHtml(title) {
       <div class="loading">
         <div class="dot"></div>
         <div>
-          <p class="title">Preparation du PDF</p>
-          <p class="text">Le debrief est simplifie pour un rendu lisible et rapide a partager.</p>
+          <p class="title">Préparation du PDF</p>
+          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles en annexe.</p>
         </div>
       </div>
     </body>
   </html>`;
 }
 
-function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
-  const title = `debrief-${slugify(debrief.prospect_name || 'prospect')}-${debrief.call_date || 'export'}.pdf`;
-  const pct = Math.round(debrief.percentage || 0);
-  const score20 = toScore20FromPercentage(pct);
-  const scores = computeSectionScores(debrief.sections || {});
-  const topSections = getTopSections(scores);
-  const prioritySections = getPrioritySections(scores);
-  const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
-  const keyBullets = extractKeyBullets(analysis);
-  const analysisLines = extractAnalysisLines(analysis);
-  const latestComments = [...comments].slice(-4).reverse();
+function buildDebriefPdfHtml(payload) {
+  const ctx = buildExportContext(payload || {});
+  const {
+    title,
+    debrief,
+    percentage,
+    score20,
+    topSections,
+    prioritySections,
+    actionPriority,
+    latestComments,
+    dominantObjection,
+    risk,
+    sectionInsights,
+    signals,
+    executiveHighlights,
+    analysisDigest,
+    scoreReading,
+  } = ctx;
 
-  const scoreRows = SECTION_DETAILS_ORDER.map(({ key, label }) => {
-    const value = scores[key] || 0;
-    return `
-      <div class="score-row">
-        <div class="score-row__label">${escapeHtml(label)}</div>
-        <div class="score-row__bar">
-          <div class="score-row__fill" style="width:${(value / 5) * 100}%;background:${barColor(value)}"></div>
-        </div>
-        <div class="score-row__value">${value}/5</div>
+  const riskToneClass = risk.tone === 'good' ? 'chip--good' : risk.tone === 'warn' ? 'chip--warn' : 'chip--danger';
+
+  const topList = topSections.length > 0
+    ? topSections.map(section => `<li>${escapeHtml(cleanSectionLabel(section.label))} <strong>${section.score}/5</strong></li>`).join('')
+    : '<li>Non renseigné</li>';
+
+  const priorityList = prioritySections.length > 0
+    ? prioritySections.map(section => `<li>${escapeHtml(cleanSectionLabel(section.label))} <strong>${section.score}/5</strong></li>`).join('')
+    : '<li>Non renseigné</li>';
+
+  const highlightsHtml = executiveHighlights.length > 0
+    ? `<ul class="list">${executiveHighlights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucune synthèse disponible.</p>';
+
+  const signalsHtml = signals.length > 0
+    ? `<ul class="list list--signals">${signals.map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 180))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucun champ libre significatif n’a été saisi sur ce debrief.</p>';
+
+  const scoreRows = sectionInsights.map(section => `
+    <article class="score-row">
+      <div class="score-row__head">
+        <strong>${escapeHtml(section.label)}</strong>
+        <span style="color:${barColor(section.score)}">${section.score}/5</span>
       </div>
-    `;
-  }).join('');
+      <div class="score-row__track">
+        <div class="score-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
+      </div>
+      <p class="score-row__focus">${escapeHtml(truncateText(section.focus || 'Aucun axe explicite saisi pour cette section.', 170))}</p>
+    </article>
+  `).join('');
 
-  const sectionRows = SECTION_DETAILS_ORDER.map(({ key, label }) => {
-    const value = scores[key] || 0;
-    const note = getSectionNote(debrief.section_notes, key);
-    const strength = readSectionNote(note, ['strength', 'strengths']) || 'Point fort non renseigné.';
-    const weakness = readSectionNote(note, ['weakness', 'weaknesses']) || 'Point faible non renseigné.';
-    const improvement = readSectionNote(note, ['improvement', 'improvements']) || 'Piste de progression non renseignée.';
-    const sectionData = getSectionData(debrief.sections, key);
-    const answers = Object.entries(sectionData || {})
-      .map(([answerKey, answerValue]) => ({ label: formatFieldLabel(answerKey), value: formatFieldValue(answerValue) }))
-      .filter(item => item.value)
-      .slice(0, 6);
-
-    const answersText = answers.length > 0
-      ? answers.map(item => `${item.label}: ${item.value}`).join(' · ')
-      : 'Aucune réponse détaillée pour cette section.';
-
-    return `
-      <article class="detail-card">
-        <div class="detail-card__head">
-          <h3>${escapeHtml(label)}</h3>
-          <span style="color:${barColor(value)}">${value}/5</span>
-        </div>
-        <p><strong>Bien fait:</strong> ${escapeHtml(strength)}</p>
-        <p><strong>A corriger:</strong> ${escapeHtml(weakness)}</p>
-        <p><strong>Coach note:</strong> ${escapeHtml(improvement)}</p>
-        <p class="answers-line"><strong>Réponses clés:</strong> ${escapeHtml(answersText)}</p>
-      </article>
-    `;
-  }).join('');
-
-  const summaryList = keyBullets.length > 0
-    ? `<ul>${keyBullets.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune synthèse IA disponible.</p>';
-
-  const analysisHtml = analysisLines.length > 0
-    ? `<div class="analysis-list">${analysisLines.slice(0, 10).map(item => `<p>${escapeHtml(item)}</p>`).join('')}</div>`
-    : '<p class="hint">Aucune analyse IA complète disponible.</p>';
+  const analysisHtml = analysisDigest.length > 0
+    ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucune analyse IA disponible.</p>';
 
   const commentsHtml = latestComments.length > 0
     ? latestComments.map(comment => `
       <div class="comment">
-        <p class="comment__meta"><strong>${escapeHtml(comment.author_name || 'Equipe')}</strong> · ${escapeHtml(fmtDate(comment.created_at))}</p>
+        <p class="comment__meta"><strong>${escapeHtml(comment.author_name || 'Équipe')}</strong> · ${escapeHtml(fmtDate(comment.created_at))}</p>
         <p>${renderText(comment.content || '')}</p>
       </div>
     `).join('')
-    : '<p class="hint">Aucun commentaire équipe.</p>';
+    : '<p class="hint">Aucun commentaire équipe sur ce debrief.</p>';
 
-  const planItems = [
-    `Jours 1-2: drill ciblé sur l'action prioritaire (${actionPriority}).`,
-    'Jours 3-4: application en conditions réelles sur 3 appels.',
-    'Jours 5-7: revue HOS + ajustement des scripts de closing.',
-  ];
+  const annexHtml = sectionInsights.map(section => {
+    const evidence = section.evidence.length > 0
+      ? `<ul class="mini-list">${section.evidence.map(item => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(truncateText(item.value, 150))}</li>`).join('')}</ul>`
+      : '<p class="hint" style="margin-top:6px;">Aucun détail libre saisi.</p>';
+
+    return `
+      <article class="annex-card">
+        <div class="annex-card__head">
+          <h3>${escapeHtml(section.label)}</h3>
+          <span style="color:${barColor(section.score)}">${section.score}/5</span>
+        </div>
+        <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
+        <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
+        <p><strong>Action ciblée:</strong> ${escapeHtml(section.improvement || 'Non renseigné')}</p>
+        ${evidence}
+      </article>
+    `;
+  }).join('');
 
   return `<!doctype html>
   <html lang="fr">
@@ -293,7 +514,7 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           --line: #ead8cb;
           --bg: #f8f4f0;
           --paper: #ffffff;
-          --accent: #e87d6a;
+          --accent-dark: #d4604e;
         }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
@@ -313,105 +534,167 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           color: var(--muted);
         }
         .sheet {
-          width: min(1072px, calc(100vw - 28px));
+          width: min(1080px, calc(100vw - 28px));
           margin: 18px auto 32px;
           background: var(--paper);
           border-radius: 22px;
           box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
-          padding: 28px 28px 24px;
+          padding: 26px;
         }
-        .title {
-          margin: 0;
-          font-size: 38px;
-          line-height: 1.1;
-          font-weight: 700;
-          color: var(--text);
+        .hero {
+          display: grid;
+          grid-template-columns: 1fr minmax(220px, 260px);
+          gap: 16px;
+          align-items: stretch;
+          margin-bottom: 14px;
         }
-        .subtitle {
-          margin: 10px 0 0;
-          font-size: 15px;
-          color: var(--muted);
+        .hero-main {
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 16px;
+          background: linear-gradient(160deg, #fffaf6 0%, #fff1ea 100%);
         }
-        .sep {
-          margin: 16px 0;
-          border: none;
-          border-top: 1px solid var(--line);
-        }
-        .section-label {
+        .kicker {
+          margin: 0 0 8px;
           font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: .08em;
+          letter-spacing: .1em;
           font-weight: 700;
-          color: var(--muted);
-          margin: 0 0 8px;
+          color: #a48572;
         }
-        .identity {
-          display: grid;
-          gap: 12px;
-          grid-template-columns: 1fr auto;
-          align-items: start;
+        .hero-main h1 {
+          margin: 0;
+          font-size: 29px;
+          line-height: 1.14;
         }
-        .identity p {
-          margin: 0 0 6px;
-          font-size: 15px;
-          line-height: 1.45;
-        }
-        .score-big {
-          text-align: right;
-        }
-        .score-big strong {
-          display: block;
-          font-size: 52px;
-          line-height: 1;
-          color: #d4604e;
-        }
-        .score-big span {
-          font-size: 14px;
-          color: var(--muted);
-        }
-        .snapshot {
-          display: grid;
-          gap: 12px;
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .snapshot-card {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          min-height: 120px;
-        }
-        .snapshot-card h3 {
-          margin: 0 0 8px;
+        .hero-meta {
+          margin: 8px 0 0;
+          color: #7a6557;
           font-size: 14px;
         }
-        .snapshot-card p {
-          margin: 0 0 5px;
-          font-size: 13px;
-          line-height: 1.45;
-          color: #6e5d4f;
-        }
-        .snapshot-card--a { background: #fff6f2; }
-        .snapshot-card--b { background: #fff9f0; }
-        .snapshot-card--c { background: #f2fbf7; }
-        .score-grid {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fcf8f5;
-          display: grid;
+        .chips {
+          margin-top: 12px;
+          display: flex;
+          flex-wrap: wrap;
           gap: 8px;
         }
-        .score-row {
+        .chip {
+          border: 1px solid var(--line);
+          background: #fff;
+          color: #6f5f51;
+          font-size: 11px;
+          font-weight: 700;
+          border-radius: 999px;
+          padding: 6px 10px;
+        }
+        .chip--good { background: #ecfdf5; border-color: #8ce4bf; color: #166534; }
+        .chip--warn { background: #fffbeb; border-color: #f9cf8a; color: #92400e; }
+        .chip--danger { background: #fef2f2; border-color: #f8c6c6; color: #991b1b; }
+        .hero-score {
+          border: 1px solid #f1cabf;
+          border-radius: 16px;
+          background: linear-gradient(160deg, #fef2ec 0%, #ffe8df 100%);
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .hero-score p {
+          margin: 0;
+          color: #8b6e5c;
+          font-size: 12px;
+        }
+        .hero-score strong {
+          display: block;
+          margin-top: 6px;
+          font-size: 54px;
+          line-height: 1;
+          color: var(--accent-dark);
+        }
+        .hero-score small {
+          font-size: 13px;
+          color: #795f51;
+          margin-top: 6px;
+        }
+        .tiles {
+          margin-top: 12px;
           display: grid;
-          grid-template-columns: 170px 1fr 64px;
-          align-items: center;
+          gap: 10px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .tile {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .tile h2 {
+          margin: 0 0 8px;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: .06em;
+          color: #7f6b5c;
+        }
+        .tile ul {
+          margin: 0;
+          padding-left: 17px;
+          font-size: 13px;
+          line-height: 1.45;
+          color: #5f4f41;
+        }
+        .tile li + li { margin-top: 5px; }
+        .split {
+          margin-top: 12px;
+          display: grid;
+          gap: 10px;
+          grid-template-columns: 1fr 1fr;
+        }
+        .panel {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .panel h2 {
+          margin: 0 0 8px;
+          font-size: 14px;
+          color: #4e4035;
+        }
+        .hint {
+          margin: 0;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.45;
+        }
+        .list {
+          margin: 0;
+          padding-left: 18px;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+        .list li + li { margin-top: 5px; }
+        .list--signals li strong {
+          color: #5a4a3a;
+        }
+        .score-rows {
+          display: grid;
           gap: 10px;
         }
-        .score-row__label {
-          font-size: 13px;
-          font-weight: 600;
+        .score-row {
+          border: 1px solid #f0e1d7;
+          border-radius: 10px;
+          padding: 10px;
+          background: #fffcfa;
         }
-        .score-row__bar {
+        .score-row__head {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          align-items: baseline;
+          margin-bottom: 6px;
+          font-size: 13px;
+        }
+        .score-row__track {
           height: 10px;
           border-radius: 999px;
           background: #f2e2d8;
@@ -421,231 +704,155 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           height: 100%;
           border-radius: inherit;
         }
-        .score-row__value {
-          font-size: 13px;
-          font-weight: 700;
-          text-align: right;
-        }
-        .detail-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-        .detail-card {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-        }
-        .detail-card__head {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-        .detail-card__head h3 {
-          margin: 0;
-          font-size: 14px;
-        }
-        .detail-card__head span {
-          font-size: 13px;
-          font-weight: 700;
-        }
-        .detail-card p {
-          margin: 0 0 6px;
+        .score-row__focus {
+          margin: 8px 0 0;
           font-size: 12px;
+          color: #705f52;
           line-height: 1.45;
-          color: #6f5e50;
-        }
-        .detail-card .answers-line {
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px dashed var(--line);
-        }
-        .closing-focus {
-          margin-top: 12px;
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-        }
-        .closing-focus h3 {
-          margin: 0 0 8px;
-          font-size: 14px;
-        }
-        .closing-focus p {
-          margin: 0 0 6px;
-          font-size: 13px;
-          color: #6d5d4f;
-        }
-        .hint {
-          margin: 0;
-          color: var(--muted);
-          font-size: 12px;
-          line-height: 1.45;
-        }
-        ul {
-          margin: 0;
-          padding-left: 18px;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-        li + li {
-          margin-top: 5px;
-        }
-        .bottom-grid {
-          margin-top: 12px;
-          display: grid;
-          gap: 12px;
-          grid-template-columns: 1fr 1fr;
-        }
-        .block {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-        }
-        .analysis-list {
-          display: grid;
-          gap: 5px;
-        }
-        .analysis-list p {
-          margin: 0;
-          font-size: 12px;
-          line-height: 1.45;
-          padding-left: 8px;
-          border-left: 2px solid rgba(232,125,106,.25);
         }
         .comment + .comment {
           margin-top: 8px;
           padding-top: 8px;
           border-top: 1px dashed var(--line);
         }
+        .comment__meta {
+          margin: 0;
+          color: #8f7d6e;
+          font-size: 11px;
+        }
         .comment p {
           margin: 4px 0 0;
           font-size: 12px;
           line-height: 1.45;
         }
-        .comment__meta {
-          margin: 0;
-          color: var(--muted);
-          font-size: 11px;
+        .panel--soft {
+          margin-top: 12px;
+          background: #fcf8f4;
         }
-        .plan-list {
-          margin: 0;
-          padding-left: 18px;
+        .annex-grid {
+          margin-top: 8px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
         }
-        .plan-list li {
-          font-size: 12px;
-          line-height: 1.45;
-          color: #6e5d4f;
-        }
-        .action-box {
-          margin-top: 10px;
+        .annex-card {
           border: 1px solid var(--line);
-          background: #fff2ec;
           border-radius: 10px;
           padding: 10px;
+          background: #fff;
+        }
+        .annex-card__head {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          align-items: baseline;
+        }
+        .annex-card h3 {
+          margin: 0 0 6px;
+          font-size: 13px;
+        }
+        .annex-card p {
+          margin: 0 0 5px;
           font-size: 12px;
           line-height: 1.45;
+          color: #6f5e50;
         }
+        .mini-list {
+          margin: 6px 0 0;
+          padding-left: 16px;
+          font-size: 12px;
+          color: #6f5e50;
+          line-height: 1.4;
+        }
+        .mini-list li + li { margin-top: 4px; }
         .footer {
-          margin-top: 14px;
-          font-size: 11px;
-          color: var(--muted);
+          margin-top: 12px;
+          border-top: 1px solid var(--line);
+          padding-top: 10px;
           display: flex;
           justify-content: space-between;
           gap: 10px;
-          border-top: 1px solid var(--line);
-          padding-top: 10px;
+          color: #8f7d6e;
+          font-size: 11px;
         }
-        @media (max-width: 780px) {
+        @media (max-width: 860px) {
           .sheet { padding: 16px; border-radius: 14px; }
-          .identity { grid-template-columns: 1fr; }
-          .score-big { text-align: left; }
-          .snapshot { grid-template-columns: 1fr; }
-          .score-row { grid-template-columns: 1fr; gap: 6px; }
-          .score-row__value { text-align: left; }
-          .detail-grid { grid-template-columns: 1fr; }
-          .bottom-grid { grid-template-columns: 1fr; }
+          .hero { grid-template-columns: 1fr; }
+          .tiles { grid-template-columns: 1fr; }
+          .split { grid-template-columns: 1fr; }
+          .annex-grid { grid-template-columns: 1fr; }
         }
       </style>
     </head>
     <body>
-      <div class="topbar">Prévisualisation PDF: infos détaillées + design minimal.</div>
+      <div class="topbar">Prévisualisation PDF optimisée: lecture stratégique d'abord, détail ensuite.</div>
       <main class="sheet">
-        <h1 class="title">Export Debrief</h1>
-        <p class="subtitle">Executive details dans un design ultra clean</p>
-        <hr class="sep" />
-
-        <section class="identity">
-          <div>
-            <p class="section-label">Identité call</p>
-            <p><strong>Prospect:</strong> ${escapeHtml(debrief.prospect_name || 'Non renseigné')}</p>
-            <p><strong>Closer:</strong> ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')} · <strong>Date:</strong> ${escapeHtml(fmtDate(debrief.call_date))}</p>
-            <p><strong>Résultat:</strong> ${debrief.is_closed ? 'Closé' : 'Non closé'} · <strong>Objection dominante:</strong> ${escapeHtml(getDominantObjection(debrief))}</p>
-            ${debrief.call_link ? `<p><strong>Lien appel:</strong> ${escapeHtml(debrief.call_link)}</p>` : ''}
+        <section class="hero">
+          <div class="hero-main">
+            <p class="kicker">Export debrief priorisé</p>
+            <h1>${escapeHtml(debrief.prospect_name || 'Prospect non renseigné')}</h1>
+            <p class="hero-meta">
+              ${escapeHtml(fmtDate(debrief.call_date))} · ${escapeHtml(debrief.closer_name || debrief.user_name || 'Closer non renseigné')}
+            </p>
+            <div class="chips">
+              <span class="chip">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
+              <span class="chip ${riskToneClass}">${escapeHtml(risk.label)}</span>
+              <span class="chip">Objection: ${escapeHtml(dominantObjection)}</span>
+            </div>
           </div>
-          <div class="score-big">
+          <aside class="hero-score">
+            <p>Score global</p>
             <strong>${score20}</strong>
-            <span>/20 · ${pct}% de performance</span>
-          </div>
+            <small>/20 · ${percentage}% · ${escapeHtml(scoreReading)}</small>
+          </aside>
         </section>
-        <hr class="sep" />
 
-        <p class="section-label">Snapshot stratégique</p>
-        <section class="snapshot">
-          <article class="snapshot-card snapshot-card--a">
-            <h3>Points forts</h3>
-            ${topSections.length > 0
-              ? topSections.map(section => `<p>- ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</p>`).join('')
-              : '<p>- Non renseigné</p>'}
+        <section class="tiles">
+          <article class="tile">
+            <h2>Forces clés</h2>
+            <ul>${topList}</ul>
           </article>
-          <article class="snapshot-card snapshot-card--b">
-            <h3>Priorités</h3>
-            ${prioritySections.length > 0
-              ? prioritySections.map(section => `<p>- ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</p>`).join('')
-              : '<p>- Non renseigné</p>'}
+          <article class="tile">
+            <h2>Axes critiques</h2>
+            <ul>${priorityList}</ul>
           </article>
-          <article class="snapshot-card snapshot-card--c">
-            <h3>Action prioritaire</h3>
-            <p>${escapeHtml(actionPriority)}</p>
-            ${debrief.notes ? `<p class="hint"><strong>Note closer:</strong> ${renderText(debrief.notes)}</p>` : ''}
+          <article class="tile">
+            <h2>Action prioritaire</h2>
+            <p style="margin:0;font-size:13px;line-height:1.45;color:#604f42;">${escapeHtml(actionPriority)}</p>
+            ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 220))}</p>` : ''}
           </article>
         </section>
-        <hr class="sep" />
 
-        <p class="section-label">Section scores</p>
-        <section class="score-grid">${scoreRows}</section>
-        <hr class="sep" />
-
-        <p class="section-label">Détails sectionnels</p>
-        <section class="detail-grid">${sectionRows}</section>
-        <section class="closing-focus">
-          <h3>Focus closing & objection</h3>
-          <p><strong>Objection principale:</strong> ${escapeHtml(getDominantObjection(debrief))}</p>
-          ${analysisLines.length > 0 ? `<p><strong>Alternative IA:</strong> ${escapeHtml(analysisLines.slice(0, 1).join(' '))}</p>` : ''}
-          <p><strong>Priorité technique:</strong> annonce prix + silence + isolation objection.</p>
+        <section class="split">
+          <article class="panel">
+            <h2>Essentiel en 20 secondes</h2>
+            ${highlightsHtml}
+          </article>
+          <article class="panel">
+            <h2>Signaux terrain (champs libres)</h2>
+            ${signalsHtml}
+          </article>
         </section>
-        <hr class="sep" />
 
-        <p class="section-label">IA, plan 7 jours et commentaires</p>
-        <section class="bottom-grid">
-          <article class="block">
-            <h3 style="margin:0 0 8px;font-size:14px;">Synthèse IA</h3>
-            ${summaryList}
-            <h3 style="margin:12px 0 8px;font-size:14px;">Analyse IA complète</h3>
+        <section class="panel" style="margin-top:12px;">
+          <h2>Lecture des sections</h2>
+          <div class="score-rows">${scoreRows}</div>
+        </section>
+
+        <section class="split" style="margin-top:12px;">
+          <article class="panel">
+            <h2>Synthèse IA utile</h2>
             ${analysisHtml}
           </article>
-          <article class="block">
-            <h3 style="margin:0 0 8px;font-size:14px;">Plan 7 jours</h3>
-            <ol class="plan-list">
-              ${planItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-            </ol>
-            <div class="action-box"><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority)}</div>
-            <h3 style="margin:12px 0 8px;font-size:14px;">Commentaires équipe</h3>
+          <article class="panel">
+            <h2>Commentaires équipe</h2>
             ${commentsHtml}
           </article>
+        </section>
+
+        <section class="panel panel--soft">
+          <h2>Annexe détaillée</h2>
+          <div class="annex-grid">${annexHtml}</div>
         </section>
 
         <footer class="footer">
@@ -680,17 +887,24 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
   targetWindow.focus();
 }
 
-export async function downloadDebriefPdf({ debrief, comments = [], analysis = '' }) {
-  const title = `debrief-${slugify(debrief?.prospect_name || 'prospect')}-${debrief?.call_date || 'export'}.pdf`;
-  const pct = Math.round(debrief?.percentage || 0);
-  const score20 = toScore20FromPercentage(pct);
-  const scores = computeSectionScores(debrief?.sections || {});
-  const topSections = getTopSections(scores);
-  const prioritySections = getPrioritySections(scores);
-  const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
-  const keyBullets = extractKeyBullets(analysis);
-  const analysisLines = extractAnalysisLines(analysis);
-  const latestComments = [...comments].slice(-6).reverse();
+export async function downloadDebriefPdf(payload) {
+  const ctx = buildExportContext(payload || {});
+  const {
+    title,
+    debrief,
+    percentage,
+    score20,
+    topSections,
+    prioritySections,
+    actionPriority,
+    latestComments,
+    dominantObjection,
+    sectionInsights,
+    signals,
+    executiveHighlights,
+    analysisDigest,
+    scoreReading,
+  } = ctx;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
@@ -705,229 +919,252 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
     y = margin;
   };
 
-  const writeText = (text, { size = 11, bold = false, color = [45, 58, 75], line = 5 } = {}) => {
+  const writeText = (text, {
+    x = margin,
+    width = contentW,
+    size = 10.5,
+    bold = false,
+    color = [72, 60, 50],
+    lineHeight = 4.6,
+  } = {}) => {
     const safe = String(text || '').trim();
     if (!safe) return;
     doc.setFont('helvetica', bold ? 'bold' : 'normal');
     doc.setFontSize(size);
     doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(safe, contentW);
-    for (const lineText of lines) {
-      ensureSpace(line + 1);
-      doc.text(lineText, margin, y);
-      y += line;
+    const lines = doc.splitTextToSize(safe, width);
+    for (const line of lines) {
+      ensureSpace(lineHeight + 0.5);
+      doc.text(line, x, y);
+      y += lineHeight;
     }
   };
 
-  const writeBullet = (text) => {
+  const writeBullet = (text, { indent = 0, size = 10.2, color = [79, 66, 56], width = contentW - indent - 6 } = {}) => {
     const safe = String(text || '').trim();
     if (!safe) return;
-    const bulletX = margin + 2;
-    const textX = margin + 7;
-    const textWidth = contentW - 7;
-    const lines = doc.splitTextToSize(safe, textWidth);
-    ensureSpace(6);
+    const x = margin + indent;
+    const bulletX = x + 1.2;
+    const textX = x + 5;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(65, 65, 65);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(safe, width);
+    ensureSpace(5);
     doc.text('•', bulletX, y);
     doc.text(lines[0], textX, y);
-    y += 5;
-    for (let i = 1; i < lines.length; i++) {
-      ensureSpace(5);
+    y += 4.8;
+    for (let i = 1; i < lines.length; i += 1) {
+      ensureSpace(4.8);
       doc.text(lines[i], textX, y);
-      y += 5;
+      y += 4.8;
     }
   };
 
-  const sectionTitle = (text) => {
-    ensureSpace(9);
-    doc.setDrawColor(235, 125, 106);
-    doc.setFillColor(255, 242, 236);
-    doc.roundedRect(margin, y - 4, contentW, 8, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(212, 96, 78);
-    doc.text(text, margin + 2.5, y + 1.5);
-    y += 10;
-  };
-
-  const drawSeparator = () => {
-    ensureSpace(6);
-    doc.setDrawColor(234, 216, 203);
-    doc.setLineWidth(0.4);
+  const drawDivider = () => {
+    ensureSpace(5);
+    doc.setDrawColor(233, 216, 203);
+    doc.setLineWidth(0.35);
     doc.line(margin, y, pageW - margin, y);
-    y += 6;
-  };
-
-  const writeLabel = (text) => {
-    ensureSpace(6);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(155, 138, 122);
-    doc.text(String(text || '').toUpperCase(), margin, y);
     y += 5;
   };
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.setTextColor(59, 47, 39);
-  doc.text('Export Debrief', margin, y + 2);
-  y += 8;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.5);
-  doc.setTextColor(143, 125, 110);
-  doc.text('Executive details dans un design ultra clean', margin, y + 1);
-  y += 6;
-  drawSeparator();
+  const sectionTitle = text => {
+    ensureSpace(8);
+    doc.setFillColor(255, 243, 236);
+    doc.setDrawColor(236, 191, 174);
+    doc.roundedRect(margin, y - 3.4, contentW, 7.4, 1.8, 1.8, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(191, 87, 69);
+    doc.text(String(text || ''), margin + 2.4, y + 1.1);
+    y += 7.5;
+  };
 
-  writeLabel('Identite call');
-  writeText(`Prospect: ${debrief?.prospect_name || 'Non renseigné'}`, { size: 11.2, bold: true, color: [66, 52, 43], line: 5.2 });
-  writeText(`Closer: ${debrief?.closer_name || debrief?.user_name || 'Non renseigné'} · Date: ${fmtDate(debrief?.call_date)}`, { size: 10.5, color: [98, 84, 72], line: 4.8 });
-  writeText(`Résultat: ${debrief?.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${getDominantObjection(debrief)}`, { size: 10.5, color: [98, 84, 72], line: 4.8 });
-  if (debrief?.call_link) writeText(`Lien appel: ${debrief.call_link}`, { size: 10.2, color: [110, 96, 84], line: 4.6 });
-  ensureSpace(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
-  doc.setTextColor(212, 96, 78);
-  doc.text(`${score20}/20`, pageW - margin - 44, y - 12);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(143, 125, 110);
-  doc.text(`${pct}%`, pageW - margin - 20, y - 8);
-  drawSeparator();
-
-  writeLabel('Snapshot strategique');
-  ensureSpace(24);
-  const cardW = (contentW - 8) / 3;
-  const cardY = y;
-  const drawMiniCard = (x, titleText, lines, fill) => {
+  const drawSummaryCard = (x, topY, w, h, titleText, lines, fill = [255, 249, 244]) => {
     doc.setFillColor(...fill);
     doc.setDrawColor(234, 216, 203);
-    doc.roundedRect(x, cardY, cardW, 24, 2, 2, 'FD');
+    doc.roundedRect(x, topY, w, h, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.2);
-    doc.setTextColor(74, 58, 47);
-    doc.text(titleText, x + 3, cardY + 5);
+    doc.setFontSize(9.6);
+    doc.setTextColor(84, 68, 56);
+    doc.text(titleText, x + 2.8, topY + 4.8);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.4);
-    doc.setTextColor(106, 91, 79);
-    let ly = cardY + 10;
-    (lines || []).slice(0, 3).forEach(line => {
-      const split = doc.splitTextToSize(line, cardW - 6);
-      split.slice(0, 1).forEach(s => {
-        doc.text(`- ${s}`, x + 3, ly);
-        ly += 4.3;
-      });
+    doc.setFontSize(8.8);
+    doc.setTextColor(110, 93, 78);
+    let ly = topY + 9.2;
+    (lines || []).slice(0, 3).forEach(item => {
+      const split = doc.splitTextToSize(item, w - 5.6);
+      if (split.length > 0) {
+        doc.text(`- ${split[0]}`, x + 2.8, ly);
+        ly += 3.9;
+      }
     });
   };
-  const topLines = topSections.length > 0
-    ? topSections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`)
-    : ['Non renseigné'];
-  const priorityLines = prioritySections.length > 0
-    ? prioritySections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`)
-    : ['Non renseigné'];
-  drawMiniCard(margin, 'Points forts', topLines, [255, 246, 242]);
-  drawMiniCard(margin + cardW + 4, 'Priorités', priorityLines, [255, 249, 240]);
-  drawMiniCard(margin + (cardW + 4) * 2, 'Action prioritaire', [actionPriority], [242, 251, 247]);
-  y += 28;
-  drawSeparator();
 
-  writeLabel('Section scores');
-  ensureSpace(38);
-  doc.setFillColor(252, 248, 245);
-  doc.setDrawColor(234, 216, 203);
-  doc.roundedRect(margin, y, contentW, 36, 2, 2, 'FD');
-  let rowY = y + 6;
-  SECTION_DETAILS_ORDER.forEach(({ key, label }) => {
-    const value = scores[key] || 0;
-    const barX = margin + 45;
-    const barW = contentW - 78;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(83, 66, 55);
-    doc.text(label, margin + 3, rowY + 1);
-    doc.setFillColor(242, 226, 216);
-    doc.roundedRect(barX, rowY - 1.6, barW, 2.8, 1.4, 1.4, 'F');
-    const color = barColor(value);
-    const rgb = color === '#059669' ? [5, 150, 105]
-      : color === '#d97706' ? [217, 119, 6]
-        : color === '#e87d6a' ? [232, 125, 106]
-          : [239, 68, 68];
-    doc.setFillColor(...rgb);
-    doc.roundedRect(barX, rowY - 1.6, (barW * value) / 5, 2.8, 1.4, 1.4, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(83, 66, 55);
-    doc.text(`${value}/5`, margin + contentW - 10, rowY + 1, { align: 'right' });
-    rowY += 6.5;
+  ensureSpace(24);
+  doc.setFillColor(255, 245, 238);
+  doc.setDrawColor(240, 208, 194);
+  doc.roundedRect(margin, y - 2, contentW, 24, 3, 3, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16.8);
+  doc.setTextColor(73, 58, 47);
+  doc.text('Export Debrief', margin + 3, y + 4.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10.2);
+  doc.setTextColor(118, 100, 86);
+  doc.text('Lecture stratégique priorisée', margin + 3, y + 9.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(73, 58, 47);
+  doc.text(truncateText(debrief.prospect_name || 'Prospect non renseigné', 56), margin + 3, y + 15);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(128, 108, 93);
+  doc.text(`${fmtDate(debrief.call_date)} · ${debrief.closer_name || debrief.user_name || 'Closer non renseigné'}`, margin + 3, y + 19.3);
+
+  const scoreBoxW = 38;
+  const scoreBoxX = pageW - margin - scoreBoxW;
+  doc.setFillColor(255, 234, 226);
+  doc.setDrawColor(240, 192, 175);
+  doc.roundedRect(scoreBoxX, y + 1, scoreBoxW, 20, 2, 2, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(212, 96, 78);
+  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 10.8, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.6);
+  doc.setTextColor(122, 101, 88);
+  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 15.7, { align: 'center' });
+  y += 27;
+
+  drawDivider();
+  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
+    size: 10.4,
+    bold: true,
+    color: [78, 63, 52],
   });
-  y += 40;
-  drawSeparator();
-
-  writeLabel('Details sectionnels');
-  SECTION_DETAILS_ORDER.forEach(({ key, label }) => {
-    const value = scores[key] || 0;
-    const note = getSectionNote(debrief?.section_notes, key);
-    const strength = readSectionNote(note, ['strength', 'strengths']) || 'Point fort non renseigné.';
-    const weakness = readSectionNote(note, ['weakness', 'weaknesses']) || 'Point faible non renseigné.';
-    const improvement = readSectionNote(note, ['improvement', 'improvements']) || 'Piste de progression non renseignée.';
-    const sectionData = getSectionData(debrief?.sections, key);
-    const answers = Object.entries(sectionData || {})
-      .map(([fieldKey, fieldValue]) => `${formatFieldLabel(fieldKey)}: ${formatFieldValue(fieldValue)}`)
-      .filter(Boolean)
-      .slice(0, 4)
-      .join(' · ');
-
-    ensureSpace(28);
-    doc.setDrawColor(234, 216, 203);
-    doc.roundedRect(margin, y, contentW, 26, 2, 2);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(74, 58, 47);
-    doc.text(`${label} - ${value}/5`, margin + 3, y + 5);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.4);
-    doc.setTextColor(108, 92, 79);
-    doc.text(doc.splitTextToSize(`Bien fait: ${strength}`, contentW - 6), margin + 3, y + 9);
-    doc.text(doc.splitTextToSize(`A corriger: ${weakness}`, contentW - 6), margin + 3, y + 14);
-    doc.text(doc.splitTextToSize(`Coach note: ${improvement}`, contentW - 6), margin + 3, y + 19);
-    doc.text(doc.splitTextToSize(`Réponses clés: ${answers || 'Aucune réponse détaillée.'}`, contentW - 6), margin + 3, y + 24);
-    y += 30;
+  writeText(`Lecture score: ${scoreReading}. Action prioritaire: ${actionPriority}`, {
+    size: 9.9,
+    color: [112, 94, 80],
   });
-  drawSeparator();
-
-  writeLabel('Ia, plan 7 jours et commentaires');
-  sectionTitle('Synthèse IA');
-  if (keyBullets.length > 0) keyBullets.slice(0, 8).forEach(item => writeBullet(item));
-  else writeBullet('Aucune synthèse IA disponible.');
-
-  sectionTitle('Analyse IA complète');
-  if (analysisLines.length > 0) analysisLines.slice(0, 16).forEach(line => writeBullet(line));
-  else writeBullet('Aucune analyse IA complète disponible.');
-
-  sectionTitle('Plan 7 jours');
-  writeBullet(`Jours 1-2: drill ciblé sur l'action prioritaire (${actionPriority}).`);
-  writeBullet('Jours 3-4: application en conditions réelles sur 3 appels.');
-  writeBullet('Jours 5-7: revue HOS + ajustement des scripts de closing.');
-  writeText(`Action prioritaire: ${actionPriority}`, { size: 10.5, bold: true, color: [95, 55, 40], line: 5 });
-
-  sectionTitle('Commentaires équipe');
-  if (latestComments.length > 0) {
-    latestComments.forEach(comment => {
-      writeText(`${comment.author_name || 'Équipe'} — ${fmtDate(comment.created_at)}`, { size: 9.8, bold: true, color: [90, 90, 90], line: 4.5 });
-      writeText(comment.content || '', { size: 10, color: [72, 72, 72], line: 4.5 });
-      y += 1.2;
+  if (debrief.call_link) {
+    writeText(`Lien appel: ${debrief.call_link}`, {
+      size: 9.2,
+      color: [120, 103, 89],
     });
-  } else {
-    writeBullet('Aucun commentaire équipe.');
   }
 
-  ensureSpace(8);
+  drawDivider();
+  sectionTitle('Essentiel en 20 secondes');
+  if (executiveHighlights.length > 0) {
+    executiveHighlights.slice(0, 6).forEach(item => writeBullet(item));
+  } else {
+    writeBullet('Aucune synthèse disponible.');
+  }
+
+  ensureSpace(26);
+  const cardW = (contentW - 8) / 3;
+  const cardTop = y;
+  const topLines = topSections.length > 0
+    ? topSections.map(section => `${cleanSectionLabel(section.label)} (${section.score}/5)`)
+    : ['Non renseigné'];
+  const priorityLines = prioritySections.length > 0
+    ? prioritySections.map(section => `${cleanSectionLabel(section.label)} (${section.score}/5)`)
+    : ['Non renseigné'];
+  drawSummaryCard(margin, cardTop, cardW, 24, 'Forces', topLines, [255, 246, 241]);
+  drawSummaryCard(margin + cardW + 4, cardTop, cardW, 24, 'Axes critiques', priorityLines, [255, 250, 241]);
+  drawSummaryCard(margin + (cardW + 4) * 2, cardTop, cardW, 24, 'Action', [truncateText(actionPriority, 92)], [243, 250, 246]);
+  y += 28;
+
+  sectionTitle('Score par section');
+  for (const section of sectionInsights) {
+    ensureSpace(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.7);
+    doc.setTextColor(81, 65, 53);
+    doc.text(section.label, margin + 1.2, y + 1.3);
+    doc.text(`${section.score}/5`, margin + contentW - 1.2, y + 1.3, { align: 'right' });
+    const trackX = margin + 36;
+    const trackW = contentW - 48;
+    doc.setFillColor(243, 228, 216);
+    doc.roundedRect(trackX, y - 1.4, trackW, 2.9, 1.4, 1.4, 'F');
+    doc.setFillColor(...toRgb(barColor(section.score)));
+    doc.roundedRect(trackX, y - 1.4, (trackW * section.score) / 5, 2.9, 1.4, 1.4, 'F');
+    y += 4.2;
+    writeText(truncateText(section.focus || 'Aucun axe explicite saisi pour cette section.', 130), {
+      size: 8.9,
+      color: [119, 99, 84],
+      lineHeight: 3.9,
+    });
+  }
+
+  sectionTitle('Signaux terrain (champs libres)');
+  if (signals.length > 0) {
+    signals.slice(0, 8).forEach(signal => {
+      writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 135)}`, {
+        size: 9.6,
+      });
+    });
+  } else {
+    writeBullet('Aucun signal terrain libre saisi sur ce debrief.');
+  }
+
+  sectionTitle('Synthèse IA utile');
+  if (analysisDigest.length > 0) {
+    analysisDigest.slice(0, 6).forEach(item => writeBullet(item, { size: 9.8 }));
+  } else {
+    writeBullet('Aucune synthèse IA disponible.');
+  }
+
+  if (latestComments.length > 0) {
+    sectionTitle('Commentaires équipe');
+    latestComments.slice(0, 3).forEach(comment => {
+      writeText(`${comment.author_name || 'Équipe'} · ${fmtDate(comment.created_at)}`, {
+        bold: true,
+        size: 9.3,
+        color: [93, 76, 64],
+        lineHeight: 4.1,
+      });
+      writeText(truncateText(comment.content || '', 210), {
+        size: 9.4,
+        color: [108, 91, 78],
+        lineHeight: 4.1,
+      });
+      y += 1;
+    });
+  }
+
+  doc.addPage();
+  y = margin;
+  sectionTitle('Annexe détaillée');
+  sectionInsights.forEach(section => {
+    ensureSpace(28);
+    doc.setDrawColor(234, 216, 203);
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin, y, contentW, 26, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(80, 64, 53);
+    doc.text(`${section.label} · ${section.score}/5`, margin + 2.8, y + 4.8);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.1);
+    doc.setTextColor(112, 95, 81);
+    doc.text(doc.splitTextToSize(`Point fort: ${section.strength || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 9);
+    doc.text(doc.splitTextToSize(`Point faible: ${section.weakness || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 13.5);
+    doc.text(doc.splitTextToSize(`Action ciblée: ${section.improvement || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 18);
+    const evidenceText = section.evidence.length > 0
+      ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 80)}`).join(' | ')
+      : 'Aucun détail libre saisi.';
+    doc.text(doc.splitTextToSize(`Signaux: ${evidenceText}`, contentW - 5.6), margin + 2.8, y + 22.5);
+    y += 29;
+  });
+
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.8);
   doc.setTextColor(145, 145, 145);
-  doc.text(`Généré le ${fmtDate(new Date().toISOString())} — CloserDebrief`, margin, pageH - 7);
+  doc.text(`Généré le ${fmtDate(new Date().toISOString())} · CloserDebrief`, margin, pageH - 7);
   doc.save(title);
 }
 
