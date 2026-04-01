@@ -10,6 +10,14 @@ const OBJECTION_LABELS = {
   aucune: 'Aucune',
 };
 
+const SECTION_DETAILS_ORDER = [
+  { key: 'decouverte', label: 'Découverte' },
+  { key: 'reformulation', label: 'Reformulation' },
+  { key: 'projection', label: 'Projection' },
+  { key: 'presentation_offre', label: "Présentation de l'offre" },
+  { key: 'closing', label: 'Closing & Objections' },
+];
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -43,6 +51,44 @@ function barColor(score) {
 function getSectionNote(sectionNotes, key) {
   if (!sectionNotes) return null;
   return sectionNotes[key] || (key === 'presentation_offre' ? sectionNotes.offre : null) || null;
+}
+
+function getSectionData(sections, key) {
+  if (!sections) return {};
+  return sections[key] || (key === 'presentation_offre' ? sections.offre : null) || {};
+}
+
+function formatFieldLabel(rawKey = '') {
+  return String(rawKey || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function formatFieldValue(value) {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map(item => String(item)).join(', ');
+  if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+  if (typeof value === 'object') {
+    try { return JSON.stringify(value); } catch { return ''; }
+  }
+  return String(value);
+}
+
+function cleanMarkdownLine(line = '') {
+  return String(line || '')
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/^[-*]\s+/, '')
+    .replace(/^\d+[.)]\s+/, '')
+    .replace(/\*\*/g, '')
+    .trim();
+}
+
+function extractAnalysisLines(text) {
+  if (!text) return [];
+  return String(text)
+    .split('\n')
+    .map(line => cleanMarkdownLine(line))
+    .filter(Boolean);
 }
 
 function extractActionPriority(text) {
@@ -156,28 +202,52 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
   const prioritySections = getPrioritySections(scores);
   const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
-  const latestComments = [...comments].slice(-2).reverse();
-  const sectionRows = SECTIONS.map(({ key, label }) => {
+  const analysisLines = extractAnalysisLines(analysis);
+  const latestComments = [...comments].slice(-6).reverse();
+
+  const sectionRows = SECTION_DETAILS_ORDER.map(({ key, label }) => {
     const value = scores[key] || 0;
     const note = getSectionNote(debrief.section_notes, key);
-    const highlight = note?.improvement || note?.weakness || note?.strength || '';
+    const sectionData = getSectionData(debrief.sections, key);
+    const answers = Object.entries(sectionData || {})
+      .map(([answerKey, answerValue]) => ({ label: formatFieldLabel(answerKey), value: formatFieldValue(answerValue) }))
+      .filter(item => item.value);
+
+    const notesHtml = [
+      note?.strength ? `<p class="note note--good"><strong>Point fort:</strong> ${escapeHtml(note.strength)}</p>` : '',
+      note?.weakness ? `<p class="note note--bad"><strong>Point faible:</strong> ${escapeHtml(note.weakness)}</p>` : '',
+      note?.improvement ? `<p class="note note--warn"><strong>A améliorer:</strong> ${escapeHtml(note.improvement)}</p>` : '',
+    ].filter(Boolean).join('');
+
+    const answersHtml = answers.length > 0
+      ? `<ul class="answers">${answers.map(item => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.value)}</li>`).join('')}</ul>`
+      : '<p class="hint">Aucune réponse détaillée renseignée pour cette section.</p>';
+
     return `
       <div class="section-row">
         <div class="section-row__head">
-          <span>${escapeHtml(label.replace(/^[^\p{L}\p{N}]+/u, '').trim())}</span>
+          <span>${escapeHtml(label)}</span>
           <strong style="color:${barColor(value)}">${value}/5</strong>
         </div>
         <div class="bar">
           <div class="fill" style="width:${(value / 5) * 100}%;background:${barColor(value)}"></div>
         </div>
-        ${highlight ? `<p class="hint">${escapeHtml(highlight)}</p>` : ''}
+        ${notesHtml || '<p class="hint">Aucune note sectionnelle.</p>'}
+        <div class="answers-wrap">
+          <h4>Détails des réponses</h4>
+          ${answersHtml}
+        </div>
       </div>
     `;
   }).join('');
 
   const summaryList = keyBullets.length > 0
     ? `<ul>${keyBullets.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune synthese IA disponible pour ce debrief.</p>';
+    : '<p class="hint">Aucune synthèse IA disponible pour ce debrief.</p>';
+
+  const analysisHtml = analysisLines.length > 0
+    ? `<div class="analysis-list">${analysisLines.map(item => `<p>${escapeHtml(item)}</p>`).join('')}</div>`
+    : '<p class="hint">Aucune analyse IA complète disponible.</p>';
 
   const commentsHtml = latestComments.length > 0
     ? latestComments.map(comment => `
@@ -186,7 +256,7 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
         <p>${renderText(comment.content || '')}</p>
       </div>
     `).join('')
-    : '<p class="hint">Aucun commentaire ajoute.</p>';
+    : '<p class="hint">Aucun commentaire ajouté.</p>';
 
   return `<!doctype html>
   <html lang="fr">
@@ -201,6 +271,12 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           --line: rgba(232, 125, 106, .16);
           --paper: #fffdfb;
           --accent: #e87d6a;
+          --good: #166534;
+          --good-bg: #f0fdf4;
+          --bad: #991b1b;
+          --bad-bg: #fff5f5;
+          --warn: #92400e;
+          --warn-bg: #fffbeb;
         }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
@@ -220,7 +296,7 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           color: var(--muted);
         }
         .sheet {
-          width: min(920px, calc(100vw - 26px));
+          width: min(1020px, calc(100vw - 26px));
           margin: 16px auto 28px;
           background: var(--paper);
           border-radius: 18px;
@@ -299,7 +375,13 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
         }
         .section-list {
           display: grid;
-          gap: 10px;
+          gap: 12px;
+        }
+        .section-row {
+          border: 1px solid var(--line);
+          border-radius: 10px;
+          padding: 10px 11px;
+          background: #fffdfb;
         }
         .section-row__head {
           display: flex;
@@ -307,9 +389,10 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           align-items: baseline;
           gap: 10px;
           font-size: 13px;
+          font-weight: 700;
         }
         .bar {
-          margin-top: 5px;
+          margin-top: 6px;
           height: 7px;
           border-radius: 999px;
           background: rgba(232,125,106,.12);
@@ -319,6 +402,38 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           height: 100%;
           border-radius: inherit;
         }
+        .note {
+          margin: 7px 0 0;
+          padding: 7px 8px;
+          border-radius: 8px;
+          font-size: 12px;
+          line-height: 1.45;
+          border: 1px solid transparent;
+        }
+        .note--good { color: var(--good); background: var(--good-bg); border-color: #bbf7d0; }
+        .note--bad { color: var(--bad); background: var(--bad-bg); border-color: #fca5a5; }
+        .note--warn { color: var(--warn); background: var(--warn-bg); border-color: #fcd34d; }
+        .answers-wrap {
+          margin-top: 8px;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          padding: 8px;
+          background: #fff;
+        }
+        .answers-wrap h4 {
+          margin: 0 0 6px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+          color: var(--muted);
+        }
+        .answers {
+          margin: 0;
+          padding-left: 18px;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+        .answers li + li { margin-top: 4px; }
         ul {
           margin: 0;
           padding-left: 18px;
@@ -327,6 +442,17 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
         }
         li + li {
           margin-top: 6px;
+        }
+        .analysis-list {
+          display: grid;
+          gap: 6px;
+        }
+        .analysis-list p {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.5;
+          border-left: 2px solid rgba(232,125,106,.25);
+          padding-left: 8px;
         }
         .comment + .comment {
           margin-top: 10px;
@@ -371,7 +497,7 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
       </style>
     </head>
     <body>
-      <div class="topbar">Export lisible (sans impression automatique). Utilisez le menu navigateur si vous souhaitez l'enregistrer en PDF.</div>
+      <div class="topbar">Prévisualisation PDF: relisez puis lancez le téléchargement.</div>
       <main class="sheet">
         <section class="hero">
           <div>
@@ -379,6 +505,7 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
             <p class="meta">Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigne')}</p>
             <p class="meta">Date appel: ${escapeHtml(fmtDate(debrief.call_date))} · Resultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}</p>
             <p class="meta">Objection dominante: ${escapeHtml(getDominantObjection(debrief))}</p>
+            ${debrief.call_link ? `<p class="meta">Lien appel: ${escapeHtml(debrief.call_link)}</p>` : ''}
           </div>
           <div class="score">
             <strong>${score20}/20</strong>
@@ -388,39 +515,50 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
 
         <section class="grid">
           <article class="card">
-            <h2>Sections debrief</h2>
-            <div class="section-list">${sectionRows}</div>
-          </article>
-
-          <article class="card">
-            <h2>Points importants</h2>
+            <h2>Résumé stratégique</h2>
             <div class="chips">
               ${topSections.map(section => `<span class="chip">Point fort: ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</span>`).join('')}
               ${prioritySections.map(section => `<span class="chip">Priorite: ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</span>`).join('')}
             </div>
             <div class="action"><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority)}</div>
             ${debrief.notes ? `<p class="hint"><strong>Note closer:</strong> ${renderText(debrief.notes)}</p>` : ''}
+            ${debrief.strengths ? `<p class="hint"><strong>Forces notées:</strong> ${renderText(debrief.strengths)}</p>` : ''}
+            ${debrief.improvements ? `<p class="hint"><strong>Axes notés:</strong> ${renderText(debrief.improvements)}</p>` : ''}
           </article>
+
+          <article class="card">
+            <h2>Synthèse IA rapide</h2>
+            ${summaryList}
+          </article>
+        </section>
+
+        <section class="card" style="margin-top:12px">
+          <h2>Détails debrief par section</h2>
+          <div class="section-list">${sectionRows}</div>
         </section>
 
         <section class="grid">
           <article class="card">
-            <h2>Synthese IA (version courte)</h2>
-            ${summaryList}
+            <h2>Analyse IA complète</h2>
+            ${analysisHtml}
           </article>
           <article class="card">
-            <h2>Commentaires recents</h2>
+            <h2>Commentaires équipe</h2>
             ${commentsHtml}
           </article>
         </section>
 
         <footer class="footer">
-          <span>CloserDebrief · Export debrief</span>
+          <span>CloserDebrief · Export détaillé</span>
           <span>${escapeHtml(title)}</span>
         </footer>
       </main>
     </body>
   </html>`;
+}
+
+export function buildDebriefPdfPreviewHtml(payload) {
+  return buildDebriefPdfHtml(payload);
 }
 
 export function openDebriefPdfWindow(debrief) {
@@ -451,7 +589,8 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
   const prioritySections = getPrioritySections(scores);
   const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
-  const latestComments = [...comments].slice(-2).reverse();
+  const analysisLines = extractAnalysisLines(analysis);
+  const latestComments = [...comments].slice(-6).reverse();
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
@@ -538,20 +677,43 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
   writeBullet(`Objection dominante: ${getDominantObjection(debrief)}`);
   writeBullet(`Points forts: ${topSections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucun'}`);
   writeBullet(`Priorités: ${prioritySections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucune'}`);
+  if (debrief?.call_link) writeBullet(`Lien d'appel: ${debrief.call_link}`);
   if (debrief?.notes) writeBullet(`Note closer: ${debrief.notes}`);
+  if (debrief?.strengths) writeBullet(`Points forts notés: ${debrief.strengths}`);
+  if (debrief?.improvements) writeBullet(`Axes d'amélioration notés: ${debrief.improvements}`);
 
-  sectionTitle('Score par section');
-  SECTIONS.forEach(({ key, label }) => {
+  sectionTitle('Score et détails par section');
+  SECTION_DETAILS_ORDER.forEach(({ key, label }) => {
     const value = scores[key] || 0;
     const note = getSectionNote(debrief?.section_notes, key);
-    writeBullet(`${label.replace(/^[^\p{L}\p{N}]+/u, '').trim()}: ${value}/5${note?.improvement ? ` — ${note.improvement}` : ''}`);
+    const sectionData = getSectionData(debrief?.sections, key);
+    writeText(`${label}: ${value}/5`, { size: 11, bold: true, color: [64, 64, 64], line: 5 });
+    if (note?.strength) writeBullet(`Point fort: ${note.strength}`);
+    if (note?.weakness) writeBullet(`Point faible: ${note.weakness}`);
+    if (note?.improvement) writeBullet(`A améliorer: ${note.improvement}`);
+    const details = Object.entries(sectionData || {})
+      .map(([fieldKey, fieldValue]) => `${formatFieldLabel(fieldKey)}: ${formatFieldValue(fieldValue)}`)
+      .filter(Boolean);
+    if (details.length === 0) {
+      writeBullet('Aucune réponse détaillée dans cette section.');
+    } else {
+      details.forEach(detail => writeBullet(detail));
+    }
+    y += 1;
   });
 
   sectionTitle('Synthèse IA (points clés)');
   if (keyBullets.length > 0) {
-    keyBullets.slice(0, 4).forEach(item => writeBullet(item));
+    keyBullets.slice(0, 8).forEach(item => writeBullet(item));
   } else {
     writeBullet('Aucune synthèse IA disponible.');
+  }
+
+  sectionTitle('Analyse IA complète');
+  if (analysisLines.length > 0) {
+    analysisLines.forEach(line => writeBullet(line));
+  } else {
+    writeBullet('Aucune analyse IA complète disponible.');
   }
 
   sectionTitle('Plan d’action');

@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, copy, toScore20FromPercentage } from '../../utils/scoring';
-import { downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
+import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
-import { Btn, Card, ScoreGauge, ClosedBadge, Empty } from '../ui';
+import { Btn, Card, ScoreGauge, ClosedBadge, Empty, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
 
 function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
   const mob = useIsMobile();
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewPayload, setPreviewPayload] = useState(null);
+  const [downloadingPreview, setDownloadingPreview] = useState(false);
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
       <p style={{ color:DS.textMuted }}>Debrief introuvable</p>
@@ -23,27 +27,47 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const scores = computeSectionScores(debrief.sections || {});
   const barCol = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
 
+  const buildPdfPayload = async () => {
+    const analysis = (() => {
+      try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
+      catch { return ''; }
+    })();
+
+    let comments = [];
+    try {
+      comments = await apiFetch(`/debriefs/${debrief.id}/comments`);
+    } catch {
+      comments = [];
+    }
+
+    return { debrief, comments, analysis, allDebriefs, user };
+  };
+
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      const analysis = (() => {
-        try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
-        catch { return ''; }
-      })();
+      const payload = await buildPdfPayload();
+      setPreviewPayload(payload);
+      setPreviewHtml(buildDebriefPdfPreviewHtml(payload));
+      setPreviewOpen(true);
+    } catch (e) {
+      toast(e.message || "Impossible de préparer la prévisualisation PDF", 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
-      let comments = [];
-      try {
-        comments = await apiFetch(`/debriefs/${debrief.id}/comments`);
-      } catch {
-        comments = [];
-      }
-
-      await downloadDebriefPdf({ debrief, comments, analysis, allDebriefs, user });
+  const handleDownloadFromPreview = async () => {
+    if (!previewPayload) return;
+    setDownloadingPreview(true);
+    try {
+      await downloadDebriefPdf(previewPayload);
       toast('PDF téléchargé');
+      setPreviewOpen(false);
     } catch (e) {
       toast(e.message || "Impossible de télécharger le PDF", 'error');
     } finally {
-      setExportingPdf(false);
+      setDownloadingPreview(false);
     }
   };
 
@@ -67,7 +91,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
             ✏️ Modifier
           </Btn>
           <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
-            {exportingPdf ? 'Préparation PDF...' : '📄 Exporter en PDF'}
+            {exportingPdf ? 'Préparation prévisualisation...' : '📄 Prévisualiser le PDF'}
           </Btn>
           {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid rgba(232,125,106,.12)',borderRadius:8,background:'#ffffff',fontSize:12,textDecoration:'none',color:'#5a4a3a'}}>🔗 Écouter</a>}
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
@@ -151,6 +175,67 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
 
       {/* Comments */}
       <CommentsSection debriefId={debrief.id} user={user} toast={toast}/>
+
+      {previewOpen && (
+        <div
+          style={{
+            position:'fixed',
+            inset:0,
+            zIndex:9500,
+            background:'rgba(20, 25, 32, .5)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            padding:mob ? 8 : 20,
+          }}
+          onClick={e => e.target === e.currentTarget && !downloadingPreview && setPreviewOpen(false)}
+        >
+          <div
+            style={{
+              width:'100%',
+              maxWidth:mob ? '100%' : 1180,
+              height:mob ? '94vh' : '92vh',
+              background:'var(--card,#fff)',
+              borderRadius:14,
+              border:'1px solid var(--border)',
+              boxShadow:'var(--sh-card)',
+              display:'flex',
+              flexDirection:'column',
+              overflow:'hidden',
+            }}
+          >
+            <div style={{ padding:'10px 12px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+              <div>
+                <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Prévisualisation export PDF</p>
+                <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>Vérifie le rendu, puis télécharge.</p>
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <Btn variant="secondary" onClick={()=>setPreviewOpen(false)} disabled={downloadingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
+                  Fermer
+                </Btn>
+                <Btn onClick={handleDownloadFromPreview} disabled={downloadingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
+                  {downloadingPreview ? 'Téléchargement...' : '⬇️ Télécharger le PDF'}
+                </Btn>
+              </div>
+            </div>
+
+            <div style={{ flex:1, background:'#f4efe9' }}>
+              {previewHtml ? (
+                <iframe
+                  title="Prévisualisation PDF Debrief"
+                  srcDoc={previewHtml}
+                  style={{ width:'100%', height:'100%', border:'none' }}
+                />
+              ) : (
+                <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:DS.textMuted, gap:10 }}>
+                  <Spinner size={22}/>
+                  <span>Chargement de la prévisualisation...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
