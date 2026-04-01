@@ -35,6 +35,28 @@ const SCORE_FILTERS = [
 function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
   const isHOS = user.role === 'head_of_sales';
+  const [patternsData, setPatternsData] = useState(null);
+  const [patternsLoading, setPatternsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setPatternsLoading(true);
+    apiFetch('/patterns')
+      .then(data => {
+        if (!mounted) return;
+        setPatternsData(data);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPatternsData(null);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setPatternsLoading(false);
+      });
+    return () => { mounted = false; };
+  }, [user?.id]);
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
@@ -47,6 +69,48 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
       <StatsRow debriefs={debriefs}/>
+
+      <Card style={{ padding:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap', marginBottom:10 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>🧠 Détection de patterns</h2>
+            <p style={{ margin:'3px 0 0', fontSize:12, color:DS.textMuted }}>
+              {isHOS ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
+            </p>
+          </div>
+          <Btn variant="secondary" onClick={()=>navigate('History')} style={{ fontSize:12, padding:'6px 11px' }}>
+            Ouvrir l’historique
+          </Btn>
+        </div>
+
+        {patternsLoading ? (
+          <Spinner size={20} />
+        ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
+          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+            Aucun pattern critique détecté pour le moment.
+          </p>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {patternsData.patterns.slice(0, 3).map(pattern => (
+              <div key={pattern.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'rgba(253,232,228,.24)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', gap:8, marginBottom:4, flexWrap:'wrap' }}>
+                  <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+                    {pattern.title}
+                  </p>
+                  <span style={{ fontSize:11, fontWeight:700, color:'#c05040' }}>
+                    {pattern.count} cas ({pattern.rate}%)
+                  </span>
+                </div>
+                <p style={{ margin:'0 0 4px', fontSize:12, color:DS.textMuted }}>{pattern.message}</p>
+                <p style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>
+                  Action suggérée: {pattern.recommendation}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, alignItems:'start' }}>
         <Card style={{ padding:14, maxWidth:760 }}>
           <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>

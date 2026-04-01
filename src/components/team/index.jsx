@@ -155,6 +155,105 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
   );
 }
 
+function ManagerCopilotCard({ toast }) {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [summary, setSummary] = useState(null);
+
+  const loadSummary = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const data = await apiFetch('/ai/manager-summary');
+      setSummary(data);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { loadSummary(); }, [loadSummary]);
+
+  const periodLabel = summary?.period
+    ? `${summary.period.current_from} → ${summary.period.current_to}`
+    : '';
+
+  return (
+    <Card style={{ padding:16, border:'1px solid rgba(106,172,206,.22)', background:'linear-gradient(135deg, rgba(218,237,245,.45), rgba(253,232,228,.35))' }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+        <div>
+          <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#5a4a3a' }}>🧭 Copilot Manager</h3>
+          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+            Résumé hebdo équipe + recommandations actionnables {periodLabel ? `(${periodLabel})` : ''}
+          </p>
+        </div>
+        <Btn variant="secondary" onClick={()=>loadSummary(true)} disabled={refreshing || loading} style={{ fontSize:12, padding:'7px 11px' }}>
+          {refreshing ? 'Actualisation...' : '↻ Actualiser'}
+        </Btn>
+      </div>
+
+      {loading ? (
+        <Spinner size={22} />
+      ) : !summary ? (
+        <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>Impossible de charger le résumé manager.</p>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {summary.metrics && (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, minmax(0,1fr))', gap:8 }}>
+              {[
+                { label:'Debriefs semaine', value:summary.metrics.current_week?.total ?? 0, color:'#e87d6a' },
+                { label:'Score moyen', value:`${summary.metrics.current_week?.avgScore ?? 0}%`, color:'#059669' },
+                { label:'Closing', value:`${summary.metrics.current_week?.closeRate ?? 0}%`, color:'#d97706' },
+                { label:'Deals à risque', value:summary.metrics.pipeline_alerts?.atRisk ?? 0, color:'#dc2626' },
+              ].map(item => (
+                <div key={item.label} style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'8px 10px' }}>
+                  <p style={{ margin:'0 0 3px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{item.label}</p>
+                  <p style={{ margin:0, fontSize:18, fontWeight:700, color:item.color }}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {Array.isArray(summary.highlights) && summary.highlights.length > 0 && (
+            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>Faits marquants</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                {summary.highlights.slice(0, 4).map((line, idx) => (
+                  <p key={idx} style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>• {line}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Array.isArray(summary.recommendations) && summary.recommendations.length > 0 && (
+            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>Recommandations concrètes</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                {summary.recommendations.slice(0, 4).map((line, idx) => (
+                  <p key={idx} style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>• {line}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {summary.aiSummary && (
+            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>
+                Synthèse IA {summary.model ? `(${summary.model})` : ''}
+              </p>
+              <p style={{ margin:0, fontSize:12, color:'#5a4a3a', whiteSpace:'pre-wrap', lineHeight:1.55 }}>
+                {summary.aiSummary}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function HOSPage({ toast, allDebriefs }) {
   const mob = useIsMobile();
   const [teams, setTeams] = useState([]);
@@ -319,6 +418,8 @@ function HOSPage({ toast, allDebriefs }) {
           <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
         </div>
       </div>
+
+      <ManagerCopilotCard toast={toast} />
 
       {teams.length === 0 ? (
         <Empty

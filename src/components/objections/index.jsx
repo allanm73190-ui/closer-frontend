@@ -150,6 +150,44 @@ function ObjectionCard({ objection, toast }) {
             </div>
           )}
 
+          {/* Living objection library */}
+          {Array.isArray(objection.validatedResponses) && objection.validatedResponses.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3a7a9a', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
+                📚 Bibliothèque vivante (réponses validées)
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {objection.validatedResponses.slice(0, 4).map((item, idx) => (
+                  <div key={`${item.text.slice(0, 32)}_${idx}`} style={{ background:'rgba(218,237,245,.22)', border:'1px solid rgba(58,122,154,.22)', borderRadius:R_MD, padding:'12px 12px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:item.validated ? 'rgba(218,240,216,.8)' : 'rgba(254,243,224,.9)', color:item.validated ? '#5a9858' : '#c07830' }}>
+                          {item.validated ? 'Validée' : 'À confirmer'}
+                        </span>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#3a7a9a' }}>
+                          {item.closeRate}% closing
+                        </span>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#3a7a9a' }}>
+                          {item.uses} usage{item.uses > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { copy(item.text); toast('Réponse copiée'); }}
+                        style={{ border:'none', background:'white', borderRadius:8, padding:'4px 8px', fontSize:11, cursor:'pointer', color:'#3a7a9a', fontWeight:700 }}
+                      >
+                        Copier
+                      </button>
+                    </div>
+                    <p style={{ margin:0, fontSize:13, color:TXT, lineHeight:1.55 }}>
+                      "{item.text}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* AI Variant */}
           <div style={{ borderTop: '1px solid rgba(232,125,106,.08)', paddingTop: 14 }}>
             {aiResponse ? (
