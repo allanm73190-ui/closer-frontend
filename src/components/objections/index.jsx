@@ -3,7 +3,6 @@ import { apiFetch } from '../../config/api';
 import { DS, P, P2, TXT, TXT2, TXT3, R_SM, R_MD, R_LG, R_FULL, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, card, cardSm, inp } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { fmtDate, copy } from '../../utils/scoring';
-import { fetchAIAnalysis } from '../../config/ai';
 import { Btn, Card, Spinner, Empty } from '../ui';
 
 const OBJECTION_META = {

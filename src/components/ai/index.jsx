@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, inp } from '../../styles/designSystem';
-import { computeSectionScores, fmtDate, copy } from '../../utils/scoring';
+import { fmtDate, copy } from '../../utils/scoring';
 import { apiFetch } from '../../config/api';
 import { fetchAIAnalysis } from '../../config/ai';
 import { Card, Btn, Spinner, Textarea } from '../ui';
@@ -10,11 +10,6 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
   const [loading, setLoading]   = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const triggered = useRef(false);
-
-  const scores = computeSectionScores(debrief?.sections || {});
-  const prevDebriefs = (allDebriefs || [])
-    .filter(d => d.id !== debrief?.id)
-    .sort((a, b) => new Date(b.call_date) - new Date(a.call_date));
 
   // Try to load cached analysis
   useEffect(() => {
@@ -26,20 +21,20 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
   }, [debrief?.id]);
 
   const generate = useCallback(async () => {
-    if (!debrief || loading) return;
+    if (!debrief?.id || loading) return;
     setLoading(true);
     setCollapsed(false);
     try {
-      const result = await fetchAIAnalysis(debrief, scores, prevDebriefs);
+      const result = await fetchAIAnalysis(debrief.id);
       setAnalysis(result);
       try { localStorage.setItem(`cd_ai_${debrief.id}`, result); } catch {}
       toast('Analyse IA générée !');
     } catch (e) {
-      toast(e.message || 'Erreur lors de l\'analyse IA', 'error');
+      toast(e.message || "Erreur lors de l'analyse IA", 'error');
     } finally {
       setLoading(false);
     }
-  }, [debrief, scores, prevDebriefs, loading, toast]);
+  }, [debrief?.id, loading, toast]);
 
   // Auto-trigger on mount if requested
   useEffect(() => {

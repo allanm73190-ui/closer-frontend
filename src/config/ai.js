@@ -1,4 +1,5 @@
 import { computeSectionScores } from '../utils/scoring';
+import { apiFetch } from './api';
 
 // ─── SECTION LABELS ──────────────────────────────────────────────────────────
 export const SECTION_LABELS_AI = {
@@ -173,22 +174,9 @@ export function buildAIPrompt(debrief, scores, prevDebriefs) {
 }
 
 // ─── FETCH AI ANALYSIS ───────────────────────────────────────────────────────
-export async function fetchAIAnalysis(debrief, scores, prevDebriefs) {
-  const userPrompt = buildAIPrompt(debrief, scores, prevDebriefs);
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: AI_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'Erreur API IA');
-  }
-  const data = await response.json();
-  return data.content?.map(b => b.text || '').join('\n') || '';
+// L'analyse est désormais générée côté backend (POST /api/ai/analyze)
+// pour ne pas exposer la clé Anthropic dans le navigateur.
+export async function fetchAIAnalysis(debriefId) {
+  const data = await apiFetch('/ai/analyze', { method: 'POST', body: { debrief_id: debriefId } });
+  return data.analysis || '';
 }
