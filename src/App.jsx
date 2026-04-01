@@ -22,6 +22,35 @@ import { PipelinePage } from './components/pipeline';
 import { HOSPage } from './components/team';
 import { ObjectionLibrary } from './components/objections';
 
+const DESKTOP_SIDEBAR_WIDTH = 214;
+
+const PAGE_META = {
+  Dashboard: { title:'Tableau de bord', subtitle:'Performance globale et priorités du jour' },
+  Pipeline: { title:'Pipeline', subtitle:'Suivi dynamique des opportunités en cours' },
+  Objections: { title:'Objections', subtitle:'Bibliothèque active et réponses validées' },
+  HOSPage: { title:'Espace équipe', subtitle:'Pilotage des équipes et objectifs HOS' },
+  NewDebrief: { title:'Nouveau debrief', subtitle:'Capture structurée de votre dernier appel' },
+  EditDebrief: { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
+  History: { title:'Historique', subtitle:'Retrouvez et filtrez vos debriefs passés' },
+  Detail: { title:'Détail debrief', subtitle:'Analyse complète, IA et export PDF' },
+};
+
+function NavIcon({ name, active=false, size=18, color='currentColor' }) {
+  return (
+    <span
+      className="material-symbols-outlined"
+      style={{
+        fontSize:size,
+        lineHeight:1,
+        color,
+        fontVariationSettings:`'FILL' ${active ? 1 : 0}, 'wght' ${active ? 650 : 500}, 'GRAD' 0, 'opsz' 24`,
+      }}
+    >
+      {name}
+    </span>
+  );
+}
+
 // ─── APP ROOT ────────────────────────────────────────────────────────────────
 export default function App() {
   const { list: toasts, toast } = useToast();
@@ -137,13 +166,14 @@ export default function App() {
   const selDebrief = debriefs.find(d => d.id===selId);
   const isHOS = user?.role === 'head_of_sales';
   const navItems = [
-    { key:'Dashboard', label:'Dashboard', icon:'▦' },
-    { key:'Pipeline',  label:'Pipeline',  icon:'◎' },
-    { key:'Objections', label:'Objections', icon:'◉' },
-    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'◌' }] : []),
-    { key:'NewDebrief', label:'Debrief',  icon:'✦' },
-    { key:'History',   label:'Historique', icon:'◷' },
+    { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
+    { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
+    { key:'Objections', label:'Objections', icon:'forum' },
+    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'groups' }] : []),
+    { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
+    { key:'History',   label:'Historique', icon:'history' },
   ];
+  const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
   if (authLoading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
@@ -237,7 +267,9 @@ export default function App() {
             <nav style={{ position:'fixed', left:10, right:10, bottom:'max(10px, env(safe-area-inset-bottom))', background:'var(--sidebar)', border:'1px solid var(--border)', borderRadius:16, boxShadow:'var(--sh-card)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 4px', zIndex:45, backdropFilter:'blur(14px)' }}>
               {navItems.map(({ key, label, icon }) => (
                 <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit', flex:1 }}>
-                  <div style={{ minWidth:34, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
+                  <div style={{ minWidth:34, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>
+                    <NavIcon name={icon} active={page===key} size={17} color={page===key ? 'white' : TXT2} />
+                  </div>
                   <span style={{ fontSize:10, fontWeight:700, color:page===key?P:TXT3 }}>{label}</span>
                 </button>
               ))}
@@ -245,21 +277,23 @@ export default function App() {
           </>
         ) : (
           <div style={{ display:'flex', minHeight:'100vh' }}>
-            <aside style={{ width:228, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:`linear-gradient(165deg, ${P}, ${P2})`, borderRight:'1px solid rgba(255,255,255,.28)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'26px 14px 16px', zIndex:40 }}>
+            <aside style={{ width:DESKTOP_SIDEBAR_WIDTH, flexShrink:0, position:'fixed', left:0, top:0, bottom:0, display:'flex', flexDirection:'column', background:`linear-gradient(165deg, ${P}, ${P2})`, borderRight:'1px solid rgba(255,255,255,.28)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'20px 10px 12px', zIndex:60 }}>
               <button
                 onClick={()=>navigate('Dashboard')}
-                style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'8px 10px 22px', borderRadius:R_MD, marginBottom:4, width:'100%', transition:'background .15s' }}
+                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:'6px 8px 14px', borderRadius:R_MD, marginBottom:2, width:'100%', transition:'background .15s' }}
                 onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}
               >
-                <div style={{ width:36, height:36, borderRadius:12, background:'rgba(255,255,255,.22)', border:'1px solid rgba(255,255,255,.28)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'white', flexShrink:0 }}>✦</div>
+                <div style={{ width:34, height:34, borderRadius:11, background:'rgba(255,255,255,.22)', border:'1px solid rgba(255,255,255,.28)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <NavIcon name="target" active size={16} color="white" />
+                </div>
                 <div style={{ textAlign:'left' }}>
-                  <div style={{ fontSize:22, fontWeight:800, color:'white', lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
-                  <div style={{ fontSize:10, color:'rgba(255,255,255,.7)', letterSpacing:'.22em', textTransform:'uppercase', fontWeight:800, marginTop:4 }}>Sales Intelligence</div>
+                  <div style={{ fontSize:19, fontWeight:800, color:'white', lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
+                  <div style={{ fontSize:9, color:'rgba(255,255,255,.76)', letterSpacing:'.2em', textTransform:'uppercase', fontWeight:800, marginTop:3 }}>Sales Intelligence</div>
                 </div>
               </button>
 
-              <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:5, flex:1 }}>
                 {navItems.map(({ key, label, icon }) => (
                   <button
                     key={key}
@@ -267,57 +301,70 @@ export default function App() {
                     style={{
                       display:'flex',
                       alignItems:'center',
-                      gap:10,
-                      padding:'12px 14px',
-                      borderRadius:16,
+                      gap:8,
+                      padding:'8px 10px',
+                      borderRadius:12,
                       border:'none',
-                      fontSize:13,
+                      fontSize:12,
                       fontWeight:700,
                       cursor:'pointer',
                       transition:'all .18s',
-                      background:page===key?'rgba(255,255,255,.18)':'transparent',
+                      background:page===key?'rgba(255,255,255,.24)':'transparent',
                       color:'white',
-                      boxShadow:page===key?'0 10px 20px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.22)':'none',
+                      boxShadow:page===key?'0 10px 20px rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.28)':'none',
                       textAlign:'left',
                       width:'100%',
                     }}
                     onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(255,255,255,.1)'; }}
                     onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}
                   >
-                    <span style={{ fontSize:15, width:20, textAlign:'center' }}>{icon}</span>
+                    <span style={{ width:20, height:20, borderRadius:8, display:'inline-flex', alignItems:'center', justifyContent:'center', background:page===key?'rgba(255,255,255,.2)':'rgba(255,255,255,.1)' }}>
+                      <NavIcon name={icon} active={page===key} size={15} color="white" />
+                    </span>
                     <span>{label}</span>
                   </button>
                 ))}
               </div>
 
-              <div style={{ borderTop:'1px solid rgba(255,255,255,.22)', paddingTop:12, marginTop:8, display:'grid', gap:8 }}>
-                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:'white', fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
-                  <span style={{ width:18, textAlign:'center' }}>⚙️</span> Paramètres
+              <div style={{ borderTop:'1px solid rgba(255,255,255,.22)', paddingTop:10, marginTop:6, display:'grid', gap:4 }}>
+                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:8, border:'none', background:'transparent', padding:'8px 10px', borderRadius:11, cursor:'pointer', color:'white', fontSize:12, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
+                  <span style={{ width:20, height:20, borderRadius:8, background:'rgba(255,255,255,.14)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                    <NavIcon name="settings" size={14} color="white" />
+                  </span>
+                  Paramètres
                 </button>
-                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:'white', fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
-                  <span style={{ width:18, textAlign:'center' }}>↩</span> Déconnexion
+                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:8, border:'none', background:'transparent', padding:'8px 10px', borderRadius:11, cursor:'pointer', color:'white', fontSize:12, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
+                  <span style={{ width:20, height:20, borderRadius:8, background:'rgba(255,255,255,.14)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                    <NavIcon name="logout" size={14} color="white" />
+                  </span>
+                  Déconnexion
                 </button>
               </div>
             </aside>
 
-            <div style={{ flex:1, minWidth:0, maxWidth:'calc(100vw - 228px)' }}>
-              <header style={{ position:'sticky', top:0, zIndex:45, height:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
-                <div style={{ width:'min(520px, 56vw)', position:'relative' }}>
-                  <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:TXT3, fontSize:13 }}>⌕</span>
-                  <input
-                    placeholder="Rechercher un prospect, une objection, un replay..."
-                    style={{ width:'100%', border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.86)', color:TXT, borderRadius:999, padding:'10px 14px 10px 34px', boxShadow:'var(--sh-sm)', outline:'none', fontFamily:'inherit', fontSize:13 }}
-                  />
+            <div style={{ flex:1, minWidth:0, marginLeft:DESKTOP_SIDEBAR_WIDTH, width:`calc(100vw - ${DESKTOP_SIDEBAR_WIDTH}px)` }}>
+              <header style={{ position:'sticky', top:0, zIndex:45, minHeight:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ margin:'0 0 2px', fontSize:10, letterSpacing:'.14em', textTransform:'uppercase', color:TXT3, fontWeight:700 }}>
+                    CloserDebrief
+                  </p>
+                  <h2 style={{ margin:0, fontSize:18, color:TXT, fontWeight:800, lineHeight:1.2 }}>
+                    {pageMeta.title}
+                  </h2>
+                  <p style={{ margin:'2px 0 0', fontSize:12, color:TXT2 }}>
+                    {pageMeta.subtitle}
+                  </p>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}>⌂</button>
-                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}>?</button>
+                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                    <NavIcon name="help" size={16} color={TXT2} />
+                  </button>
                   <button
                     onClick={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                    style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}
+                    style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}
                     title="Basculer le thème"
                   >
-                    {theme === 'dark' ? '☀︎' : '☾'}
+                    <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={16} color={TXT2} />
                   </button>
                   <UserMenu
                     user={user}

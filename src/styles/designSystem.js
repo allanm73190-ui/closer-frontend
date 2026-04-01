@@ -73,7 +73,7 @@ export const inp = (extra={}) => ({
 
 // Global CSS string
 export const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@400,0,0,24&display=swap');
 
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
@@ -104,16 +104,16 @@ export const GLOBAL_CSS = `
   :root {
     color-scheme: light;
     --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
-    --card: rgba(255,255,255,.78);
-    --card-soft: rgba(255,255,255,.72);
-    --card-border: rgba(255,255,255,.62);
+    --card: rgba(255,255,255,.96);
+    --card-soft: rgba(255,255,255,.9);
+    --card-border: rgba(195,147,121,.3);
     --input: #f7f0ea;
     --txt: #5a4a3a;
     --txt2: #b09080;
     --txt3: #c8b8a8;
-    --border: rgba(232,125,106,.12);
-    --sh-card: 0 18px 40px rgba(112,79,57,.10), inset 0 1px 0 rgba(255,255,255,.9);
-    --sh-sm: 0 10px 22px rgba(112,79,57,.08), inset 0 1px 0 rgba(255,255,255,.85);
+    --border: rgba(195,147,121,.34);
+    --sh-card: 0 22px 48px rgba(112,79,57,.16), inset 0 1px 0 rgba(255,255,255,.95);
+    --sh-sm: 0 12px 26px rgba(112,79,57,.13), inset 0 1px 0 rgba(255,255,255,.9);
     --sh-in: inset 2px 2px 8px rgba(180,144,128,.18), inset -2px -2px 8px rgba(255,255,255,.85);
     --sidebar: rgba(255,255,255,.56);
     --nav-hover: rgba(244,236,229,.88);
@@ -123,16 +123,16 @@ export const GLOBAL_CSS = `
   [data-theme="dark"] {
     color-scheme: dark;
     --bg: radial-gradient(circle at 16% 8%,#213349 0%,transparent 38%), radial-gradient(circle at 84% 14%,#4b2f34 0%,transparent 34%), linear-gradient(160deg,#131927 0%,#1b2232 52%,#161a28 100%);
-    --card: rgba(29,39,56,.88);
-    --card-soft: rgba(33,43,60,.8);
-    --card-border: rgba(106,172,206,.24);
+    --card: rgba(27,38,56,.94);
+    --card-soft: rgba(30,42,61,.88);
+    --card-border: rgba(116,174,212,.38);
     --input: rgba(33,45,64,.92);
     --txt: #e8edf5;
     --txt2: #bdd0e4;
     --txt3: #8da1b8;
-    --border: rgba(106,172,206,.28);
-    --sh-card: 0 24px 50px rgba(0,0,0,.34);
-    --sh-sm: 0 10px 24px rgba(0,0,0,.28);
+    --border: rgba(116,174,212,.4);
+    --sh-card: 0 28px 58px rgba(0,0,0,.4);
+    --sh-sm: 0 14px 28px rgba(0,0,0,.34);
     --sh-in: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.25);
     --sidebar: rgba(17,24,38,.72);
     --nav-hover: rgba(106,172,206,.18);

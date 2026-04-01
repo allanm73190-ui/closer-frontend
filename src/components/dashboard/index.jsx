@@ -3,6 +3,7 @@ import { apiFetch } from '../../config/api';
 import { DEFAULT_PIPELINE_STATUSES, normalizePipelineConfig } from '../../config/pipeline';
 import { DS, R_FULL, SH_SM, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
+import { fmtDate } from '../../utils/scoring';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
 import { GamCard } from '../gamification';
 import { StatsRow, Chart } from './StatsChart';
@@ -37,6 +38,9 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const isHOS = user.role === 'head_of_sales';
   const [patternsData, setPatternsData] = useState(null);
   const [patternsLoading, setPatternsLoading] = useState(true);
+  const latestDebriefs = [...debriefs]
+    .sort((a,b) => new Date(b.call_date || b.created_at || 0) - new Date(a.call_date || a.created_at || 0))
+    .slice(0, 6);
 
   useEffect(() => {
     let mounted = true;
@@ -135,10 +139,75 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         )}
       </Card>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, alignItems:'start' }}>
+      <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)', gap:14, alignItems:'start' }}>
         <Card style={{ padding:18 }}>
-          <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:12 }}>Évolution du score</h2>
-          <Chart debriefs={debriefs} compact />
+          <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>Évolution du score</h2>
+          <p style={{ margin:'0 0 10px', fontSize:12, color:DS.textMuted }}>
+            Vue simplifiée sur les derniers appels.
+          </p>
+          <Chart debriefs={debriefs} compact simple />
+        </Card>
+
+        <Card style={{ padding:18 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:10 }}>
+            <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>
+              Historique des derniers appels
+            </h2>
+            {debriefs.length > 0 && (
+              <button
+                onClick={()=>navigate('History')}
+                style={{ background:'none', border:'none', color:'#e87d6a', cursor:'pointer', fontSize:12, fontWeight:700, fontFamily:'inherit' }}
+              >
+                Voir tout →
+              </button>
+            )}
+          </div>
+
+          {latestDebriefs.length === 0 ? (
+            <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>
+              Aucun appel debriefé pour le moment.
+            </p>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {latestDebriefs.map((d, idx) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={()=>navigate('Detail', d.id)}
+                  style={{
+                    border:'1px solid var(--border)',
+                    background:idx % 2 === 0 ? 'rgba(255,255,255,.92)' : 'rgba(253,244,238,.82)',
+                    borderRadius:11,
+                    padding:'9px 10px',
+                    textAlign:'left',
+                    cursor:'pointer',
+                    fontFamily:'inherit',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'space-between',
+                    gap:10,
+                  }}
+                >
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {d.prospect_name || 'Prospect'}
+                    </p>
+                    <p style={{ margin:'2px 0 0', fontSize:11, color:DS.textMuted }}>
+                      {fmtDate(d.call_date || d.created_at)} · {d.closer_name || d.user_name || 'Closer'}
+                    </p>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:(d.percentage || 0) >= 75 ? 'rgba(218,240,216,.9)' : 'rgba(254,243,224,.9)', color:(d.percentage || 0) >= 75 ? '#166534' : '#92400e' }}>
+                      {Math.round(d.percentage || 0)}%
+                    </span>
+                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:d.is_closed ? 'rgba(209,250,229,.9)' : 'rgba(254,226,226,.9)', color:d.is_closed ? '#065f46' : '#991b1b' }}>
+                      {d.is_closed ? 'Closé' : 'Non closé'}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
 
@@ -150,16 +219,6 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         <MiniPipeline navigate={navigate} user={user}/>
       </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
-      <div>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-          <h2 style={{ fontSize:16, fontWeight:600, color:'#5a4a3a', margin:0 }}>Derniers debriefs</h2>
-          {debriefs.length>5 && <button onClick={()=>navigate('History')} style={{background:'none',border:'none',color:'#e87d6a',fontSize:13,cursor:'pointer'}}>Voir tout ›</button>}
-        </div>
-        {debriefs.length===0
-          ? <Empty icon="📋" title="Aucun debrief" subtitle="Créez votre premier debrief pour suivre vos progrès" action={<Btn variant="secondary" onClick={()=>navigate('NewDebrief')}>+ Créer votre premier debrief</Btn>}/>
-          : <div style={{display:'flex',flexDirection:'column',gap:10}}>{debriefs.slice(0,5).map(d=><DebriefCard key={d.id} debrief={d} onClick={()=>navigate('Detail',d.id)} showUser={isHOS}/>)}</div>
-        }
-      </div>
     </div>
   );
 }

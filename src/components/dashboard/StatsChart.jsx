@@ -35,7 +35,7 @@ function StatsRow({ debriefs }) {
 }
 
 // ─── CHART ────────────────────────────────────────────────────────────────────
-function Chart({ debriefs, compact = false }) {
+function Chart({ debriefs, compact = false, simple = false }) {
   const [hov, setHov] = useState(null);
   const data = [...debriefs]
     .sort((a,b) => new Date(a.call_date||a.date) - new Date(b.call_date||b.date))
@@ -45,6 +45,43 @@ function Chart({ debriefs, compact = false }) {
       Aucune donnée — créez votre premier debrief !
     </div>
   );
+  if (simple) {
+    const simpleData = data.slice(-8);
+    const avg = Math.round(simpleData.reduce((sum, item) => sum + item.score, 0) / simpleData.length);
+    const last = simpleData[simpleData.length - 1]?.score || 0;
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ display:'flex', gap:8, alignItems:'flex-end', height:compact ? 118 : 142 }}>
+          {simpleData.map((item, idx) => (
+            <div key={`${item.date}_${idx}`} style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+              <div
+                style={{
+                  width:'100%',
+                  maxWidth:20,
+                  height:`${Math.max(16, item.score)}%`,
+                  borderRadius:'8px 8px 5px 5px',
+                  background:item.score >= 75
+                    ? 'linear-gradient(180deg,#6aacce,#3a7a9a)'
+                    : item.score >= 55
+                      ? 'linear-gradient(180deg,#e8a58d,#d97706)'
+                      : 'linear-gradient(180deg,#f4b2a5,#d4604e)',
+                  boxShadow:'0 8px 16px rgba(90,74,58,.12)',
+                }}
+                title={`${item.prospect || 'Debrief'} · ${item.score}%`}
+              />
+              <span style={{ fontSize:10, color:'#a88f80', fontWeight:600 }}>
+                {item.date}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12 }}>
+          <span style={{ color:'#a88f80' }}>Moyenne récente: <strong style={{ color:'#5a4a3a' }}>{avg}%</strong></span>
+          <span style={{ color:'#a88f80' }}>Dernier appel: <strong style={{ color:'#5a4a3a' }}>{last}%</strong></span>
+        </div>
+      </div>
+    );
+  }
   const W = compact ? 500 : 560;
   const H = compact ? 142 : 188;
   const pL = 42;
