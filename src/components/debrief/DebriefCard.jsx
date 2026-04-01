@@ -9,7 +9,7 @@ function DebriefCard({ debrief, onClick, showUser }) {
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{
-        background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(253,241,235,.72))',
+        background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))',
         border:`1px solid ${hov?'rgba(232,125,106,.26)':'var(--border)'}`,
         borderRadius:DS.radiusLg,
         padding:'16px 18px',
@@ -27,13 +27,13 @@ function DebriefCard({ debrief, onClick, showUser }) {
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:DS.textMuted, flexWrap:'wrap' }}>
           <span>📅 {fmtDate(debrief.call_date)}</span>
           <span>👤 {debrief.closer_name}</span>
-          {showUser&&debrief.user_name&&<span style={{background:'rgba(253,232,228,.34)',padding:'2px 7px',borderRadius:999, border:'1px solid var(--border)'}}>par {debrief.user_name}</span>}
+          {showUser&&debrief.user_name&&<span style={{background:'var(--surface-accent)',padding:'2px 7px',borderRadius:999, border:'1px solid var(--border)'}}>par {debrief.user_name}</span>}
         </div>
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
         <ClosedBadge isClosed={debrief.is_closed}/>
         <ScoreBadge pct={pct}/>
-        <span style={{ color:hov?'#e87d6a':'#d1d5db', fontSize:18, transition:'color .15s' }}>→</span>
+        <span style={{ color:hov?'#e87d6a':'var(--txt3,#c8b8a8)', fontSize:18, transition:'color .15s' }}>→</span>
       </div>
     </div>
   );

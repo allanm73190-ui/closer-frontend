@@ -14,18 +14,18 @@ function StatsRow({ debriefs }) {
   const pA = sorted.slice(3,6).reduce((s,d)=>s+(d.percentage||0),0) / Math.max(sorted.slice(3,6).length,1);
   const trend = sorted.slice(3,6).length > 0 ? Math.round(rA - pA) : 0;
   const items = [
-    { label:'Total appels',   value:total,                         icon:'📞', bg:'rgba(253,232,228,.6)', c:'#e87d6a' },
-    { label:'Score moyen',    value:`${avg}%`,                     icon:'🎯', bg:'#d1fae5', c:'#059669' },
-    { label:'Meilleur score', value:`${Math.round(best)}%`,        icon:'🏆', bg:'#fef3c7', c:'#d97706' },
-    { label:'Tendance',       value:`${trend>=0?'+':''}${trend}%`, icon:trend>=0?'📈':'📉', bg:trend>=0?'#d1fae5':'#fee2e2', c:trend>=0?'#059669':'#dc2626' },
+    { label:'Total appels',   value:total,                         icon:'📞', bg:'var(--surface-accent)', c:'var(--txt,#5a4a3a)' },
+    { label:'Score moyen',    value:`${avg}%`,                     icon:'🎯', bg:'var(--positive-bg)', c:'var(--positive-txt)' },
+    { label:'Meilleur score', value:`${Math.round(best)}%`,        icon:'🏆', bg:'var(--warning-bg)', c:'var(--warning-txt)' },
+    { label:'Tendance',       value:`${trend>=0?'+':''}${trend}%`, icon:trend>=0?'📈':'📉', bg:trend>=0?'var(--positive-bg)':'var(--danger-bg)', c:trend>=0?'var(--positive-txt)':'var(--danger-txt)' },
   ];
   return (
     <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
       {items.map(({ label, value, icon, bg, c }) => (
-        <Card key={label} style={{ padding:mob?'12px 14px':'16px 18px', display:'flex', alignItems:'center', gap:mob?10:12, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
+        <Card key={label} style={{ padding:mob?'12px 14px':'16px 18px', display:'flex', alignItems:'center', gap:mob?10:12, background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
           <div style={{ width:mob?36:44, height:mob?36:44, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:mob?16:20, flexShrink:0 }}>{icon}</div>
           <div>
-            <p style={{ fontSize:10, color:'#6b7280', margin:0, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em' }}>{label}</p>
+            <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:0, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em' }}>{label}</p>
             <p style={{ fontSize:mob?18:22, fontWeight:700, color:c, margin:0 }}>{value}</p>
           </div>
         </Card>
@@ -76,8 +76,8 @@ function Chart({ debriefs, compact = false, simple = false }) {
           ))}
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12 }}>
-          <span style={{ color:'#a88f80' }}>Moyenne récente: <strong style={{ color:'#5a4a3a' }}>{avg}%</strong></span>
-          <span style={{ color:'#a88f80' }}>Dernier appel: <strong style={{ color:'#5a4a3a' }}>{last}%</strong></span>
+          <span style={{ color:'var(--txt2,#b09080)' }}>Moyenne récente: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{avg}%</strong></span>
+          <span style={{ color:'var(--txt2,#b09080)' }}>Dernier appel: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{last}%</strong></span>
         </div>
       </div>
     );

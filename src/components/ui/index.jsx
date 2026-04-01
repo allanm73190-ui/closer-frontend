@@ -155,7 +155,7 @@ export function ScoreBadge({ pct }) {
 export function ClosedBadge({ isClosed }) {
   if (isClosed === null || isClosed === undefined) return null;
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:8, fontSize:12, fontWeight:600, whiteSpace:'nowrap', background:isClosed?'#d1fae5':'#fee2e2', color:isClosed?'#065f46':'#991b1b' }}>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:8, fontSize:12, fontWeight:600, whiteSpace:'nowrap', background:isClosed?'var(--positive-bg)':'var(--danger-bg)', color:isClosed?'var(--positive-txt)':'var(--danger-txt)' }}>
       {isClosed ? '✓ Closer' : '✗ Non Closer'}
     </span>
   );

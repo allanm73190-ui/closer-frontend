@@ -5,12 +5,12 @@ import { SECTIONS } from '../../config/ai';
 import {
   DEFAULT_PIPELINE_CONFIG,
   DEFAULT_PIPELINE_STATUSES,
+  LEAD_FIELD_OPTIONS,
   normalizePipelineConfig,
-  makeStatusKey,
 } from '../../config/pipeline';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { Btn, Card, Modal, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Textarea } from '../ui';
+import { Btn, Card, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Textarea } from '../ui';
 
 function getStageByKey(stages, key) {
   return stages.find(stage => stage.key === key) || null;
@@ -22,6 +22,10 @@ function getWonStatusKey(stages) {
 
 function getOpenStatusKey(stages) {
   return stages.find(stage => !stage.closed)?.key || 'prospect';
+}
+
+function leadFieldLabel(key) {
+  return LEAD_FIELD_OPTIONS.find(field => field.key === key)?.label || key;
 }
 
 function parseISODate(value) {
@@ -61,7 +65,7 @@ function StatusBadge({ stage, compact=false }) {
   );
 }
 
-function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCreateDebrief, toast }) {
+function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave, onDelete, onCreateDebrief, toast }) {
   const mob = useIsMobile();
   const initialDealClosed = typeof deal?.deal_closed === 'boolean'
     ? deal.deal_closed
@@ -87,6 +91,14 @@ function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCrea
   const isNew = !deal?.id;
   const linkedDebrief = debriefs.find(item => item.id === form.debrief_id);
   const activeStage = getStageByKey(statuses, form.status) || statuses[0];
+  const visibleFields = useMemo(() => {
+    const fallback = LEAD_FIELD_OPTIONS.map(field => field.key);
+    const list = Array.isArray(importantFields) && importantFields.length > 0 ? importantFields : fallback;
+    return new Set(list);
+  }, [importantFields]);
+  const showFirstName = visibleFields.has('first_name');
+  const showLastName = visibleFields.has('last_name');
+  const showProspectFallback = !showFirstName && !showLastName;
 
   const setValue = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -105,7 +117,7 @@ function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCrea
   const saveLead = async ({ closeAfter = true, silent = false } = {}) => {
     const prospectName = buildProspectName();
     if (!prospectName) {
-      toast('Nom ou prénom requis', 'error');
+      toast('Nom du contact requis', 'error');
       return null;
     }
     setSaving(true);
@@ -224,60 +236,84 @@ function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCrea
           {activeTab === 'contact' && (
             <>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Nom *</label>
-                  <Input value={form.last_name} onChange={e=>setValue('last_name', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Prénom *</label>
-                  <Input value={form.first_name} onChange={e=>setValue('first_name', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Email</label>
-                  <Input type="email" value={form.email} onChange={e=>setValue('email', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Téléphone</label>
-                  <Input value={form.phone} onChange={e=>setValue('phone', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Source</label>
-                  <Input value={form.source} onChange={e=>setValue('source', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Valeur (€)</label>
-                  <Input type="number" value={form.value} onChange={e=>setValue('value', e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Date</label>
-                  <Input type="date" value={form.contact_date} onChange={e=>setValue('contact_date', e.target.value)} />
-                </div>
+                {showLastName && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Nom *</label>
+                    <Input value={form.last_name} onChange={e=>setValue('last_name', e.target.value)} />
+                  </div>
+                )}
+                {showFirstName && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Prénom *</label>
+                    <Input value={form.first_name} onChange={e=>setValue('first_name', e.target.value)} />
+                  </div>
+                )}
+                {showProspectFallback && (
+                  <div style={{ gridColumn:'1 / -1' }}>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Nom du contact *</label>
+                    <Input value={form.prospect_name} onChange={e=>setValue('prospect_name', e.target.value)} />
+                  </div>
+                )}
+                {visibleFields.has('email') && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Email</label>
+                    <Input type="email" value={form.email} onChange={e=>setValue('email', e.target.value)} />
+                  </div>
+                )}
+                {visibleFields.has('phone') && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Téléphone</label>
+                    <Input value={form.phone} onChange={e=>setValue('phone', e.target.value)} />
+                  </div>
+                )}
+                {visibleFields.has('source') && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Source</label>
+                    <Input value={form.source} onChange={e=>setValue('source', e.target.value)} />
+                  </div>
+                )}
+                {visibleFields.has('value') && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Valeur (€)</label>
+                    <Input type="number" value={form.value} onChange={e=>setValue('value', e.target.value)} />
+                  </div>
+                )}
+                {visibleFields.has('contact_date') && (
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Date</label>
+                    <Input type="date" value={form.contact_date} onChange={e=>setValue('contact_date', e.target.value)} />
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:8 }}>Deal (closé ou non)</label>
-                <div style={{ display:'flex', gap:10 }}>
-                  <button
-                    type="button"
-                    onClick={()=>setValue('deal_closed', true)}
-                    style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${form.deal_closed ? '#059669' : 'var(--border)'}`, background:form.deal_closed ? 'rgba(209,250,229,.8)' : 'var(--card,#fff)', color:form.deal_closed ? '#065f46' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
-                  >
-                    ✅ Closé
-                  </button>
-                  <button
-                    type="button"
-                    onClick={()=>setValue('deal_closed', false)}
-                    style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${!form.deal_closed ? '#dc2626' : 'var(--border)'}`, background:!form.deal_closed ? 'rgba(254,226,226,.8)' : 'var(--card,#fff)', color:!form.deal_closed ? '#991b1b' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
-                  >
-                    ❌ Non closé
-                  </button>
+              {visibleFields.has('deal_closed') && (
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:8 }}>Deal (closé ou non)</label>
+                  <div style={{ display:'flex', gap:10 }}>
+                    <button
+                      type="button"
+                      onClick={()=>setValue('deal_closed', true)}
+                      style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${form.deal_closed ? '#059669' : 'var(--border)'}`, background:form.deal_closed ? 'rgba(209,250,229,.8)' : 'var(--card,#fff)', color:form.deal_closed ? '#065f46' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
+                    >
+                      ✅ Closé
+                    </button>
+                    <button
+                      type="button"
+                      onClick={()=>setValue('deal_closed', false)}
+                      style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${!form.deal_closed ? '#dc2626' : 'var(--border)'}`, background:!form.deal_closed ? 'rgba(254,226,226,.8)' : 'var(--card,#fff)', color:!form.deal_closed ? '#991b1b' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
+                    >
+                      ❌ Non closé
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Note</label>
-                <Textarea rows={4} value={form.note} onChange={e=>setValue('note', e.target.value)} />
-              </div>
+              {visibleFields.has('note') && (
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Note</label>
+                  <Textarea rows={4} value={form.note} onChange={e=>setValue('note', e.target.value)} />
+                </div>
+              )}
             </>
           )}
 
@@ -291,9 +327,10 @@ function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCrea
                   {form.email || 'Email non renseigné'} · {form.phone || 'Téléphone non renseigné'}
                 </p>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Source: {form.source || '—'}</span>
-                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Valeur: {(Number(form.value) || 0).toLocaleString('fr-FR')} €</span>
-                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Date: {form.contact_date ? fmtDate(form.contact_date) : '—'}</span>
+                  {visibleFields.has('source') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Source: {form.source || '—'}</span>}
+                  {visibleFields.has('value') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Valeur: {(Number(form.value) || 0).toLocaleString('fr-FR')} €</span>}
+                  {visibleFields.has('contact_date') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Date: {form.contact_date ? fmtDate(form.contact_date) : '—'}</span>}
+                  {visibleFields.has('deal_closed') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Deal: {form.deal_closed ? 'Closé' : 'Non closé'}</span>}
                 </div>
               </Card>
 
@@ -442,147 +479,12 @@ function AccordionColumn({ stage, deals, stages, onOpen, onMove }) {
   );
 }
 
-function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
-  const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(config || DEFAULT_PIPELINE_CONFIG)));
-
-  useEffect(() => {
-    setDraft(JSON.parse(JSON.stringify(config || DEFAULT_PIPELINE_CONFIG)));
-  }, [config]);
-
-  const updateStatus = (idx, patch) => {
-    setDraft(prev => ({
-      ...prev,
-      statuses: prev.statuses.map((status, statusIdx) => statusIdx === idx ? { ...status, ...patch } : status),
-    }));
-  };
-
-  const removeStatus = (idx) => {
-    setDraft(prev => ({
-      ...prev,
-      statuses: prev.statuses.filter((_, statusIdx) => statusIdx !== idx),
-    }));
-  };
-
-  const moveStatus = (idx, direction) => {
-    setDraft(prev => {
-      const next = [...prev.statuses];
-      const targetIdx = idx + direction;
-      if (targetIdx < 0 || targetIdx >= next.length) return prev;
-      [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
-      return { ...prev, statuses: next };
-    });
-  };
-
-  const addStatus = () => {
-    const nextLabel = `Nouveau statut ${draft.statuses.length + 1}`;
-    const nextKey = makeStatusKey(nextLabel, `status_${draft.statuses.length + 1}`);
-    setDraft(prev => ({
-      ...prev,
-      statuses: [
-        ...prev.statuses,
-        { key: nextKey, label: nextLabel, icon:'🧩', color:'#64748b', bg:'#e2e8f0', closed:false, won:false },
-      ],
-    }));
-  };
-
-  const save = () => {
-    if (!draft.statuses?.length) {
-      toast('Ajoutez au moins un statut', 'error');
-      return;
-    }
-    const usedKeys = new Set();
-    const normalizedStatuses = draft.statuses.map((status, idx) => {
-      const normalizedKeyBase = makeStatusKey(status.key || status.label || `status_${idx + 1}`, `status_${idx + 1}`);
-      let normalizedKey = normalizedKeyBase;
-      let suffix = 2;
-      while (usedKeys.has(normalizedKey)) {
-        normalizedKey = `${normalizedKeyBase}_${suffix}`;
-        suffix += 1;
-      }
-      usedKeys.add(normalizedKey);
-      return {
-        ...status,
-        key: normalizedKey,
-        label: String(status.label || normalizedKey).trim() || normalizedKey,
-        icon: String(status.icon || '•').trim() || '•',
-      };
-    });
-    onSave({
-      ...draft,
-      statuses: normalizedStatuses,
-      importantFields: ['first_name', 'last_name', 'email', 'phone', 'source', 'deal_closed', 'value', 'contact_date', 'note'],
-    });
-  };
-
-  const statusesInUse = new Set((deals || []).map(deal => deal.status));
-
-  return (
-    <Modal title="Paramètres pipeline" onClose={onClose}>
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-          Personnalisez les statuts pipeline. La fiche contact reste unifiée pour toute l’équipe.
-        </p>
-
-        <Card style={{ padding:12, border:'1px solid var(--border)' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-            <h3 style={{ margin:0, fontSize:13, color:'var(--txt,#5a4a3a)' }}>Statuts pipeline</h3>
-            <Btn variant="secondary" onClick={addStatus} style={{ fontSize:12, padding:'6px 10px' }}>+ Ajouter</Btn>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {(draft.statuses || []).map((status, idx) => (
-              <div key={`${status.key}_${idx}`} style={{ border:'1px solid var(--border)', borderRadius:10, padding:10, background:'var(--input,#f5ede6)' }}>
-                <div style={{ display:'grid', gridTemplateColumns:'42px 1fr 1fr', gap:8, marginBottom:8 }}>
-                  <Input value={status.icon} onChange={e=>updateStatus(idx, { icon: e.target.value })} placeholder="🎯" />
-                  <Input value={status.label} onChange={e=>updateStatus(idx, { label: e.target.value })} placeholder="Label statut" />
-                  <Input value={status.key} onChange={e=>updateStatus(idx, { key: e.target.value })} placeholder="clé_statut" />
-                </div>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <label style={{ fontSize:11, color:DS.textMuted }}>Couleur</label>
-                    <input type="color" value={status.color} onChange={e=>updateStatus(idx, { color: e.target.value })} />
-                    <label style={{ fontSize:11, color:DS.textMuted }}>Fond</label>
-                    <input type="color" value={status.bg.startsWith('#') ? status.bg : '#f1f5f9'} onChange={e=>updateStatus(idx, { bg: e.target.value })} />
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <label style={{ fontSize:11, color:DS.textMuted }}>
-                      <input type="checkbox" checked={!!status.closed} onChange={e=>updateStatus(idx, { closed: e.target.checked })} /> Clôturé
-                    </label>
-                    <label style={{ fontSize:11, color:DS.textMuted }}>
-                      <input type="checkbox" checked={!!status.won} onChange={e=>updateStatus(idx, { won: e.target.checked, closed: e.target.checked ? true : status.closed })} /> Gagné
-                    </label>
-                  </div>
-                </div>
-                <div style={{ marginTop:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <p style={{ margin:0, fontSize:11, color: statusesInUse.has(status.key) ? '#d97706' : DS.textMuted }}>
-                    {statusesInUse.has(status.key) ? 'Statut actuellement utilisé par des leads' : 'Aucun lead sur ce statut'}
-                  </p>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <Btn variant="secondary" onClick={()=>moveStatus(idx, -1)} style={{ fontSize:11, padding:'4px 8px' }}>↑</Btn>
-                    <Btn variant="secondary" onClick={()=>moveStatus(idx, 1)} style={{ fontSize:11, padding:'4px 8px' }}>↓</Btn>
-                    <Btn variant="danger" onClick={()=>removeStatus(idx)} style={{ fontSize:11, padding:'4px 8px' }}>Suppr.</Btn>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
-          <Btn onClick={save}>Sauvegarder</Btn>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
 function PipelinePage({ user, toast, debriefs, navigate }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openLead, setOpenLead] = useState(null);
   const [filter, setFilter] = useState('all');
   const [alertFocus, setAlertFocus] = useState('all');
-  const [showSettings, setShowSettings] = useState(false);
   const [pipelineConfig, setPipelineConfig] = useState(DEFAULT_PIPELINE_CONFIG);
   const mob = useIsMobile();
 
@@ -692,16 +594,6 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const closed = deals.filter(deal => closedKeys.includes(deal.status));
   const winRate = closed.length > 0 ? Math.round((deals.filter(deal => wonKeys.includes(deal.status)).length / closed.length) * 100) : 0;
 
-  const savePipelineSettings = (nextConfig) => {
-    apiFetch('/pipeline-config', { method:'PUT', body: nextConfig })
-      .then(saved => {
-        setPipelineConfig(normalizePipelineConfig(saved || nextConfig));
-        setShowSettings(false);
-        toast('Pipeline personnalisé');
-      })
-      .catch(err => toast(err.message, 'error'));
-  };
-
   const openNewDebriefFromLead = (leadContext) => {
     navigate?.('NewDebrief', null, 'Pipeline', { leadContext });
   };
@@ -719,14 +611,28 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            {isHOS && <Btn variant="secondary" onClick={()=>setShowSettings(true)}>⚙️ Paramètres</Btn>}
+            {isHOS && (
+              <Btn
+                variant="secondary"
+                onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
+              >
+                ⚙️ Paramètres
+              </Btn>
+            )}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
           </div>
         </div>
         <div style={{ marginTop:10, display:'flex', flexWrap:'wrap', gap:8 }}>
-          {['Nom', 'Prénom', 'Email', 'Téléphone', 'Source', 'Deal closé/non', 'Valeur', 'Date', 'Note'].map(item => (
-            <span key={item} style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>{item}</span>
+          {(pipelineConfig.importantFields || []).map(field => (
+            <span key={field} style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
+              {leadFieldLabel(field)}
+            </span>
           ))}
+          {(pipelineConfig.importantFields || []).length === 0 && (
+            <span style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
+              Aucun champ prioritaire configuré
+            </span>
+          )}
         </div>
       </Card>
 
@@ -854,20 +760,11 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
           deal={openLead?.id ? openLead : null}
           statuses={statuses}
           debriefs={debriefs || []}
+          importantFields={pipelineConfig.importantFields}
           onClose={()=>setOpenLead(null)}
           onSave={handleSave}
           onDelete={handleDelete}
           onCreateDebrief={openNewDebriefFromLead}
-          toast={toast}
-        />
-      )}
-
-      {showSettings && isHOS && (
-        <PipelineSettingsModal
-          config={pipelineConfig}
-          deals={deals}
-          onClose={()=>setShowSettings(false)}
-          onSave={savePipelineSettings}
           toast={toast}
         />
       )}

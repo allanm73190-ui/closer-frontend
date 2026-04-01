@@ -118,6 +118,19 @@ export const GLOBAL_CSS = `
     --sidebar: rgba(255,255,255,.56);
     --nav-hover: rgba(244,236,229,.88);
     --chip-bg: rgba(255,255,255,.68);
+    --surface-a: rgba(255,255,255,.96);
+    --surface-b: rgba(249,239,233,.78);
+    --surface-accent: rgba(253,232,228,.6);
+    --surface-info: rgba(218,237,245,.5);
+    --positive-bg: rgba(209,250,229,.9);
+    --positive-txt: #065f46;
+    --warning-bg: rgba(254,243,199,.9);
+    --warning-txt: #92400e;
+    --danger-bg: rgba(254,226,226,.9);
+    --danger-txt: #991b1b;
+    --neutral-bg: rgba(241,245,249,.9);
+    --neutral-txt: #475569;
+    --input-on-card: rgba(255,255,255,.92);
   }
 
   [data-theme="dark"] {
@@ -137,5 +150,18 @@ export const GLOBAL_CSS = `
     --sidebar: rgba(17,24,38,.72);
     --nav-hover: rgba(106,172,206,.18);
     --chip-bg: rgba(20,29,44,.8);
+    --surface-a: rgba(27,38,56,.95);
+    --surface-b: rgba(35,49,70,.88);
+    --surface-accent: rgba(79,56,67,.6);
+    --surface-info: rgba(54,79,108,.58);
+    --positive-bg: rgba(20,83,45,.58);
+    --positive-txt: #86efac;
+    --warning-bg: rgba(120,53,15,.58);
+    --warning-txt: #fde68a;
+    --danger-bg: rgba(127,29,29,.58);
+    --danger-txt: #fca5a5;
+    --neutral-bg: rgba(51,65,85,.58);
+    --neutral-txt: #cbd5e1;
+    --input-on-card: rgba(30,43,62,.92);
   }
 `;

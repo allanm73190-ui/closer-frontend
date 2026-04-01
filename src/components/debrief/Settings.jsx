@@ -206,7 +206,7 @@ function AccountSettings({ user, onClose, toast }) {
   );
 }
 
-function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }) {
+function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, embedded = false }) {
   const [config, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(debriefConfig || DEFAULT_DEBRIEF_CONFIG)));
   const [saving, setSaving] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -254,12 +254,17 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }
       await apiFetch('/debrief-config', { method:'PUT', body:{ sections: config } });
       setDebriefConfig(config);
       toast('Questions sauvegardées !');
-      onClose();
+      if (!embedded) onClose?.();
     } catch (e) {
       toast(e.message, 'error');
     } finally {
       setSaving(false);
     }
+  };
+
+  const cancel = () => {
+    setLocalConfig(JSON.parse(JSON.stringify(debriefConfig || DEFAULT_DEBRIEF_CONFIG)));
+    if (!embedded) onClose?.();
   };
 
   const reset = async () => {
@@ -363,7 +368,9 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast }
           Réinitialiser
         </button>
         <div style={{ display:'flex', gap:8 }}>
-          <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
+          <Btn variant="secondary" onClick={cancel}>
+            {embedded ? 'Annuler les modifications' : 'Annuler'}
+          </Btn>
           <Btn onClick={save} disabled={saving}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Btn>
         </div>
       </div>

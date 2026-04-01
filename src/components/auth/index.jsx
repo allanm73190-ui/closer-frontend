@@ -10,12 +10,12 @@ const fieldLabel = {
   fontWeight:700,
   letterSpacing:'.12em',
   textTransform:'uppercase',
-  color:'rgba(90,74,58,.72)',
+  color:'var(--txt2,#b09080)',
 };
 const fieldInput = {
   width:'100%',
-  border:'1px solid rgba(195,147,121,.42)',
-  background:'rgba(255,255,255,.92)',
+  border:'1px solid var(--border)',
+  background:'var(--input-on-card)',
   borderRadius:14,
   padding:'12px 14px',
   fontSize:14,
@@ -51,7 +51,7 @@ const linkBtn = {
 function AuthShell({ title, subtitle, children, wide=false }) {
   const mob = useIsMobile();
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-120, right:-110, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.26), rgba(232,125,106,0) 72%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:-120, left:-120, width:330, height:330, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.24), rgba(106,172,206,0) 72%)', pointerEvents:'none' }} />
 
@@ -62,11 +62,11 @@ function AuthShell({ title, subtitle, children, wide=false }) {
           maxWidth:wide ? 1040 : 940,
           display:'grid',
           gridTemplateColumns:mob ? '1fr' : '1fr 1.08fr',
-          background:'rgba(255,255,255,.68)',
-          border:'1px solid rgba(195,147,121,.34)',
+          background:'var(--card-soft)',
+          border:'1px solid var(--border)',
           borderRadius:28,
           overflow:'hidden',
-          boxShadow:'0 28px 62px rgba(85,66,63,.18)',
+          boxShadow:'var(--sh-card)',
           backdropFilter:'blur(18px)',
         }}
       >
@@ -86,11 +86,11 @@ function AuthShell({ title, subtitle, children, wide=false }) {
           </aside>
         )}
 
-        <section style={{ padding:mob ? '24px 20px' : '40px 46px', background:'rgba(255,255,255,.82)' }}>
+        <section style={{ padding:mob ? '24px 20px' : '40px 46px', background:'var(--card)' }}>
           {mob && (
             <div style={{ marginBottom:20 }}>
               <h1 style={{ margin:0, fontSize:30, fontWeight:800, color:P, lineHeight:1 }}>CloserDebrief</h1>
-              <p style={{ margin:'6px 0 0', fontSize:10, letterSpacing:'.2em', textTransform:'uppercase', color:'rgba(90,74,58,.66)', fontWeight:700 }}>Sales Intelligence</p>
+              <p style={{ margin:'6px 0 0', fontSize:10, letterSpacing:'.2em', textTransform:'uppercase', color:'var(--txt2,#b09080)', fontWeight:700 }}>Sales Intelligence</p>
             </div>
           )}
 

@@ -63,7 +63,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:28 }}>
-      <Card style={{ padding:mob ? '18px 16px' : '24px 26px', background:'linear-gradient(145deg, rgba(255,255,255,.96), rgba(249,238,232,.82))' }}>
+      <Card style={{ padding:mob ? '18px 16px' : '24px 26px', background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
           <div>
             <p style={{ margin:'0 0 4px', fontSize:11, color:DS.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em' }}>Tableau de bord</p>
@@ -80,7 +80,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             'Patterns IA',
             'Pipeline synchronisé',
           ].map(tag => (
-            <span key={tag} style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, color:'#7d2c1e', background:'rgba(253,232,228,.78)', border:'1px solid rgba(232,125,106,.24)' }}>
+            <span key={tag} style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, color:'var(--txt,#5a4a3a)', background:'var(--surface-accent)', border:'1px solid var(--border)' }}>
               {tag}
             </span>
           ))}
@@ -120,12 +120,12 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {patternsData.patterns.slice(0, 3).map(pattern => (
-              <div key={pattern.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'rgba(253,232,228,.24)' }}>
+              <div key={pattern.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'var(--surface-accent)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', gap:8, marginBottom:4, flexWrap:'wrap' }}>
                   <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
                     {pattern.title}
                   </p>
-                  <span style={{ fontSize:11, fontWeight:700, color:'#c05040' }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:'var(--danger-txt)' }}>
                     {pattern.count} cas ({pattern.rate}%)
                   </span>
                 </div>
@@ -176,7 +176,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                   onClick={()=>navigate('Detail', d.id)}
                   style={{
                     border:'1px solid var(--border)',
-                    background:idx % 2 === 0 ? 'rgba(255,255,255,.92)' : 'rgba(253,244,238,.82)',
+                    background:idx % 2 === 0 ? 'var(--surface-a)' : 'var(--surface-b)',
                     borderRadius:11,
                     padding:'9px 10px',
                     textAlign:'left',
@@ -197,10 +197,10 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                     </p>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:(d.percentage || 0) >= 75 ? 'rgba(218,240,216,.9)' : 'rgba(254,243,224,.9)', color:(d.percentage || 0) >= 75 ? '#166534' : '#92400e' }}>
+                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:(d.percentage || 0) >= 75 ? 'var(--positive-bg)' : 'var(--warning-bg)', color:(d.percentage || 0) >= 75 ? 'var(--positive-txt)' : 'var(--warning-txt)' }}>
                       {Math.round(d.percentage || 0)}%
                     </span>
-                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:d.is_closed ? 'rgba(209,250,229,.9)' : 'rgba(254,226,226,.9)', color:d.is_closed ? '#065f46' : '#991b1b' }}>
+                    <span style={{ fontSize:11, fontWeight:700, padding:'3px 7px', borderRadius:999, background:d.is_closed ? 'var(--positive-bg)' : 'var(--danger-bg)', color:d.is_closed ? 'var(--positive-txt)' : 'var(--danger-txt)' }}>
                       {d.is_closed ? 'Closé' : 'Non closé'}
                     </span>
                   </div>

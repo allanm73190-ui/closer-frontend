@@ -15,7 +15,7 @@ function RadioGroup({ label, options, value, onChange }) {
               e.preventDefault();
               onChange(value === opt.value ? '' : opt.value);
             }}
-            style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value===opt.value?'#e87d6a':'var(--border)'}`, background:value===opt.value?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value===opt.value?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value===opt.value?'0 8px 18px rgba(232,125,106,.12)':'none' }}
+            style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value===opt.value?'#e87d6a':'var(--border)'}`, background:value===opt.value?'var(--surface-accent)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value===opt.value?'var(--txt,#5a4a3a)':'var(--txt2,#b09080)', transition:'all .15s', boxShadow:value===opt.value?'0 8px 18px rgba(232,125,106,.12)':'none' }}
           >
             <input type="radio" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value===opt.value} readOnly/>
             <span>{opt.label}</span>
@@ -32,7 +32,7 @@ function CheckboxGroup({ label, options, value=[], onChange }) {
       {label && <p style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:9 }}>{label}</p>}
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         {options.map(opt => (
-          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value.includes(opt.value)?'#e87d6a':'var(--border)'}`, background:value.includes(opt.value)?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value.includes(opt.value)?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value.includes(opt.value)?'0 8px 18px rgba(232,125,106,.12)':'none' }}>
+          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value.includes(opt.value)?'#e87d6a':'var(--border)'}`, background:value.includes(opt.value)?'var(--surface-accent)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value.includes(opt.value)?'var(--txt,#5a4a3a)':'var(--txt2,#b09080)', transition:'all .15s', boxShadow:value.includes(opt.value)?'0 8px 18px rgba(232,125,106,.12)':'none' }}>
             <input type="checkbox" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value.includes(opt.value)} onChange={()=>toggle(opt.value)}/>
             <span>{opt.label}</span>
           </label>
@@ -44,7 +44,7 @@ function CheckboxGroup({ label, options, value=[], onChange }) {
 function SectionNotes({ notes={}, onChange }) {
   const mob = useIsMobile(640);
   return (
-    <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:10, paddingTop:16, marginTop:8, borderTop:'1px solid rgba(232,125,106,.08)' }}>
+      <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:10, paddingTop:16, marginTop:8, borderTop:'1px solid var(--border)' }}>
       {[
         { key:'strength',    label:'👍 Point fort',   placeholder:'Ce qui a bien fonctionné...', color:'#059669' },
         { key:'weakness',    label:'👎 Point faible', placeholder:"Ce qui n'a pas marché...",    color:'#dc2626' },
@@ -52,7 +52,7 @@ function SectionNotes({ notes={}, onChange }) {
       ].map(({ key, label, placeholder, color }) => (
         <div key={key}>
           <label style={{ display:'block', fontSize:11, fontWeight:600, color, marginBottom:5 }}>{label}</label>
-          <textarea rows={mob?2:3} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})} style={{ width:'100%', borderRadius:8, border:'1px solid rgba(232,125,106,.12)', padding:'7px 10px', fontSize:12, resize:'none', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
+          <textarea rows={mob?2:3} placeholder={placeholder} value={notes[key]||''} onChange={e=>onChange({...notes,[key]:e.target.value})} style={{ width:'100%', borderRadius:8, border:'1px solid var(--border)', background:'var(--input-on-card)', color:'var(--txt,#5a4a3a)', padding:'7px 10px', fontSize:12, resize:'none', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
         </div>
       ))}
     </div>
@@ -61,17 +61,17 @@ function SectionNotes({ notes={}, onChange }) {
 function CatCard({ number, title, children }) {
   const [open, setOpen] = React.useState(true);
   return (
-    <div style={{ ...cardSm({ border:'1px solid rgba(232,125,106,.16)' }), overflow:'hidden', marginBottom:12 }}>
+    <div style={{ ...cardSm({ border:'1px solid var(--border)' }), overflow:'hidden', marginBottom:12 }}>
       <button type="button" onClick={()=>setOpen(v=>!v)} style={{
         display:'flex', alignItems:'center', gap:12, padding:'13px 16px',
-        background: open ? `linear-gradient(135deg,${P},${P2})` : `linear-gradient(135deg,rgba(253,232,228,.5),rgba(218,237,245,.32))`,
+        background: open ? `linear-gradient(135deg,${P},${P2})` : `linear-gradient(135deg,var(--surface-accent),var(--surface-info))`,
         width:'100%', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all .2s'
       }}>
         <span style={{ width:26, height:26, borderRadius:'50%', background:open?'rgba(255,255,255,.25)':P, color:'white', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
         <span style={{ fontWeight:800, fontSize:14, color:open?'white':TXT, flex:1, textAlign:'left' }}>{title}</span>
         <span style={{ fontSize:13, color:open?'rgba(255,255,255,.8)':TXT3, transition:'transform .2s', display:'inline-block', transform:open?'rotate(180deg)':'none' }}>▾</span>
       </button>
-      {open && <div style={{ padding:18, borderTop:`1px solid rgba(232,125,106,.12)` }}>{children}</div>}
+      {open && <div style={{ padding:18, borderTop:`1px solid var(--border)` }}>{children}</div>}
     </div>
   );
 }

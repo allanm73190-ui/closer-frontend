@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // ─── Config & Utils ──────────────────────────────────────────────────────────
 import { apiFetch, getToken, clearToken, setOnExpired } from './config/api';
@@ -17,10 +17,10 @@ import { LoginPage, RegisterPage, ForgotPage, ResetPage } from './components/aut
 import { Dashboard, History } from './components/dashboard';
 import { Detail } from './components/debrief/Detail';
 import { NewDebrief } from './components/debrief/NewDebrief';
-import { AccountSettings } from './components/debrief/Settings';
 import { PipelinePage } from './components/pipeline';
 import { HOSPage } from './components/team';
 import { ObjectionLibrary } from './components/objections';
+import { SettingsPage } from './components/settings';
 
 const DESKTOP_SIDEBAR_WIDTH = 214;
 
@@ -33,6 +33,7 @@ const PAGE_META = {
   EditDebrief: { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
   History: { title:'Historique', subtitle:'Retrouvez et filtrez vos debriefs passés' },
   Detail: { title:'Détail debrief', subtitle:'Analyse complète, IA et export PDF' },
+  Settings: { title:'Paramètres', subtitle:'Configuration synchronisée de votre espace' },
 };
 
 function NavIcon({ name, active=false, size=18, color='currentColor' }) {
@@ -66,9 +67,10 @@ export default function App() {
   const [gam,     setGam]     = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [burst,   setBurst]   = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [autoAI, setAutoAI] = useState(false);
+  const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
+  const [settingsTabRequest, setSettingsTabRequest] = useState('account');
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('cd_theme');
     return saved === 'dark' ? 'dark' : 'light';
@@ -114,6 +116,20 @@ export default function App() {
     localStorage.setItem('cd_theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (!user) return;
+    apiFetch('/app-settings')
+      .then(settings => {
+        if (settings?.theme === 'dark' || settings?.theme === 'light') {
+          setTheme(settings.theme);
+        }
+        if (typeof settings?.autoAiAfterDebrief === 'boolean') {
+          setAutoAiAfterDebrief(settings.autoAiAfterDebrief);
+        }
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
   // Keep debrief config synchronized for all pages
   useEffect(() => {
     if (!user) {
@@ -136,11 +152,56 @@ export default function App() {
     else if (p !== 'Detail') setFrom(null);
     setAutoAI(!!opts.autoAI);
     setLeadContext(opts.leadContext || null);
+    if (opts.settingsTab) setSettingsTabRequest(opts.settingsTab);
     window.scrollTo({ top:0, behavior:'smooth' });
   };
 
+  const saveAppSettings = async (nextSettings, options = {}) => {
+    const { silent = false } = options;
+    const payload = {
+      theme: nextSettings?.theme === 'dark' ? 'dark' : 'light',
+      autoAiAfterDebrief: typeof nextSettings?.autoAiAfterDebrief === 'boolean'
+        ? nextSettings.autoAiAfterDebrief
+        : autoAiAfterDebrief,
+    };
+    try {
+      const saved = await apiFetch('/app-settings', { method:'PUT', body: payload });
+      const nextTheme = saved?.theme === 'dark' ? 'dark' : 'light';
+      setTheme(nextTheme);
+      setAutoAiAfterDebrief(typeof saved?.autoAiAfterDebrief === 'boolean' ? saved.autoAiAfterDebrief : payload.autoAiAfterDebrief);
+      return saved;
+    } catch (e) {
+      if (!silent) toast(e.message, 'error');
+      throw e;
+    }
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    apiFetch('/app-settings', {
+      method:'PUT',
+      body:{ theme: nextTheme, autoAiAfterDebrief },
+    }).catch(() => {});
+  };
+
+  const openSettings = (tab = 'account', origin = page) => {
+    const keepId = ['Detail', 'EditDebrief'].includes(origin) ? selId : null;
+    navigate('Settings', keepId, origin, { settingsTab: tab });
+  };
+
   const onLogin = (u, g) => { setUser(u); if (g) setGam(g); setPage('Dashboard'); toast(`Bienvenue, ${u.name} !`); };
-  const onLogout = () => { clearToken(); setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login'); toast('Déconnecté'); };
+  const onLogout = () => {
+    clearToken();
+    setUser(null);
+    setDebriefs([]);
+    setGam(null);
+    setPage('Dashboard');
+    setAuthView('login');
+    setAutoAiAfterDebrief(true);
+    setSettingsTabRequest('account');
+    toast('Déconnecté');
+  };
 
   const onSave = (debrief, g) => {
     setDebriefs(p => [debrief, ...p]);
@@ -174,6 +235,13 @@ export default function App() {
     { key:'History',   label:'Historique', icon:'history' },
   ];
   const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
+  const appSettingsValue = useMemo(() => ({
+    theme,
+    autoAiAfterDebrief,
+  }), [theme, autoAiAfterDebrief]);
+  const sidebarBg = theme === 'dark'
+    ? 'linear-gradient(170deg,#25344d 0%, #1d2a40 58%, #3b2b3a 110%)'
+    : `linear-gradient(165deg, ${P}, ${P2})`;
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
   if (authLoading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
@@ -197,8 +265,8 @@ export default function App() {
           user={user}
           debriefConfig={debriefConfig}
           debriefTemplates={debriefTemplates}
-          setDebriefConfig={setDebriefConfig}
           leadContext={leadContext}
+          autoAiAfterSave={autoAiAfterDebrief}
         />
       )}
       {page==='EditDebrief' && (
@@ -210,9 +278,9 @@ export default function App() {
           user={user}
           debriefConfig={debriefConfig}
           debriefTemplates={debriefTemplates}
-          setDebriefConfig={setDebriefConfig}
           existingDebrief={selDebrief}
           fromPage={from || 'History'}
+          autoAiAfterSave={autoAiAfterDebrief}
         />
       )}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
@@ -220,6 +288,22 @@ export default function App() {
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
       {page==='HOSPage' && isHOS && <HOSPage toast={toast} allDebriefs={debriefs}/>}
+      {page==='Settings' && (
+        <SettingsPage
+          user={user}
+          toast={toast}
+          navigate={navigate}
+          fromPage={from || 'Dashboard'}
+          returnId={selId}
+          requestedTab={settingsTabRequest}
+          debriefConfig={debriefConfig}
+          setDebriefConfig={setDebriefConfig}
+          debriefTemplates={debriefTemplates}
+          setDebriefTemplates={setDebriefTemplates}
+          appSettings={appSettingsValue}
+          onSaveAppSettings={saveAppSettings}
+        />
+      )}
     </>
   );
 
@@ -235,7 +319,6 @@ export default function App() {
       <div style={{ position:'relative', zIndex:1 }}>
         {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
         <Toasts list={toasts}/>
-        {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
 
         {mob ? (
           <>
@@ -252,10 +335,10 @@ export default function App() {
                   user={user}
                   gam={gam}
                   onLogout={onLogout}
-                  onSettings={()=>setShowSettings(true)}
+                  onSettings={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
                   toast={toast}
                   theme={theme}
-                  onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                  onToggleTheme={toggleTheme}
                 />
               </div>
             </header>
@@ -277,7 +360,7 @@ export default function App() {
           </>
         ) : (
           <div style={{ display:'flex', minHeight:'100vh' }}>
-            <aside style={{ width:DESKTOP_SIDEBAR_WIDTH, flexShrink:0, position:'fixed', left:0, top:0, bottom:0, display:'flex', flexDirection:'column', background:`linear-gradient(165deg, ${P}, ${P2})`, borderRight:'1px solid rgba(255,255,255,.28)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'20px 10px 12px', zIndex:60 }}>
+            <aside style={{ width:DESKTOP_SIDEBAR_WIDTH, flexShrink:0, position:'fixed', left:0, top:0, bottom:0, display:'flex', flexDirection:'column', background:sidebarBg, borderRight:'1px solid rgba(255,255,255,.24)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'20px 10px 12px', zIndex:60 }}>
               <button
                 onClick={()=>navigate('Dashboard')}
                 style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:'6px 8px 14px', borderRadius:R_MD, marginBottom:2, width:'100%', transition:'background .15s' }}
@@ -327,7 +410,26 @@ export default function App() {
               </div>
 
               <div style={{ borderTop:'1px solid rgba(255,255,255,.22)', paddingTop:10, marginTop:6, display:'grid', gap:4 }}>
-                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:8, border:'none', background:'transparent', padding:'8px 10px', borderRadius:11, cursor:'pointer', color:'white', fontSize:12, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
+                <button
+                  onClick={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
+                  style={{
+                    display:'flex',
+                    alignItems:'center',
+                    gap:8,
+                    border:'none',
+                    background:page === 'Settings' ? 'rgba(255,255,255,.22)' : 'transparent',
+                    boxShadow:page === 'Settings' ? 'inset 0 0 0 1px rgba(255,255,255,.28)' : 'none',
+                    padding:'8px 10px',
+                    borderRadius:11,
+                    cursor:'pointer',
+                    color:'white',
+                    fontSize:12,
+                    fontWeight:700,
+                    textAlign:'left',
+                    fontFamily:'inherit',
+                    opacity:.95,
+                  }}
+                >
                   <span style={{ width:20, height:20, borderRadius:8, background:'rgba(255,255,255,.14)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
                     <NavIcon name="settings" size={14} color="white" />
                   </span>
@@ -343,7 +445,7 @@ export default function App() {
             </aside>
 
             <div style={{ flex:1, minWidth:0, marginLeft:DESKTOP_SIDEBAR_WIDTH, width:`calc(100vw - ${DESKTOP_SIDEBAR_WIDTH}px)` }}>
-              <header style={{ position:'sticky', top:0, zIndex:45, minHeight:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
+              <header style={{ position:'sticky', top:0, zIndex:45, minHeight:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'var(--card-soft)', backdropFilter:'blur(16px)', borderBottom:'1px solid var(--border)' }}>
                 <div style={{ minWidth:0 }}>
                   <p style={{ margin:'0 0 2px', fontSize:10, letterSpacing:'.14em', textTransform:'uppercase', color:TXT3, fontWeight:700 }}>
                     CloserDebrief
@@ -356,12 +458,12 @@ export default function App() {
                   </p>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'var(--card,#fff)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
                     <NavIcon name="help" size={16} color={TXT2} />
                   </button>
                   <button
-                    onClick={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                    style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}
+                    onClick={toggleTheme}
+                    style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'var(--card,#fff)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}
                     title="Basculer le thème"
                   >
                     <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={16} color={TXT2} />
@@ -370,10 +472,10 @@ export default function App() {
                     user={user}
                     gam={gam}
                     onLogout={onLogout}
-                    onSettings={()=>setShowSettings(true)}
+                    onSettings={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
                     toast={toast}
                     theme={theme}
-                    onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                    onToggleTheme={toggleTheme}
                   />
                 </div>
               </header>

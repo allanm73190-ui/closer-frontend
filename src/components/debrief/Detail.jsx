@@ -77,7 +77,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
           <div>
-            <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>{debrief.prospect_name}</h1>
+            <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{debrief.prospect_name}</h1>
             <div style={{ display:'flex', gap:12, fontSize:12, color:DS.textMuted, marginTop:4, flexWrap:'wrap' }}>
               <span>📅 {fmtDate(debrief.call_date)}</span>
               <span>👤 {debrief.closer_name}</span>
@@ -93,14 +93,14 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
           <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
             {exportingPdf ? 'Préparation prévisualisation...' : '📄 Prévisualiser le PDF'}
           </Btn>
-          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid rgba(232,125,106,.12)',borderRadius:8,background:'#ffffff',fontSize:12,textDecoration:'none',color:'#5a4a3a'}}>🔗 Écouter</a>}
+          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,background:'var(--card,#ffffff)',fontSize:12,textDecoration:'none',color:'var(--txt,#5a4a3a)'}}>🔗 Écouter</a>}
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
         </div>
       </div>
 
       {mob ? (
         <>
-          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.78))' }}>
+          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <Radar scores={scores} compareScores={globalScores} size={246} />
@@ -117,7 +117,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         </>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'minmax(320px, 360px) minmax(0, 1fr)', gap:22, alignItems:'start' }}>
-          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.8))' }}>
+          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <div style={{ width:'100%', borderTop:'1px dashed var(--border)', paddingTop:10 }}>
@@ -143,14 +143,14 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
                 const sn = getSectionNote(debrief.section_notes, key);
                 if (!sn || (!sn.strength && !sn.weakness && !sn.improvement)) return null;
                 return (
-                  <div key={`${key}_notes`} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'rgba(255,255,255,.55)' }}>
+                  <div key={`${key}_notes`} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'var(--card-soft)' }}>
                     <p style={{ margin:'0 0 6px', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>
                       {key.replace('_', ' ')}
                     </p>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:8 }}>
-                      {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {sn.strength}</div>}
-                      {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {sn.weakness}</div>}
-                      {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'rgba(255,251,235,.8)',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {sn.improvement}</div>}
+                      {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--positive-bg)',border:'1px solid rgba(74,222,128,.42)',color:'var(--positive-txt)'}}>👍 {sn.strength}</div>}
+                      {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--danger-bg)',border:'1px solid rgba(252,165,165,.42)',color:'var(--danger-txt)'}}>👎 {sn.weakness}</div>}
+                      {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--warning-bg)',border:'1px solid rgba(252,211,77,.42)',color:'var(--warning-txt)'}}>📈 {sn.improvement}</div>}
                     </div>
                   </div>
                 );
@@ -162,9 +162,9 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
 
       {(debrief.strengths||debrief.improvements||debrief.notes) && (
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12 }}>
-          {debrief.strengths    && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#059669',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
-          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#d97706',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
-          {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'#e87d6a',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'#6b7280',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
+          {debrief.strengths    && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--positive-txt)',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
+          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--warning-txt)',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
+          {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--txt,#5a4a3a)',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
         </div>
       )}
 
@@ -217,7 +217,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
               </div>
             </div>
 
-            <div style={{ flex:1, background:'#f4efe9' }}>
+            <div style={{ flex:1, background:'var(--bg)' }}>
               {previewHtml ? (
                 <iframe
                   title="Prévisualisation PDF Debrief"

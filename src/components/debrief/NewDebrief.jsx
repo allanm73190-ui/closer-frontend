@@ -3,10 +3,10 @@ import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeScore, computeSectionScores } from '../../utils/scoring';
-import { Btn, Input, Textarea, Card, ScoreGauge, ClosedBadge, Modal } from '../ui';
+import { Btn, Input, Textarea, Card, ScoreGauge, ClosedBadge } from '../ui';
 import { Radar } from '../ui/Charts';
 import { RadioGroup, CheckboxGroup, SectionNotes, CatCard } from './FormPrimitives';
-import { DebriefConfigEditor, DEFAULT_DEBRIEF_CONFIG } from './Settings';
+import { DEFAULT_DEBRIEF_CONFIG } from './Settings';
 import { normalizeDebriefTemplateCatalog, buildTemplateSections, getDefaultTemplateCatalog } from '../../config/debriefTemplates';
 
 function normalizeSectionKey(rawKey) {
@@ -61,6 +61,27 @@ function isYesOption(option) {
   return raw.includes('oui') || raw.includes('yes');
 }
 
+function isNegativeOption(option) {
+  if (!option) return true;
+  const raw = `${option.value || ''} ${option.label || ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  return (
+    /\bnon\b/.test(raw) ||
+    raw.includes('aucun') ||
+    raw.includes('aucune') ||
+    raw.includes('pas ') ||
+    raw.includes(' no')
+  );
+}
+
+function shouldShowRadioDetail(sectionKey, option) {
+  if (!option) return false;
+  if (sectionKey === 'decouverte') return !isNegativeOption(option);
+  return isYesOption(option);
+}
+
 function detailPlaceholderFromQuestion(label) {
   const text = String(label || '').toLowerCase();
   if (text.includes('douleur de surface')) return 'Décris la douleur concernée...';
@@ -97,11 +118,10 @@ function buildNotesState(configSections, previous = null) {
   return next;
 }
 
-function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, setDebriefConfig, existingDebrief, fromPage, leadContext }) {
+function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, existingDebrief, fromPage, leadContext, autoAiAfterSave = true }) {
   const mob = useIsMobile();
   const isHOS = user?.role === 'head_of_sales';
   const isEditing = !!existingDebrief?.id;
-  const [showDebriefSettings, setShowDebriefSettings] = useState(false);
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const templateCatalog = useMemo(
     () => normalizeDebriefTemplateCatalog(debriefTemplates || getDefaultTemplateCatalog()),
@@ -247,7 +267,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       } else {
         onSave(r.debrief, r.gamification);
         toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
-        navigate('Detail', r.debrief.id, null, { autoAI: true });
+        navigate('Detail', r.debrief.id, null, { autoAI: !!autoAiAfterSave });
       }
     } catch (e) {
       toast(e.message, 'error');
@@ -281,7 +301,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
     if (type === 'text') {
       return (
         <div key={question.id} style={{ marginBottom:16 }}>
-          <label style={{ display:'block', fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>
+          <label style={{ display:'block', fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>
             {question.label}
           </label>
           <Textarea
@@ -295,7 +315,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
     }
 
     const activeOption = options.find(option => option.value === value);
-    const showYesDetail = isYesOption(activeOption);
+    const showYesDetail = shouldShowRadioDetail(sectionKey, activeOption);
     return (
       <div key={question.id}>
         <RadioGroup
@@ -307,7 +327,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               const prevSection = prev[sectionKey] || {};
               const nextSection = { ...prevSection, [question.id]: v };
               const nextActiveOption = options.find(option => option.value === v);
-              if (!isYesOption(nextActiveOption)) delete nextSection[detailKey];
+              if (!shouldShowRadioDetail(sectionKey, nextActiveOption)) delete nextSection[detailKey];
               return { ...prev, [sectionKey]: nextSection };
             });
           }}
@@ -331,17 +351,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      {showDebriefSettings && (
-        <Modal title="Paramètres des questions debrief" onClose={()=>setShowDebriefSettings(false)}>
-          <DebriefConfigEditor
-            debriefConfig={debriefConfig}
-            setDebriefConfig={setDebriefConfig}
-            onClose={()=>setShowDebriefSettings(false)}
-            toast={toast}
-          />
-        </Modal>
-      )}
-
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || (isEditing ? 'History' : 'Dashboard'))} style={{ width:36, height:36, padding:0, borderRadius:8, fontSize:16, flexShrink:0 }}>←</Btn>
@@ -355,7 +364,11 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           </div>
         </div>
         {isHOS && (
-          <Btn variant="secondary" onClick={()=>setShowDebriefSettings(true)} style={{ fontSize:13, padding:'9px 14px' }}>
+          <Btn
+            variant="secondary"
+            onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
+            style={{ fontSize:13, padding:'9px 14px' }}
+          >
             ⚙️ Paramètres questions
           </Btn>
         )}
@@ -372,10 +385,10 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         </Card>
       )}
 
-      <Card style={{ padding:16, border:'1px solid rgba(232,125,106,.18)', background:'linear-gradient(135deg, rgba(255,255,255,.92), rgba(253,240,236,.72))' }}>
+      <Card style={{ padding:16, border:'1px solid var(--border)', background:'linear-gradient(135deg, var(--surface-a), var(--surface-b))' }}>
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 2fr', gap:10, alignItems:'center' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'#5a4a3a', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
+            <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'var(--txt,#5a4a3a)', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
             <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>Le formulaire s’adapte selon votre type de produit.</p>
           </div>
           <div>
@@ -384,13 +397,13 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               onChange={e=>setSelectedTemplateKey(e.target.value)}
               style={{
                 width:'100%',
-                background:'white',
-                border:'1px solid rgba(232,125,106,.2)',
+                background:'var(--input-on-card)',
+                border:'1px solid var(--border)',
                 borderRadius:10,
                 padding:'10px 12px',
                 fontSize:13,
                 fontFamily:'inherit',
-                color:'#5a4a3a',
+                color:'var(--txt,#5a4a3a)',
               }}
             >
               {templateCatalog.templates.map(template => (
@@ -410,35 +423,35 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'minmax(0, 1fr) 320px', gap:mob?16:26, alignItems:'start' }}>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <Card style={{ padding:20 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Informations de l'appel</h3>
+              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Informations de l'appel</h3>
               <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(2,minmax(0,1fr))', gap:12, marginBottom:14 }}>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Prospect *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Prospect *</label>
                   <Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({ ...form, prospect_name:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Closer *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Closer *</label>
                   <Input required placeholder="Votre nom" value={form.closer_name} onChange={e=>setForm({ ...form, closer_name:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Date *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Date *</label>
                   <Input type="date" required value={form.call_date} onChange={e=>setForm({ ...form, call_date:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Type de prospect</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Type de prospect</label>
                   <select
                     value={form.prospect_type}
                     onChange={e=>setForm({ ...form, prospect_type:e.target.value })}
                     style={{
                       width:'100%',
-                      background:'white',
-                      border:'1px solid rgba(232,125,106,.2)',
+                      background:'var(--input-on-card)',
+                      border:'1px solid var(--border)',
                       borderRadius:10,
                       padding:'10px 12px',
                       fontSize:13,
                       fontFamily:'inherit',
-                      color:'#5a4a3a',
-                      boxShadow:'0 1px 4px rgba(28,26,40,.05)',
+                      color:'var(--txt,#5a4a3a)',
+                      boxShadow:'0 1px 4px rgba(28,26,40,.08)',
                     }}
                   >
                     {PROSPECT_TYPE_OPTIONS.map(option => (
@@ -448,20 +461,20 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>🔗 Lien enregistrement</label>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>🔗 Lien enregistrement</label>
                 <Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({ ...form, call_link:e.target.value })} />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>Résultat *</label>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>Résultat *</label>
                 <div style={{ display:'flex', gap:10 }}>
-                  {[{val:true,label:'✅ Closer',border:'#059669',bg:'#d1fae5',c:'#065f46'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'#fee2e2',c:'#991b1b'}].map(({val,label,border,bg,c})=>(
+                  {[{val:true,label:'✅ Closer',border:'#059669',bg:'var(--positive-bg)',c:'var(--positive-txt)'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'var(--danger-bg)',c:'var(--danger-txt)'}].map(({val,label,border,bg,c})=>(
                     <button
                       key={String(val)}
                       type="button"
                       onClick={()=>setForm({ ...form, is_closed:val })}
                       style={{
-                        flex:1, padding:'12px 14px', borderRadius:10, border:`2px solid ${form.is_closed===val?border:'#e2e8f0'}`,
-                        background:form.is_closed===val?bg:'white', color:form.is_closed===val?c:'#94a3b8', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all .2s',
+                        flex:1, padding:'12px 14px', borderRadius:10, border:`2px solid ${form.is_closed===val?border:'var(--border)'}`,
+                        background:form.is_closed===val?bg:'var(--input-on-card)', color:form.is_closed===val?c:'var(--txt2,#b09080)', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all .2s',
                       }}
                     >
                       {label}
@@ -471,7 +484,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               </div>
             </Card>
 
-            <h2 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Évaluation des critères</h2>
+            <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0 }}>Évaluation des critères</h2>
             {configSections.map((section, idx) => (
               <CatCard key={section.key || idx} number={String(idx + 1)} title={section.title || `Section ${idx + 1}`}>
                 {section.questions.length > 0
@@ -486,7 +499,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             ))}
 
             <Card style={{ padding:20 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Notes globales</h3>
+              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:12 }}>Notes globales</h3>
               <Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({ ...form, notes:e.target.value })} />
             </Card>
 
@@ -504,8 +517,8 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
 
           {!mob && (
             <div style={{ position:'sticky', top:80 }}>
-              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.82))' }}>
-                <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Score en direct</h3>
+              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
+                <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0 }}>Score en direct</h3>
                 <ScoreGauge percentage={percentage} />
                 <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{total} / {max} points</p>
                 {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed} />}
