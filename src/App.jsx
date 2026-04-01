@@ -245,21 +245,21 @@ export default function App() {
           </>
         ) : (
           <div style={{ display:'flex', minHeight:'100vh' }}>
-            <aside style={{ width:238, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid var(--border)', boxShadow:'var(--sh-sm)', padding:'18px 12px', zIndex:40, backdropFilter:'blur(16px)' }}>
+            <aside style={{ width:228, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid rgba(255,255,255,.5)', boxShadow:'0 20px 40px rgba(85,66,63,.06)', padding:'26px 14px 16px', zIndex:40, backdropFilter:'blur(18px)' }}>
               <button
                 onClick={()=>navigate('Dashboard')}
-                style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:22, width:'100%', transition:'background .15s' }}
+                style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'8px 10px 22px', borderRadius:R_MD, marginBottom:4, width:'100%', transition:'background .15s' }}
                 onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}
               >
                 <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'white', flexShrink:0 }}>✦</div>
                 <div style={{ textAlign:'left' }}>
-                  <div style={{ fontSize:15, fontWeight:800, color:TXT, lineHeight:1.1 }}>CloserDebrief</div>
-                  <div style={{ fontSize:10, color:TXT3, letterSpacing:'.12em', textTransform:'uppercase' }}>Sales Intelligence</div>
+                  <div style={{ fontSize:22, fontWeight:800, color:TXT, lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
+                  <div style={{ fontSize:10, color:TXT2, letterSpacing:'.22em', textTransform:'uppercase', fontWeight:800, marginTop:4 }}>Sales Intelligence</div>
                 </div>
               </button>
 
-              <div style={{ display:'flex', flexDirection:'column', gap:5, flex:1 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1 }}>
                 {navItems.map(({ key, label, icon }) => (
                   <button
                     key={key}
@@ -268,16 +268,16 @@ export default function App() {
                       display:'flex',
                       alignItems:'center',
                       gap:10,
-                      padding:'11px 14px',
-                      borderRadius:R_MD,
+                      padding:'12px 14px',
+                      borderRadius:16,
                       border:'none',
                       fontSize:13,
-                      fontWeight:page===key?700:600,
+                      fontWeight:700,
                       cursor:'pointer',
                       transition:'all .18s',
-                      background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent',
-                      color:page===key?'white':TXT2,
-                      boxShadow:page===key?SH_BTN:'none',
+                      background:page===key?'rgba(244,236,229,.72)':'transparent',
+                      color:page===key?P2:TXT2,
+                      boxShadow:page===key?'inset 2px 0 0 #e87d6a':'none',
                       textAlign:'left',
                       width:'100%',
                     }}
@@ -290,23 +290,49 @@ export default function App() {
                 ))}
               </div>
 
-              <div style={{ borderTop:'1px solid var(--border)', paddingTop:12, marginTop:8 }}>
-                <UserMenu
-                  user={user}
-                  gam={gam}
-                  onLogout={onLogout}
-                  onSettings={()=>setShowSettings(true)}
-                  toast={toast}
-                  sidebar
-                  theme={theme}
-                  onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                />
+              <div style={{ borderTop:'1px solid rgba(176,144,128,.14)', paddingTop:12, marginTop:8, display:'grid', gap:8 }}>
+                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:TXT2, fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit' }}>
+                  <span style={{ width:18, textAlign:'center' }}>⚙️</span> Paramètres
+                </button>
+                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:TXT2, fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit' }}>
+                  <span style={{ width:18, textAlign:'center' }}>↩</span> Déconnexion
+                </button>
               </div>
             </aside>
 
-            <main style={{ flex:1, minWidth:0, padding:'34px 44px 44px', overflowX:'hidden', maxWidth:'calc(100vw - 238px)', animation:'fadeUp .25s ease-out' }}>
-              {dataLoading ? <Spinner full/> : Content()}
-            </main>
+            <div style={{ flex:1, minWidth:0, maxWidth:'calc(100vw - 228px)' }}>
+              <header style={{ position:'sticky', top:0, zIndex:45, height:72, padding:'16px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
+                <div style={{ width:'min(480px, 52vw)', position:'relative' }}>
+                  <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:TXT3, fontSize:13 }}>⌕</span>
+                  <input
+                    placeholder="Rechercher un prospect, un debrief..."
+                    style={{ width:'100%', border:'1px solid rgba(232,125,106,.12)', background:'rgba(255,255,255,.72)', color:TXT, borderRadius:999, padding:'10px 14px 10px 34px', boxShadow:'var(--sh-sm)', outline:'none', fontFamily:'inherit', fontSize:13 }}
+                  />
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <button
+                    onClick={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                    style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'rgba(255,255,255,.7)', cursor:'pointer', color:TXT2, fontSize:14 }}
+                    title="Basculer le thème"
+                  >
+                    {theme === 'dark' ? '☀︎' : '☾'}
+                  </button>
+                  <UserMenu
+                    user={user}
+                    gam={gam}
+                    onLogout={onLogout}
+                    onSettings={()=>setShowSettings(true)}
+                    toast={toast}
+                    theme={theme}
+                    onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                  />
+                </div>
+              </header>
+
+              <main style={{ padding:'30px 32px 42px', overflowX:'hidden', animation:'fadeUp .25s ease-out' }}>
+                {dataLoading ? <Spinner full/> : Content()}
+              </main>
+            </div>
           </div>
         )}
       </div>

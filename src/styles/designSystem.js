@@ -4,25 +4,25 @@
 export const P  = '#e87d6a';
 export const P2 = '#d4604e';
 export const A  = '#6aacce';
-export const BG = 'linear-gradient(160deg,#f8efe8 0%,#eef4f8 52%,#f8f1ea 100%)';
+export const BG = 'linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)';
 export const WHITE = '#ffffff';
 export const TXT  = '#5a4a3a';
-export const TXT2 = '#8f7462';
-export const TXT3 = '#bda998';
-export const SAND = '#f6eee6';
+export const TXT2 = '#b09080';
+export const TXT3 = '#c8b8a8';
+export const SAND = '#f7f0ea';
 
 // Ombres
-export const SH_CARD = '0 20px 40px rgba(85,66,63,.08), 0 6px 14px rgba(85,66,63,.06)';
-export const SH_SM   = '0 8px 18px rgba(85,66,63,.08)';
+export const SH_CARD = '0 18px 40px rgba(112,79,57,.10), inset 0 1px 0 rgba(255,255,255,.9)';
+export const SH_SM   = '0 10px 22px rgba(112,79,57,.08), inset 0 1px 0 rgba(255,255,255,.85)';
 export const SH_BTN  = '0 10px 26px rgba(232,125,106,.32), inset 0 1px 0 rgba(255,255,255,.24)';
-export const SH_IN   = 'inset 0 1px 0 rgba(255,255,255,.78), inset 0 -1px 0 rgba(90,74,58,.08)';
-export const SH_HOVERED = '0 24px 48px rgba(85,66,63,.12), 0 8px 18px rgba(85,66,63,.08)';
+export const SH_IN   = 'inset 2px 2px 8px rgba(180,144,128,.18), inset -2px -2px 8px rgba(255,255,255,.85)';
+export const SH_HOVERED = '0 20px 44px rgba(112,79,57,.16), inset 0 1px 0 rgba(255,255,255,.92)';
 
 // Radius
 export const R_SM = 10;
 export const R_MD = 14;
-export const R_LG = 20;
-export const R_XL = 28;
+export const R_LG = 18;
+export const R_XL = 24;
 export const R_FULL = 999;
 
 // Design System object
@@ -30,10 +30,10 @@ export const DS = {
   bgApp: BG, bgCard: WHITE, bgInput: SAND,
   primary: P, primary2: P2, accent: A,
   textPrimary: TXT, textSecondary: TXT2, textMuted: TXT3,
-  success:'#059669', successBg:'rgba(209,250,229,.7)', successBorder:'rgba(16,185,129,.32)',
-  warning:'#c07830', warningBg:'rgba(254,243,199,.75)', warningBorder:'rgba(217,119,6,.3)',
-  danger:'#dc2626',  dangerBg:'rgba(254,226,226,.75)',  dangerBorder:'rgba(220,38,38,.3)',
-  info:'#3a7a9a',    infoBg:'rgba(219,234,254,.7)',     infoBorder:'rgba(58,122,154,.28)',
+  success:'#059669', successBg:'rgba(5,150,105,.12)', successBorder:'rgba(5,150,105,.3)',
+  warning:'#d97706', warningBg:'rgba(217,119,6,.12)', warningBorder:'rgba(217,119,6,.3)',
+  danger:'#dc2626',  dangerBg:'rgba(220,38,38,.12)',  dangerBorder:'rgba(220,38,38,.3)',
+  info:'#3a7a9a',    infoBg:'rgba(106,172,206,.14)',  infoBorder:'rgba(58,122,154,.28)',
   shadowCard: SH_CARD, shadowCardHov: SH_HOVERED, shadowSm: SH_SM,
   shadowBtn: SH_BTN, shadowInset: SH_IN,
   radiusSm:R_SM, radiusMd:R_MD, radiusLg:R_LG, radiusXl:R_XL, radiusFull:R_FULL,
@@ -42,14 +42,14 @@ export const DS = {
 // Style helpers
 export const card = (extra={}) => ({
   background:'var(--card,#ffffff)',
-  border:'1px solid var(--border)',
+  border:'1px solid var(--card-border, rgba(255,255,255,.62))',
   borderRadius:R_LG,
   boxShadow:'var(--sh-card)',
   ...extra,
 });
 
 export const cardSm = (extra={}) => ({
-  background:'var(--card-soft,#fff)',
+  background:'var(--card-soft, rgba(255,255,255,.74))',
   border:'1px solid var(--border)',
   borderRadius:R_MD,
   boxShadow:'var(--sh-sm)',
@@ -103,20 +103,21 @@ export const GLOBAL_CSS = `
 
   :root {
     color-scheme: light;
-    --bg: linear-gradient(160deg,#f8efe8 0%,#eef4f8 52%,#f8f1ea 100%);
-    --card: rgba(255,255,255,.9);
-    --card-soft: rgba(255,255,255,.76);
-    --input: rgba(250,241,235,.95);
+    --bg: linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%);
+    --card: rgba(255,255,255,.78);
+    --card-soft: rgba(255,255,255,.72);
+    --card-border: rgba(255,255,255,.62);
+    --input: #f7f0ea;
     --txt: #5a4a3a;
-    --txt2: #8f7462;
-    --txt3: #bda998;
-    --border: rgba(232,125,106,.16);
-    --sh-card: 0 20px 40px rgba(85,66,63,.08), 0 6px 14px rgba(85,66,63,.06);
-    --sh-sm: 0 8px 18px rgba(85,66,63,.08);
-    --sh-in: inset 0 1px 0 rgba(255,255,255,.78), inset 0 -1px 0 rgba(90,74,58,.08);
-    --sidebar: rgba(255,248,244,.74);
-    --nav-hover: rgba(232,125,106,.12);
-    --chip-bg: rgba(255,255,255,.84);
+    --txt2: #b09080;
+    --txt3: #c8b8a8;
+    --border: rgba(232,125,106,.12);
+    --sh-card: 0 18px 40px rgba(112,79,57,.10), inset 0 1px 0 rgba(255,255,255,.9);
+    --sh-sm: 0 10px 22px rgba(112,79,57,.08), inset 0 1px 0 rgba(255,255,255,.85);
+    --sh-in: inset 2px 2px 8px rgba(180,144,128,.18), inset -2px -2px 8px rgba(255,255,255,.85);
+    --sidebar: rgba(255,255,255,.56);
+    --nav-hover: rgba(244,236,229,.88);
+    --chip-bg: rgba(255,255,255,.68);
   }
 
   [data-theme="dark"] {
@@ -124,6 +125,7 @@ export const GLOBAL_CSS = `
     --bg: radial-gradient(circle at 16% 8%,#213349 0%,transparent 38%), radial-gradient(circle at 84% 14%,#4b2f34 0%,transparent 34%), linear-gradient(160deg,#131927 0%,#1b2232 52%,#161a28 100%);
     --card: rgba(29,39,56,.88);
     --card-soft: rgba(33,43,60,.8);
+    --card-border: rgba(106,172,206,.24);
     --input: rgba(33,45,64,.92);
     --txt: #e8edf5;
     --txt2: #bdd0e4;

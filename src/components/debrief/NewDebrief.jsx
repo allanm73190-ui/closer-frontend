@@ -55,6 +55,12 @@ function normalizeTemplateKey(value) {
     .replace(/^_+|_+$/g, '');
 }
 
+function isYesOption(option) {
+  if (!option) return false;
+  const raw = `${option.value || ''} ${option.label || ''}`.toLowerCase();
+  return raw.includes('oui') || raw.includes('yes');
+}
+
 const PROSPECT_TYPE_OPTIONS = [
   { value:'', label:'Non renseigné' },
   { value:'froid', label:'Prospect froid' },
@@ -244,6 +250,8 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   const renderQuestion = (section, question) => {
     const sectionKey = section.storeKey;
     const value = secs[sectionKey]?.[question.id];
+    const detailKey = `${question.id}_note`;
+    const detailValue = secs[sectionKey]?.[detailKey] || '';
     const type = question.type || 'radio';
     const options = Array.isArray(question.options) && question.options.length > 0
       ? question.options
@@ -277,14 +285,38 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       );
     }
 
+    const activeOption = options.find(option => option.value === value);
+    const showYesDetail = isYesOption(activeOption);
     return (
-      <RadioGroup
-        key={question.id}
-        label={question.label}
-        options={options}
-        value={value}
-        onChange={v=>setAnswer(sectionKey, question.id, v)}
-      />
+      <div key={question.id}>
+        <RadioGroup
+          label={question.label}
+          options={options}
+          value={value}
+          onChange={v => {
+            setSecs(prev => {
+              const prevSection = prev[sectionKey] || {};
+              const nextSection = { ...prevSection, [question.id]: v };
+              const nextActiveOption = options.find(option => option.value === v);
+              if (!isYesOption(nextActiveOption)) delete nextSection[detailKey];
+              return { ...prev, [sectionKey]: nextSection };
+            });
+          }}
+        />
+        {showYesDetail && (
+          <div style={{ marginTop:-6, marginBottom:14 }}>
+            <label style={{ display:'block', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.05em', color:DS.textMuted, marginBottom:6 }}>
+              Détail complémentaire
+            </label>
+            <Textarea
+              rows={2}
+              placeholder="Précise ici..."
+              value={detailValue}
+              onChange={e=>setAnswer(sectionKey, detailKey, e.target.value)}
+            />
+          </div>
+        )}
+      </div>
     );
   };
 

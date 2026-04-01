@@ -9,8 +9,15 @@ function RadioGroup({ label, options, value, onChange }) {
       {label && <p style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:9 }}>{label}</p>}
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         {options.map(opt => (
-          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value===opt.value?'#e87d6a':'var(--border)'}`, background:value===opt.value?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value===opt.value?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value===opt.value?'0 8px 18px rgba(232,125,106,.12)':'none' }}>
-            <input type="radio" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value===opt.value} onChange={()=>onChange(opt.value)}/>
+          <label
+            key={opt.value}
+            onClick={e => {
+              e.preventDefault();
+              onChange(value === opt.value ? '' : opt.value);
+            }}
+            style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value===opt.value?'#e87d6a':'var(--border)'}`, background:value===opt.value?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value===opt.value?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value===opt.value?'0 8px 18px rgba(232,125,106,.12)':'none' }}
+          >
+            <input type="radio" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value===opt.value} readOnly/>
             <span>{opt.label}</span>
           </label>
         ))}
