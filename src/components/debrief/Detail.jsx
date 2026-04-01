@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, copy } from '../../utils/scoring';
+import { openDebriefPdfWindow, renderDebriefPdfWindow, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
+import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Empty } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
 
 function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
   const mob = useIsMobile();
+  const [exportingPdf, setExportingPdf] = useState(false);
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
       <p style={{ color:DS.textMuted }}>Debrief introuvable</p>
@@ -18,6 +21,34 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const pct    = Math.round(debrief.percentage || 0);
   const scores = computeSectionScores(debrief.sections || {});
   const barCol = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
+
+  const handleExportPdf = async () => {
+    let exportWindow = null;
+    setExportingPdf(true);
+    try {
+      exportWindow = openDebriefPdfWindow(debrief);
+      const analysis = (() => {
+        try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
+        catch { return ''; }
+      })();
+
+      let comments = [];
+      try {
+        comments = await apiFetch(`/debriefs/${debrief.id}/comments`);
+      } catch (err) {
+        comments = [];
+      }
+
+      renderDebriefPdfWindow(exportWindow, { debrief, comments, analysis, allDebriefs, user });
+      toast("Fenetre d'export ouverte. Utilisez 'Enregistrer en PDF' si besoin.");
+    } catch (e) {
+      if (exportWindow && !exportWindow.closed) exportWindow.close();
+      toast(e.message || "Impossible de preparer l'export PDF", 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
@@ -34,6 +65,9 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
           <ClosedBadge isClosed={debrief.is_closed}/>
+          <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
+            {exportingPdf ? 'Préparation PDF...' : '📄 Exporter en PDF'}
+          </Btn>
           {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid rgba(232,125,106,.12)',borderRadius:8,background:'#ffffff',fontSize:12,textDecoration:'none',color:'#5a4a3a'}}>🔗 Écouter</a>}
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
         </div>
@@ -78,7 +112,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
               {SECTIONS.map(({ key, label }) => {
                 const val = scores[key]||0;
-                const sn  = debrief.section_notes?.[key];
+                const sn  = getSectionNote(debrief.section_notes, key);
                 return (
                   <div key={key}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
