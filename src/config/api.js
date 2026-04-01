@@ -33,6 +33,10 @@ export async function apiFetch(path, opts = {}) {
     _onExpired?.();
     throw new Error(data.error || 'Session expirée');
   }
-  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+  if (!res.ok) {
+    const detail = typeof data.detail === 'string' ? data.detail.trim() : '';
+    const base = data.error || 'Erreur serveur';
+    throw new Error(detail ? `${base} — ${detail}` : base);
+  }
   return data;
 }
