@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, cardSm } from '../../styles/designSystem';
+import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { computeSectionScores, avgSectionScores, fmtDate, copy, toScore20FromPercentage } from '../../utils/scoring';
+import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentage } from '../../utils/scoring';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
-import { Btn, Card, ScoreGauge, ClosedBadge, Empty, Spinner } from '../ui';
+import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
 
@@ -25,7 +25,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const pct    = Math.round(debrief.percentage || 0);
   const score20 = toScore20FromPercentage(pct);
   const scores = computeSectionScores(debrief.sections || {});
-  const barCol = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
+  const globalScores = avgSectionScores((allDebriefs || []).filter(item => item.id !== debrief.id));
 
   const buildPdfPayload = async () => {
     const analysis = (() => {
@@ -72,7 +72,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
@@ -100,60 +100,58 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
 
       {mob ? (
         <>
-          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.78))' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
-            <Radar scores={scores}/>
+            <Radar scores={scores} compareScores={globalScores} size={246} />
+            {globalScores && (
+              <p style={{ margin:0, fontSize:11, color:DS.textMuted }}>
+                Pleine = debrief · Pointillé = moyenne globale
+              </p>
+            )}
           </Card>
           <Card style={{ padding:20 }}>
-            <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:16 }}>Score par section</h3>
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-              {SECTIONS.map(({ key, label }) => {
-                const val = scores[key]||0;
-                return (
-                  <div key={key}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-                      <span style={{ fontSize:14, fontWeight:600, color:'#5a4a3a' }}>{label}</span>
-                      <span style={{ fontSize:13, fontWeight:700, padding:'2px 8px', borderRadius:6, border:'1px solid rgba(232,125,106,.12)', color:barCol(val) }}>{val}/5</span>
-                    </div>
-                    <div style={{ height:8, background:'rgba(232,125,106,.1)', borderRadius:4, overflow:'hidden' }}>
-                      <div style={{ height:'100%', width:`${(val/5)*100}%`, background:barCol(val), borderRadius:4, transition:'width .7s' }}/>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:16 }}>Score par section</h3>
+            <SectionBars scores={scores} globalScores={globalScores} />
           </Card>
         </>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap:20, alignItems:'start' }}>
-          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'minmax(320px, 360px) minmax(0, 1fr)', gap:22, alignItems:'start' }}>
+          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.8))' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
-            <Radar scores={scores}/>
+            <div style={{ width:'100%', borderTop:'1px dashed var(--border)', paddingTop:10 }}>
+              <p style={{ margin:'0 0 6px', fontSize:11, color:DS.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', textAlign:'center' }}>
+                Radar Comparatif
+              </p>
+              <div style={{ display:'flex', justifyContent:'center' }}>
+                <Radar scores={scores} compareScores={globalScores} size={258} />
+              </div>
+            </div>
+            {globalScores && (
+              <p style={{ margin:0, fontSize:11, color:DS.textMuted }}>
+                Pleine = ce debrief · Pointillé = base historique
+              </p>
+            )}
           </Card>
+
           <Card style={{ padding:24 }}>
-            <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:20 }}>Score par section</h3>
-            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              {SECTIONS.map(({ key, label }) => {
-                const val = scores[key]||0;
-                const sn  = getSectionNote(debrief.section_notes, key);
+            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:18 }}>Score par section</h3>
+            <SectionBars scores={scores} globalScores={globalScores} />
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
+              {SECTIONS.map(({ key }) => {
+                const sn = getSectionNote(debrief.section_notes, key);
+                if (!sn || (!sn.strength && !sn.weakness && !sn.improvement)) return null;
                 return (
-                  <div key={key}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-                      <span style={{ fontSize:13, fontWeight:600, color:'#5a4a3a' }}>{label}</span>
-                      <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:6, border:'1px solid rgba(232,125,106,.12)', color:barCol(val) }}>{val}/5</span>
+                  <div key={`${key}_notes`} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'rgba(255,255,255,.55)' }}>
+                    <p style={{ margin:'0 0 6px', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>
+                      {key.replace('_', ' ')}
+                    </p>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:8 }}>
+                      {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {sn.strength}</div>}
+                      {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {sn.weakness}</div>}
+                      {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'rgba(255,251,235,.8)',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {sn.improvement}</div>}
                     </div>
-                    <div style={{ height:8, background:'rgba(232,125,106,.1)', borderRadius:4, overflow:'hidden' }}>
-                      <div style={{ height:'100%', width:`${(val/5)*100}%`, background:barCol(val), borderRadius:4, transition:'width .7s' }}/>
-                    </div>
-                    {sn && (sn.strength||sn.weakness||sn.improvement) && (
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginTop:8 }}>
-                        {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#166534'}}>👍 {sn.strength}</div>}
-                        {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'#fff5f5',border:'1px solid #fca5a5',color:'#991b1b'}}>👎 {sn.weakness}</div>}
-                        {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:6,background:'rgba(255,251,235,.7)',border:'1px solid #fcd34d',color:'#92400e'}}>📈 {sn.improvement}</div>}
-                      </div>
-                    )}
                   </div>
                 );
               })}

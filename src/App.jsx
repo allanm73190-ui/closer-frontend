@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 // ─── Config & Utils ──────────────────────────────────────────────────────────
 import { apiFetch, getToken, clearToken, setOnExpired } from './config/api';
-import { P, P2, TXT, TXT2, TXT3, R_MD, SH_BTN, SH_CARD, GLOBAL_CSS } from './styles/designSystem';
+import { P, P2, TXT, TXT2, TXT3, R_MD, SH_BTN, GLOBAL_CSS } from './styles/designSystem';
 import { useIsMobile, useToast, useDebriefConfig } from './hooks';
 import { normalizeDebriefTemplateCatalog, getDefaultTemplateCatalog } from './config/debriefTemplates';
 
@@ -137,12 +137,12 @@ export default function App() {
   const selDebrief = debriefs.find(d => d.id===selId);
   const isHOS = user?.role === 'head_of_sales';
   const navItems = [
-    { key:'Dashboard', label:'Dashboard', icon:'⊞' },
-    { key:'Pipeline',  label:'Pipeline',  icon:'🎯' },
-    { key:'Objections', label:'Objections', icon:'📚' },
-    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'👥' }] : []),
-    { key:'NewDebrief', label:'Debrief',  icon:'📞' },
-    { key:'History',   label:'Historique', icon:'🕐' },
+    { key:'Dashboard', label:'Dashboard', icon:'▦' },
+    { key:'Pipeline',  label:'Pipeline',  icon:'◎' },
+    { key:'Objections', label:'Objections', icon:'◉' },
+    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'◌' }] : []),
+    { key:'NewDebrief', label:'Debrief',  icon:'✦' },
+    { key:'History',   label:'Historique', icon:'◷' },
   ];
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
@@ -194,85 +194,122 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)', color:'var(--txt,#5a4a3a)', fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg)', color:'var(--txt,#5a4a3a)', position:'relative', overflow:'hidden' }}>
       <style>{GLOBAL_CSS}</style>
 
-      {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
-      <Toasts list={toasts}/>
-      {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
+      <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}>
+        <div style={{ position:'absolute', top:-160, right:-120, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.24) 0%, rgba(232,125,106,0) 72%)', animation:'floatY 10s ease-in-out infinite' }}/>
+        <div style={{ position:'absolute', bottom:-180, left:-140, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.22) 0%, rgba(106,172,206,0) 72%)', animation:'floatY 13s ease-in-out infinite' }}/>
+      </div>
 
-      {mob ? (
-        <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar)', borderBottom:'1px solid var(--border)', boxShadow:'var(--sh-sm)' }}>
-            <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
-              <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
-                <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
-                <span style={{ fontSize:14, fontWeight:700, color:TXT }}>CloserDebrief</span>
-              </button>
-              <UserMenu
-                user={user}
-                gam={gam}
-                onLogout={onLogout}
-                onSettings={()=>setShowSettings(true)}
-                toast={toast}
-                theme={theme}
-                onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              />
-            </div>
-          </header>
-          <main style={{ padding:'16px 14px 90px' }}>
-            {dataLoading ? <Spinner full/> : Content()}
-          </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'var(--sidebar)', borderTop:'1px solid var(--border)', boxShadow:'var(--sh-sm)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
-            {navItems.map(({ key, label, icon }) => (
-              <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
-                <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
-                <span style={{ fontSize:10, fontWeight:600, color:page===key?P:TXT3 }}>{label}</span>
-              </button>
-            ))}
-          </nav>
-        </>
-      ) : (
-        <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid var(--border)', boxShadow:'var(--sh-sm)', padding:'18px 10px', zIndex:40 }}>
-            <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
-              onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
-              onMouseLeave={e=>e.currentTarget.style.background='none'}>
-              <div style={{ width:34, height:34, borderRadius:10, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📞</div>
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:TXT }}>CloserDebrief</div>
-                <div style={{ fontSize:10, color:TXT3 }}>Sales OS</div>
+      <div style={{ position:'relative', zIndex:1 }}>
+        {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
+        <Toasts list={toasts}/>
+        {showSettings && <AccountSettings user={user} onClose={()=>setShowSettings(false)} toast={toast}/>}
+
+        {mob ? (
+          <>
+            <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar)', borderBottom:'1px solid var(--border)', backdropFilter:'blur(16px)' }}>
+              <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', minHeight:58 }}>
+                <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                  <div style={{ width:34, height:34, borderRadius:11, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'white' }}>✦</div>
+                  <div style={{ textAlign:'left' }}>
+                    <span style={{ display:'block', fontSize:14, fontWeight:800, color:TXT, lineHeight:1.1 }}>CloserDebrief</span>
+                    <span style={{ display:'block', fontSize:10, letterSpacing:'.12em', textTransform:'uppercase', color:TXT3 }}>Sales Intelligence</span>
+                  </div>
+                </button>
+                <UserMenu
+                  user={user}
+                  gam={gam}
+                  onLogout={onLogout}
+                  onSettings={()=>setShowSettings(true)}
+                  toast={toast}
+                  theme={theme}
+                  onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                />
               </div>
-            </button>
-            <div style={{ display:'flex', flexDirection:'column', gap:3, flex:1 }}>
+            </header>
+
+            <main style={{ padding:'20px 14px 104px' }}>
+              {dataLoading ? <Spinner full/> : Content()}
+            </main>
+
+            <nav style={{ position:'fixed', left:10, right:10, bottom:'max(10px, env(safe-area-inset-bottom))', background:'var(--sidebar)', border:'1px solid var(--border)', borderRadius:16, boxShadow:'var(--sh-card)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 4px', zIndex:45, backdropFilter:'blur(14px)' }}>
               {navItems.map(({ key, label, icon }) => (
-                <button key={key} onClick={()=>navigate(key)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:R_MD, border:'none', fontSize:13, fontWeight:page===key?700:500, cursor:'pointer', transition:'all .18s', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', fontFamily:'inherit', textAlign:'left', width:'100%' }}
-                  onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='var(--nav-hover)'; }}
-                  onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}>
-                  <span style={{ fontSize:16, width:22, textAlign:'center' }}>{icon}</span>
-                  <span>{label}</span>
+                <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit', flex:1 }}>
+                  <div style={{ minWidth:34, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
+                  <span style={{ fontSize:10, fontWeight:700, color:page===key?P:TXT3 }}>{label}</span>
                 </button>
               ))}
-            </div>
-            <div style={{ borderTop:'1px solid var(--border)', paddingTop:12, marginTop:8 }}>
-              <UserMenu
-                user={user}
-                gam={gam}
-                onLogout={onLogout}
-                onSettings={()=>setShowSettings(true)}
-                toast={toast}
-                sidebar
-                theme={theme}
-                onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              />
-            </div>
-          </aside>
-          <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>
-            {dataLoading ? <Spinner full/> : Content()}
-          </main>
-        </div>
-      )}
+            </nav>
+          </>
+        ) : (
+          <div style={{ display:'flex', minHeight:'100vh' }}>
+            <aside style={{ width:238, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid var(--border)', boxShadow:'var(--sh-sm)', padding:'18px 12px', zIndex:40, backdropFilter:'blur(16px)' }}>
+              <button
+                onClick={()=>navigate('Dashboard')}
+                style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:22, width:'100%', transition:'background .15s' }}
+                onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+              >
+                <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'white', flexShrink:0 }}>✦</div>
+                <div style={{ textAlign:'left' }}>
+                  <div style={{ fontSize:15, fontWeight:800, color:TXT, lineHeight:1.1 }}>CloserDebrief</div>
+                  <div style={{ fontSize:10, color:TXT3, letterSpacing:'.12em', textTransform:'uppercase' }}>Sales Intelligence</div>
+                </div>
+              </button>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:5, flex:1 }}>
+                {navItems.map(({ key, label, icon }) => (
+                  <button
+                    key={key}
+                    onClick={()=>navigate(key)}
+                    style={{
+                      display:'flex',
+                      alignItems:'center',
+                      gap:10,
+                      padding:'11px 14px',
+                      borderRadius:R_MD,
+                      border:'none',
+                      fontSize:13,
+                      fontWeight:page===key?700:600,
+                      cursor:'pointer',
+                      transition:'all .18s',
+                      background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent',
+                      color:page===key?'white':TXT2,
+                      boxShadow:page===key?SH_BTN:'none',
+                      textAlign:'left',
+                      width:'100%',
+                    }}
+                    onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='var(--nav-hover)'; }}
+                    onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}
+                  >
+                    <span style={{ fontSize:15, width:20, textAlign:'center' }}>{icon}</span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ borderTop:'1px solid var(--border)', paddingTop:12, marginTop:8 }}>
+                <UserMenu
+                  user={user}
+                  gam={gam}
+                  onLogout={onLogout}
+                  onSettings={()=>setShowSettings(true)}
+                  toast={toast}
+                  sidebar
+                  theme={theme}
+                  onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                />
+              </div>
+            </aside>
+
+            <main style={{ flex:1, minWidth:0, padding:'34px 44px 44px', overflowX:'hidden', maxWidth:'calc(100vw - 238px)', animation:'fadeUp .25s ease-out' }}>
+              {dataLoading ? <Spinner full/> : Content()}
+            </main>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../config/api';
-import { DS, P, P2, TXT, TXT2, TXT3, R_SM, R_MD, R_LG, R_FULL, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, card, cardSm, inp } from '../../styles/designSystem';
+import { DS, P, P2, TXT, TXT2, TXT3, R_SM, R_MD, R_LG, R_FULL, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { fmtDate, copy } from '../../utils/scoring';
 import { Btn, Card, Spinner, Empty } from '../ui';
@@ -135,7 +135,7 @@ function ObjectionCard({ objection, toast }) {
                 Autres réponses gagnantes
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {objection.bestResponses.slice(1, 4).map((d, i) => (
+                {objection.bestResponses.slice(1, 4).map(d => (
                   <div key={d.id} style={{ ...cardSm(), padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, color: TXT, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -252,7 +252,7 @@ export function ObjectionLibrary({ toast }) {
 
   if (!data || data.objections.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: TXT, margin: 0 }}>📚 Objection Library</h1>
           <p style={{ color: TXT2, fontSize: 14, marginTop: 4 }}>Les meilleures réponses aux objections de votre équipe</p>
@@ -277,16 +277,18 @@ export function ObjectionLibrary({ toast }) {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: TXT, margin: 0 }}>📚 Objection Library</h1>
-          <p style={{ color: TXT2, fontSize: 14, marginTop: 4 }}>
-            {data.totalWithObjections} debriefs avec objections sur {data.total} total
-          </p>
+      <Card style={{ padding:16, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.76))' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: TXT, margin: 0 }}>📚 Objection Library</h1>
+            <p style={{ color: TXT2, fontSize: 14, marginTop: 4 }}>
+              {data.totalWithObjections} debriefs avec objections sur {data.total} total
+            </p>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12 }}>
@@ -296,7 +298,7 @@ export function ObjectionLibrary({ toast }) {
           { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: '🎯', bg: 'rgba(218,240,216,.6)', c: '#5a9858' },
           { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: '🔥', bg: 'rgba(254,243,224,.6)', c: '#c07830' },
         ].map(({ label, value, icon, bg, c }) => (
-          <Card key={label} style={{ padding: mob ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', gap: mob ? 10 : 14 }}>
+          <Card key={label} style={{ padding: mob ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', gap: mob ? 10 : 14, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.74))' }}>
             <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: mob ? 16 : 20, flexShrink: 0 }}>{icon}</div>
             <div>
               <p style={{ fontSize: 10, color: TXT3, margin: 0, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</p>

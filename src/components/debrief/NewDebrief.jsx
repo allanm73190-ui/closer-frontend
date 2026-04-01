@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { computeScore } from '../../utils/scoring';
+import { computeScore, computeSectionScores } from '../../utils/scoring';
 import { Btn, Input, Textarea, Card, ScoreGauge, ClosedBadge, Modal } from '../ui';
+import { Radar } from '../ui/Charts';
 import { RadioGroup, CheckboxGroup, SectionNotes, CatCard } from './FormPrimitives';
 import { DebriefConfigEditor, DEFAULT_DEBRIEF_CONFIG } from './Settings';
 import { normalizeDebriefTemplateCatalog, buildTemplateSections, getDefaultTemplateCatalog } from '../../config/debriefTemplates';
@@ -109,6 +110,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   const [notes, setNotes] = useState(() => buildNotesState(configSections));
   const [loading, setLoading] = useState(false);
   const { total, max, percentage } = computeScore(secs);
+  const sectionScores = useMemo(() => computeSectionScores(secs), [secs]);
 
   useEffect(() => {
     if (templateCatalog.templates.some(template => template.key === selectedTemplateKey)) return;
@@ -219,7 +221,9 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               deal_closed: !!form.is_closed,
             },
           });
-        } catch {}
+        } catch {
+          // Lien deal non bloquant: on garde le debrief même si le patch échoue
+        }
       }
       if (isEditing) {
         onUpdate?.(r.debrief, r.gamification);
@@ -285,7 +289,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       {showDebriefSettings && (
         <Modal title="Paramètres des questions debrief" onClose={()=>setShowDebriefSettings(false)}>
           <DebriefConfigEditor
@@ -301,10 +305,10 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || (isEditing ? 'History' : 'Dashboard'))} style={{ width:36, height:36, padding:0, borderRadius:8, fontSize:16, flexShrink:0 }}>←</Btn>
           <div>
-            <h1 style={{ fontSize:20, fontWeight:700, color:'#5a4a3a', margin:0 }}>
+            <h1 style={{ fontSize:22, fontWeight:800, color:'var(--txt,#5a4a3a)', margin:0 }}>
               {isEditing ? 'Modifier le debrief' : 'Nouveau debrief'}
             </h1>
-            <p style={{ color:DS.textMuted, fontSize:13, marginTop:2 }}>
+            <p style={{ color:DS.textMuted, fontSize:13, marginTop:4 }}>
               {isEditing ? "Mettez à jour ce debrief depuis l'historique" : 'Évaluez votre dernier appel'}
             </p>
           </div>
@@ -317,17 +321,17 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       </div>
 
       {mob && (
-        <div style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', borderRadius:12, padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
+        <Card style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', border:'1px solid rgba(255,255,255,.3)', borderRadius:16, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
           <div>
             <p style={{ fontSize:11, opacity:.8, margin:0, textTransform:'uppercase', letterSpacing:'.05em' }}>Score en direct</p>
             <p style={{ fontSize:28, fontWeight:700, margin:0 }}>{percentage}%</p>
             <p style={{ fontSize:12, opacity:.7, margin:0 }}>{total} / {max} points</p>
           </div>
           {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed} />}
-        </div>
+        </Card>
       )}
 
-      <Card style={{ padding:14, border:'1px solid rgba(232,125,106,.14)' }}>
+      <Card style={{ padding:16, border:'1px solid rgba(232,125,106,.18)', background:'linear-gradient(135deg, rgba(255,255,255,.92), rgba(253,240,236,.72))' }}>
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 2fr', gap:10, alignItems:'center' }}>
           <div>
             <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'#5a4a3a', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
@@ -362,11 +366,11 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       </Card>
 
       <form onSubmit={submit}>
-        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 300px', gap:mob?16:24, alignItems:'start' }}>
+        <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'minmax(0, 1fr) 320px', gap:mob?16:26, alignItems:'start' }}>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <Card style={{ padding:16 }}>
+            <Card style={{ padding:20 }}>
               <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:14 }}>Informations de l'appel</h3>
-              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(4,1fr)', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(2,minmax(0,1fr))', gap:12, marginBottom:14 }}>
                 <div>
                   <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Prospect *</label>
                   <Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({ ...form, prospect_name:e.target.value })} />
@@ -440,25 +444,38 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               </CatCard>
             ))}
 
-            <Card style={{ padding:16 }}>
+            <Card style={{ padding:20 }}>
               <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:12 }}>Notes globales</h3>
               <Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({ ...form, notes:e.target.value })} />
             </Card>
 
             {mob && (
-              <Btn type="submit" disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
-                {loading ? 'Enregistrement...' : (isEditing ? '💾 Enregistrer les modifications' : '💾 Enregistrer le debrief')}
-              </Btn>
+              <>
+                <Card style={{ padding:14, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Radar scores={sectionScores} size={238} />
+                </Card>
+                <Btn type="submit" disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
+                  {loading ? 'Enregistrement...' : (isEditing ? '💾 Enregistrer les modifications' : '💾 Enregistrer le debrief')}
+                </Btn>
+              </>
             )}
           </div>
 
           {!mob && (
             <div style={{ position:'sticky', top:80 }}>
-              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, rgba(255,255,255,.95), rgba(247,235,228,.82))' }}>
                 <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>Score en direct</h3>
                 <ScoreGauge percentage={percentage} />
                 <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{total} / {max} points</p>
                 {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed} />}
+                <div style={{ width:'100%', borderTop:'1px dashed var(--border)', paddingTop:10 }}>
+                  <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.06em', textAlign:'center' }}>
+                    Radar Live
+                  </p>
+                  <div style={{ display:'flex', justifyContent:'center' }}>
+                    <Radar scores={sectionScores} size={232} />
+                  </div>
+                </div>
                 <Btn type="submit" disabled={loading} style={{ width:'100%' }}>
                   {loading ? 'Enregistrement...' : (isEditing ? '💾 Enregistrer les modifications' : '💾 Enregistrer le debrief')}
                 </Btn>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../config/api';
 import { DEFAULT_PIPELINE_STATUSES, normalizePipelineConfig } from '../../config/pipeline';
-import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, SH_BTN, card, cardSm } from '../../styles/designSystem';
+import { DS, R_FULL, SH_SM, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
 import { GamCard } from '../gamification';
@@ -58,16 +58,40 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
   }, [user?.id]);
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-        <div>
-          <h1 style={{ fontSize:24, fontWeight:700, color:'#5a4a3a', margin:0 }}>Tableau de bord</h1>
-          <p style={{ color:'#6b7280', marginTop:4, fontSize:14 }}>Bonjour, {user.name} 👋</p>
+    <div style={{ display:'flex', flexDirection:'column', gap:28 }}>
+      <Card style={{ padding:mob ? '18px 16px' : '24px 26px', background:'linear-gradient(145deg, rgba(255,255,255,.96), rgba(249,238,232,.82))' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+          <div>
+            <p style={{ margin:'0 0 4px', fontSize:11, color:DS.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em' }}>Tableau de bord</p>
+            <h1 style={{ fontSize:mob ? 24 : 32, fontWeight:800, color:'var(--txt,#5a4a3a)', margin:0 }}>Bonjour, {user.name}</h1>
+            <p style={{ color:'var(--txt2,#8f7462)', marginTop:6, fontSize:14, maxWidth:520 }}>
+              Pilotez vos performances, vos priorités de closing et les prochaines actions à fort impact.
+            </p>
+          </div>
+          <Btn onClick={()=>navigate('NewDebrief')} style={{ minWidth:170 }}>+ Nouveau debrief</Btn>
         </div>
-        <Btn onClick={()=>navigate('NewDebrief')}>+ Nouveau debrief</Btn>
-      </div>
-      {!isHOS && <ObjectiveBanner userId={user.id}/>}
-      <GamCard gam={gam}/>
+        <div style={{ marginTop:12, display:'flex', gap:8, flexWrap:'wrap' }}>
+          {[
+            'Vue globale live',
+            'Patterns IA',
+            'Pipeline synchronisé',
+          ].map(tag => (
+            <span key={tag} style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, color:'#7d2c1e', background:'rgba(253,232,228,.78)', border:'1px solid rgba(232,125,106,.24)' }}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      </Card>
+
+      {isHOS ? (
+        <GamCard gam={gam}/>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1.1fr .9fr', gap:14 }}>
+          <GamCard gam={gam}/>
+          <ObjectiveBanner userId={user.id}/>
+        </div>
+      )}
+
       <StatsRow debriefs={debriefs}/>
 
       <Card style={{ padding:14 }}>
@@ -112,19 +136,19 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       </Card>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, alignItems:'start' }}>
-        <Card style={{ padding:14, maxWidth:760 }}>
-          <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>
+        <Card style={{ padding:18 }}>
+          <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:12 }}>Évolution du score</h2>
           <Chart debriefs={debriefs} compact />
         </Card>
       </div>
 
-    {/* Mini Pipeline */}
-    <div>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-        <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
+      {/* Mini Pipeline */}
+      <div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+          <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
+        </div>
+        <MiniPipeline navigate={navigate} user={user}/>
       </div>
-      <MiniPipeline navigate={navigate} user={user}/>
-    </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>

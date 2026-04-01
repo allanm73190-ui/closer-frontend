@@ -31,13 +31,13 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
       onClick={onSelect}
       style={{
         border:'none',
-        borderRadius:14,
+        borderRadius:16,
         padding:'16px 18px',
         textAlign:'left',
         cursor:'pointer',
         background:active ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'white',
         color:active ? 'white' : '#5a4a3a',
-        boxShadow:active ? '0 10px 30px rgba(232,125,106,.35)' : '0 4px 16px rgba(28,26,40,.08)',
+        boxShadow:active ? '0 16px 34px rgba(232,125,106,.35)' : '0 12px 24px rgba(28,26,40,.09)',
         transition:'all .2s',
       }}
     >
@@ -404,7 +404,7 @@ function HOSPage({ toast, allDebriefs }) {
   if (loading) return <Spinner full />;
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
           <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'#5a4a3a' }}>👥 Espace Équipe</h1>
@@ -478,7 +478,7 @@ function HOSPage({ toast, allDebriefs }) {
 
                 <div style={{ marginTop:14, display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
                   {[{ label:'Debriefs', value:teamStats.total, color:'#e87d6a' }, { label:'Score moyen', value:`${teamStats.avg}%`, color:'#059669' }, { label:'Closings', value:teamStats.closed, color:'#059669' }, { label:'Taux closing', value:`${teamStats.closeRate}%`, color:'#d97706' }].map(kpi => (
-                    <div key={kpi.label} style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:10, padding:'10px 12px', background:'rgba(255,248,245,.6)' }}>
+                    <div key={kpi.label} style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:12, padding:'10px 12px', background:'linear-gradient(145deg, rgba(255,255,255,.92), rgba(249,239,233,.74))' }}>
                       <p style={{ margin:'0 0 3px', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{kpi.label}</p>
                       <p style={{ margin:0, fontSize:20, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
                     </div>

@@ -3,7 +3,6 @@ import { DS, SH_SM, R_MD, R_FULL } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { fmtShort } from '../../utils/scoring';
 import { Card } from '../ui';
-import { cardSm } from '../../styles/designSystem';
 
 function StatsRow({ debriefs }) {
   const mob   = useIsMobile();
@@ -23,10 +22,10 @@ function StatsRow({ debriefs }) {
   return (
     <div style={{ display:'grid', gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)', gap:mob?10:12 }}>
       {items.map(({ label, value, icon, bg, c }) => (
-        <Card key={label} style={{ padding:mob?'12px 14px':'16px 20px', display:'flex', alignItems:'center', gap:mob?10:14 }}>
+        <Card key={label} style={{ padding:mob?'12px 14px':'16px 18px', display:'flex', alignItems:'center', gap:mob?10:12, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
           <div style={{ width:mob?36:44, height:mob?36:44, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:mob?16:20, flexShrink:0 }}>{icon}</div>
           <div>
-            <p style={{ fontSize:10, color:'#6b7280', margin:0, fontWeight:500, textTransform:'uppercase', letterSpacing:'.04em' }}>{label}</p>
+            <p style={{ fontSize:10, color:'#6b7280', margin:0, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em' }}>{label}</p>
             <p style={{ fontSize:mob?18:22, fontWeight:700, color:c, margin:0 }}>{value}</p>
           </div>
         </Card>
@@ -47,11 +46,11 @@ function Chart({ debriefs, compact = false }) {
     </div>
   );
   const W = compact ? 500 : 560;
-  const H = compact ? 160 : 200;
+  const H = compact ? 142 : 188;
   const pL = 42;
   const pR = 16;
   const pT = compact ? 12 : 16;
-  const pB = compact ? 22 : 28;
+  const pB = compact ? 20 : 26;
   const iW=W-pL-pR, iH=H-pT-pB;
   const xs = data.map((_,i) => pL + (i / Math.max(data.length-1,1)) * iW);
   const ys = data.map(d  => pT + iH - (d.score / 100) * iH);
@@ -70,7 +69,7 @@ function Chart({ debriefs, compact = false }) {
           return <g key={v}><line x1={pL} y1={y} x2={W-pR} y2={y} stroke="#f1f5f9" strokeWidth="1"/><text x={pL-6} y={y+4} textAnchor="end" fontSize="10" fill="#94a3b8">{v}%</text></g>;
         })}
         <path d={`${path} L ${xs[xs.length-1]} ${pT+iH} L ${pL} ${pT+iH} Z`} fill="url(#cg)"/>
-        <path d={path} fill="none" stroke="#e87d6a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d={path} fill="none" stroke="#e87d6a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
         {data.map((d,i) => (
           <g key={i} onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)} onTouchStart={()=>setHov(hov===i?null:i)} style={{ cursor:'pointer' }}>
             <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:5} fill="#e87d6a" stroke="white" strokeWidth="2"/>

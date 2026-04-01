@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { P, P2, TXT, TXT3, R_MD, SH_SM, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { Input } from '../ui';
 
 function RadioGroup({ label, options, value, onChange }) {
   return (
-    <div style={{ marginBottom:16 }}>
-      {label && <p style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>{label}</p>}
+    <div style={{ marginBottom:18 }}>
+      {label && <p style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:9 }}>{label}</p>}
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         {options.map(opt => (
-          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:8, border:`1px solid ${value===opt.value?'#e87d6a':'#e2e8f0'}`, background:value===opt.value?'rgba(255,248,245,.8)':'white', cursor:'pointer', fontSize:14, color:value===opt.value?'#4c1d95':'#64748b', transition:'all .15s' }}>
+          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value===opt.value?'#e87d6a':'var(--border)'}`, background:value===opt.value?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value===opt.value?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value===opt.value?'0 8px 18px rgba(232,125,106,.12)':'none' }}>
             <input type="radio" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value===opt.value} onChange={()=>onChange(opt.value)}/>
             <span>{opt.label}</span>
           </label>
@@ -21,11 +21,11 @@ function RadioGroup({ label, options, value, onChange }) {
 function CheckboxGroup({ label, options, value=[], onChange }) {
   const toggle = v => value.includes(v) ? onChange(value.filter(x=>x!==v)) : onChange([...value, v]);
   return (
-    <div style={{ marginBottom:16 }}>
-      {label && <p style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', marginBottom:8 }}>{label}</p>}
+    <div style={{ marginBottom:18 }}>
+      {label && <p style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:9 }}>{label}</p>}
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         {options.map(opt => (
-          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:8, border:`1px solid ${value.includes(opt.value)?'#e87d6a':'#e2e8f0'}`, background:value.includes(opt.value)?'rgba(255,248,245,.8)':'white', cursor:'pointer', fontSize:14, color:value.includes(opt.value)?'#4c1d95':'#64748b', transition:'all .15s' }}>
+          <label key={opt.value} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'12px 14px', borderRadius:11, border:`1px solid ${value.includes(opt.value)?'#e87d6a':'var(--border)'}`, background:value.includes(opt.value)?'rgba(255,244,239,.92)':'var(--card,#fff)', cursor:'pointer', fontSize:13, color:value.includes(opt.value)?'#7d2c1e':'#64748b', transition:'all .15s', boxShadow:value.includes(opt.value)?'0 8px 18px rgba(232,125,106,.12)':'none' }}>
             <input type="checkbox" style={{ marginTop:3, accentColor:'#e87d6a', flexShrink:0 }} checked={value.includes(opt.value)} onChange={()=>toggle(opt.value)}/>
             <span>{opt.label}</span>
           </label>
@@ -52,19 +52,19 @@ function SectionNotes({ notes={}, onChange }) {
   );
 }
 function CatCard({ number, title, children }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(true);
   return (
-    <div style={{ ...cardSm(), overflow:'hidden', marginBottom:10 }}>
+    <div style={{ ...cardSm({ border:'1px solid rgba(232,125,106,.16)' }), overflow:'hidden', marginBottom:12 }}>
       <button type="button" onClick={()=>setOpen(v=>!v)} style={{
-        display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-        background: open ? `linear-gradient(135deg,${P},${P2})` : `linear-gradient(135deg,rgba(253,232,228,.4),rgba(253,240,238,.2))`,
+        display:'flex', alignItems:'center', gap:12, padding:'13px 16px',
+        background: open ? `linear-gradient(135deg,${P},${P2})` : `linear-gradient(135deg,rgba(253,232,228,.5),rgba(218,237,245,.32))`,
         width:'100%', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'all .2s'
       }}>
         <span style={{ width:26, height:26, borderRadius:'50%', background:open?'rgba(255,255,255,.25)':P, color:'white', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{number}</span>
-        <span style={{ fontWeight:700, fontSize:14, color:open?'white':TXT, flex:1, textAlign:'left' }}>{title}</span>
+        <span style={{ fontWeight:800, fontSize:14, color:open?'white':TXT, flex:1, textAlign:'left' }}>{title}</span>
         <span style={{ fontSize:13, color:open?'rgba(255,255,255,.8)':TXT3, transition:'transform .2s', display:'inline-block', transform:open?'rotate(180deg)':'none' }}>▾</span>
       </button>
-      {open && <div style={{ padding:16, borderTop:`1px solid rgba(232,125,106,.1)` }}>{children}</div>}
+      {open && <div style={{ padding:18, borderTop:`1px solid rgba(232,125,106,.12)` }}>{children}</div>}
     </div>
   );
 }

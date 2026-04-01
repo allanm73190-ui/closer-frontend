@@ -709,8 +709,8 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   if (loading) return <Spinner full />;
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-      <Card style={{ padding:16, border:'1px solid var(--border)', background:'linear-gradient(135deg, rgba(253,232,228,.55), rgba(218,237,245,.55))' }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+      <Card style={{ padding:18, border:'1px solid var(--border)', background:'linear-gradient(145deg, rgba(253,232,228,.6), rgba(218,237,245,.6))' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
           <div>
             <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h1>
@@ -737,7 +737,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
           { label:'Taux win', value:`${winRate}%`, icon:'🏆', color:'#d97706' },
           { label:'Sans date', value:noDateCount, icon:'🗓️', color:noDateCount > 0 ? '#d97706' : '#64748b' },
         ].map(kpi => (
-          <Card key={kpi.label} style={{ padding:'12px 13px' }}>
+          <Card key={kpi.label} style={{ padding:'12px 13px', background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
             <p style={{ margin:'0 0 6px', fontSize:11, textTransform:'uppercase', letterSpacing:'.05em', color:DS.textMuted }}>{kpi.label}</p>
             <p style={{ margin:0, fontSize:22, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
             <p style={{ margin:'4px 0 0', fontSize:12 }}>{kpi.icon}</p>
