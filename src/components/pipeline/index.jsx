@@ -48,6 +48,7 @@ function StatusBadge({ stage, compact=false }) {
 }
 
 function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCreateDebrief, toast }) {
+  const mob = useIsMobile();
   const initialDealClosed = typeof deal?.deal_closed === 'boolean'
     ? deal.deal_closed
     : !!getStageByKey(statuses, deal?.status)?.won;
@@ -167,8 +168,8 @@ function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCrea
   };
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(10,15,25,.35)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:'var(--card,#fff)', borderRadius:'18px 18px 0 0', width:'100%', maxWidth:660, maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(10,15,25,.42)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?8:20 }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:'var(--card,#fff)', borderRadius:mob?14:18, width:mob?'calc(100vw - 16px)':'min(660px, calc(100vw - 44px))', maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
         <div style={{ padding:'18px 18px 0', position:'sticky', top:0, background:'var(--card,#fff)', zIndex:2 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <StatusBadge stage={activeStage} />

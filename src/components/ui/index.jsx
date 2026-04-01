@@ -107,11 +107,12 @@ export function Card({ children, style={} }) {
 
 // ─── MODAL ───────────────────────────────────────────────────────────────────
 export function Modal({ title, onClose, children }) {
+  const mob = useIsMobile();
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.2)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(20,28,40,.42)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?8:20 }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:'var(--card,#ffffff)', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+      <div style={{ background:'var(--card,#ffffff)', borderRadius:mob?14:18, padding:mob?16:22, width:mob?'calc(100vw - 16px)':'min(640px, calc(100vw - 40px))', maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
           <h2 style={{ fontSize:17, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{title}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--txt3,#c8b8a8)', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>
         </div>
