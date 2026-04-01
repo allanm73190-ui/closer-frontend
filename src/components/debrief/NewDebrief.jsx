@@ -61,6 +61,15 @@ function isYesOption(option) {
   return raw.includes('oui') || raw.includes('yes');
 }
 
+function detailPlaceholderFromQuestion(label) {
+  const text = String(label || '').toLowerCase();
+  if (text.includes('douleur de surface')) return 'Décris la douleur concernée...';
+  if (text.includes('temporalité')) return 'Précise la temporalité donnée par le prospect...';
+  if (text.includes('urgence')) return "Décris l'urgence évoquée...";
+  if (text.includes('projection')) return 'Décris la projection exprimée...';
+  return 'Précise ici...';
+}
+
 const PROSPECT_TYPE_OPTIONS = [
   { value:'', label:'Non renseigné' },
   { value:'froid', label:'Prospect froid' },
@@ -310,7 +319,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             </label>
             <Textarea
               rows={2}
-              placeholder="Précise ici..."
+              placeholder={detailPlaceholderFromQuestion(question.label)}
               value={detailValue}
               onChange={e=>setAnswer(sectionKey, detailKey, e.target.value)}
             />

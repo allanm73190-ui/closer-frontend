@@ -245,17 +245,17 @@ export default function App() {
           </>
         ) : (
           <div style={{ display:'flex', minHeight:'100vh' }}>
-            <aside style={{ width:228, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid rgba(255,255,255,.5)', boxShadow:'0 20px 40px rgba(85,66,63,.06)', padding:'26px 14px 16px', zIndex:40, backdropFilter:'blur(18px)' }}>
+            <aside style={{ width:228, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:`linear-gradient(165deg, ${P}, ${P2})`, borderRight:'1px solid rgba(255,255,255,.28)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'26px 14px 16px', zIndex:40 }}>
               <button
                 onClick={()=>navigate('Dashboard')}
                 style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'8px 10px 22px', borderRadius:R_MD, marginBottom:4, width:'100%', transition:'background .15s' }}
                 onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}
               >
-                <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'white', flexShrink:0 }}>✦</div>
+                <div style={{ width:36, height:36, borderRadius:12, background:'rgba(255,255,255,.22)', border:'1px solid rgba(255,255,255,.28)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'white', flexShrink:0 }}>✦</div>
                 <div style={{ textAlign:'left' }}>
-                  <div style={{ fontSize:22, fontWeight:800, color:TXT, lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
-                  <div style={{ fontSize:10, color:TXT2, letterSpacing:'.22em', textTransform:'uppercase', fontWeight:800, marginTop:4 }}>Sales Intelligence</div>
+                  <div style={{ fontSize:22, fontWeight:800, color:'white', lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.7)', letterSpacing:'.22em', textTransform:'uppercase', fontWeight:800, marginTop:4 }}>Sales Intelligence</div>
                 </div>
               </button>
 
@@ -275,13 +275,13 @@ export default function App() {
                       fontWeight:700,
                       cursor:'pointer',
                       transition:'all .18s',
-                      background:page===key?'rgba(244,236,229,.72)':'transparent',
-                      color:page===key?P2:TXT2,
-                      boxShadow:page===key?'inset 2px 0 0 #e87d6a':'none',
+                      background:page===key?'rgba(255,255,255,.18)':'transparent',
+                      color:'white',
+                      boxShadow:page===key?'0 10px 20px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.22)':'none',
                       textAlign:'left',
                       width:'100%',
                     }}
-                    onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='var(--nav-hover)'; }}
+                    onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(255,255,255,.1)'; }}
                     onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}
                   >
                     <span style={{ fontSize:15, width:20, textAlign:'center' }}>{icon}</span>
@@ -290,29 +290,31 @@ export default function App() {
                 ))}
               </div>
 
-              <div style={{ borderTop:'1px solid rgba(176,144,128,.14)', paddingTop:12, marginTop:8, display:'grid', gap:8 }}>
-                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:TXT2, fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit' }}>
+              <div style={{ borderTop:'1px solid rgba(255,255,255,.22)', paddingTop:12, marginTop:8, display:'grid', gap:8 }}>
+                <button onClick={()=>setShowSettings(true)} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:'white', fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
                   <span style={{ width:18, textAlign:'center' }}>⚙️</span> Paramètres
                 </button>
-                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:TXT2, fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit' }}>
+                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:10, border:'none', background:'transparent', padding:'10px 12px', borderRadius:14, cursor:'pointer', color:'white', fontSize:13, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
                   <span style={{ width:18, textAlign:'center' }}>↩</span> Déconnexion
                 </button>
               </div>
             </aside>
 
             <div style={{ flex:1, minWidth:0, maxWidth:'calc(100vw - 228px)' }}>
-              <header style={{ position:'sticky', top:0, zIndex:45, height:72, padding:'16px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
-                <div style={{ width:'min(480px, 52vw)', position:'relative' }}>
+              <header style={{ position:'sticky', top:0, zIndex:45, height:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'rgba(245,237,230,.74)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,.42)' }}>
+                <div style={{ width:'min(520px, 56vw)', position:'relative' }}>
                   <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:TXT3, fontSize:13 }}>⌕</span>
                   <input
-                    placeholder="Rechercher un prospect, un debrief..."
-                    style={{ width:'100%', border:'1px solid rgba(232,125,106,.12)', background:'rgba(255,255,255,.72)', color:TXT, borderRadius:999, padding:'10px 14px 10px 34px', boxShadow:'var(--sh-sm)', outline:'none', fontFamily:'inherit', fontSize:13 }}
+                    placeholder="Rechercher un prospect, une objection, un replay..."
+                    style={{ width:'100%', border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.86)', color:TXT, borderRadius:999, padding:'10px 14px 10px 34px', boxShadow:'var(--sh-sm)', outline:'none', fontFamily:'inherit', fontSize:13 }}
                   />
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}>⌂</button>
+                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}>?</button>
                   <button
                     onClick={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                    style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'rgba(255,255,255,.7)', cursor:'pointer', color:TXT2, fontSize:14 }}
+                    style={{ width:34, height:34, borderRadius:12, border:'1px solid rgba(232,125,106,.2)', background:'rgba(255,255,255,.8)', cursor:'pointer', color:TXT2, fontSize:14 }}
                     title="Basculer le thème"
                   >
                     {theme === 'dark' ? '☀︎' : '☾'}
@@ -329,7 +331,7 @@ export default function App() {
                 </div>
               </header>
 
-              <main style={{ padding:'30px 32px 42px', overflowX:'hidden', animation:'fadeUp .25s ease-out' }}>
+              <main style={{ padding:'28px 30px 40px', overflowX:'hidden', animation:'fadeUp .25s ease-out' }}>
                 {dataLoading ? <Spinner full/> : Content()}
               </main>
             </div>
