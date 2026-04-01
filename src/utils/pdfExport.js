@@ -1,4 +1,5 @@
 import { SECTIONS } from '../config/ai';
+import { jsPDF } from 'jspdf';
 import { computeSectionScores, fmtDate, toScore20FromPercentage } from './scoring';
 
 const OBJECTION_LABELS = {
@@ -442,7 +443,6 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
 }
 
 export async function downloadDebriefPdf({ debrief, comments = [], analysis = '' }) {
-  const { jsPDF } = await import('jspdf');
   const title = `debrief-${slugify(debrief?.prospect_name || 'prospect')}-${debrief?.call_date || 'export'}.pdf`;
   const pct = Math.round(debrief?.percentage || 0);
   const score20 = toScore20FromPercentage(pct);
