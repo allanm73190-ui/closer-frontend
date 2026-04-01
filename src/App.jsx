@@ -36,9 +36,12 @@ export default function App() {
   const [gam,     setGam]     = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [burst,   setBurst]   = useState(null);
-  const [lbKey,   setLbKey]   = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [autoAI, setAutoAI] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('cd_theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
   const mob = useIsMobile();
   const [debriefConfig, setDebriefConfig] = useDebriefConfig();
 
@@ -74,6 +77,11 @@ export default function App() {
       .finally(() => setDataLoading(false));
   }, [user]);
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cd_theme', theme);
+  }, [theme]);
+
   // Keep debrief config synchronized for all pages
   useEffect(() => {
     if (!user) {
@@ -98,7 +106,7 @@ export default function App() {
 
   const onSave = (debrief, g) => {
     setDebriefs(p => [debrief, ...p]);
-    if (g) { setGam(g); setLbKey(k=>k+1); if (g.pointsEarned>0) setBurst({ points:g.pointsEarned, levelUp:g.levelUp, newLevel:g.level.name }); }
+    if (g) { setGam(g); if (g.pointsEarned>0) setBurst({ points:g.pointsEarned, levelUp:g.levelUp, newLevel:g.level.name }); }
   };
 
   const onUpdateDebrief = (debrief, g) => {
@@ -112,7 +120,6 @@ export default function App() {
       const r = await apiFetch(`/debriefs/${id}`,{ method:'DELETE' });
       setDebriefs(p => p.filter(d => d.id!==id));
       if (r.gamification) setGam(r.gamification);
-      setLbKey(k=>k+1);
       toast('Debrief supprimé');
       navigate(from || 'Dashboard');
     } catch(e) { toast(e.message, 'error'); }
@@ -141,7 +148,7 @@ export default function App() {
   // ─── Main app ──────────────────────────────────────────────────────────────
   const Content = () => (
     <>
-      {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} lbKey={lbKey} toast={toast}/>}
+      {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} toast={toast}/>}
       {page==='NewDebrief' && (
         <NewDebrief
           navigate={navigate}
@@ -170,12 +177,12 @@ export default function App() {
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
-      {page==='HOSPage' && isHOS && <HOSPage toast={toast} leaderboardKey={lbKey} allDebriefs={debriefs}/>}
+      {page==='HOSPage' && isHOS && <HOSPage toast={toast} allDebriefs={debriefs}/>}
     </>
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:"linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%)", fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg)', color:'var(--txt,#5a4a3a)', fontFamily:"'Inter',system-ui,sans-serif" }}>
       <style>{GLOBAL_CSS}</style>
 
       {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
@@ -184,19 +191,27 @@ export default function App() {
 
       {mob ? (
         <>
-          <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(255,248,244,.97)', borderBottom:'1px solid rgba(232,125,106,.1)', boxShadow:'0 2px 10px rgba(174,130,100,.08)' }}>
+          <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar)', borderBottom:'1px solid var(--border)', boxShadow:'var(--sh-sm)' }}>
             <div style={{ padding:'0 14px', display:'flex', alignItems:'center', justifyContent:'space-between', height:52 }}>
               <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' }}>
                 <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📞</div>
                 <span style={{ fontSize:14, fontWeight:700, color:TXT }}>CloserDebrief</span>
               </button>
-              <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast}/>
+              <UserMenu
+                user={user}
+                gam={gam}
+                onLogout={onLogout}
+                onSettings={()=>setShowSettings(true)}
+                toast={toast}
+                theme={theme}
+                onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              />
             </div>
           </header>
           <main style={{ padding:'16px 14px 90px' }}>
             {dataLoading ? <Spinner full/> : Content()}
           </main>
-          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,248,244,.97)', borderTop:'1px solid rgba(232,125,106,.1)', boxShadow:'0 -3px 12px rgba(174,130,100,.08)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
+          <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'var(--sidebar)', borderTop:'1px solid var(--border)', boxShadow:'var(--sh-sm)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:`6px 0 max(8px,env(safe-area-inset-bottom))`, zIndex:40 }}>
             {navItems.map(({ key, label, icon }) => (
               <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 10px', fontFamily:'inherit', flex:1 }}>
                 <div style={{ width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>{icon}</div>
@@ -207,9 +222,9 @@ export default function App() {
         </>
       ) : (
         <div style={{ display:'flex', minHeight:'100vh' }}>
-          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'rgba(255,248,244,.97)', borderRight:'1px solid rgba(232,125,106,.1)', boxShadow:'4px 0 14px rgba(174,130,100,.06)', padding:'18px 10px', zIndex:40 }}>
+          <aside style={{ width:220, flexShrink:0, position:'sticky', top:0, height:'100vh', display:'flex', flexDirection:'column', background:'var(--sidebar)', borderRight:'1px solid var(--border)', boxShadow:'var(--sh-sm)', padding:'18px 10px', zIndex:40 }}>
             <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:'10px 12px', borderRadius:R_MD, marginBottom:20, fontFamily:'inherit', width:'100%', transition:'background .15s' }}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(232,125,106,.07)'}
+              onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
               onMouseLeave={e=>e.currentTarget.style.background='none'}>
               <div style={{ width:34, height:34, borderRadius:10, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📞</div>
               <div>
@@ -221,15 +236,24 @@ export default function App() {
               {navItems.map(({ key, label, icon }) => (
                 <button key={key} onClick={()=>navigate(key)}
                   style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:R_MD, border:'none', fontSize:13, fontWeight:page===key?700:500, cursor:'pointer', transition:'all .18s', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', fontFamily:'inherit', textAlign:'left', width:'100%' }}
-                  onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(232,125,106,.08)'; }}
+                  onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='var(--nav-hover)'; }}
                   onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}>
                   <span style={{ fontSize:16, width:22, textAlign:'center' }}>{icon}</span>
                   <span>{label}</span>
                 </button>
               ))}
             </div>
-            <div style={{ borderTop:'1px solid rgba(232,125,106,.1)', paddingTop:12, marginTop:8 }}>
-              <UserMenu user={user} gam={gam} onLogout={onLogout} onSettings={()=>setShowSettings(true)} toast={toast} sidebar/>
+            <div style={{ borderTop:'1px solid var(--border)', paddingTop:12, marginTop:8 }}>
+              <UserMenu
+                user={user}
+                gam={gam}
+                onLogout={onLogout}
+                onSettings={()=>setShowSettings(true)}
+                toast={toast}
+                sidebar
+                theme={theme}
+                onToggleTheme={()=>setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              />
             </div>
           </aside>
           <main style={{ flex:1, minWidth:0, padding:'28px 40px', overflowX:'hidden', maxWidth:'calc(100vw - 220px)' }}>

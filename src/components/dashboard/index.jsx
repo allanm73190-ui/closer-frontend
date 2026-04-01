@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../config/api';
+import { loadPipelineConfig, DEFAULT_PIPELINE_STATUSES } from '../../config/pipeline';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, SH_BTN, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
-import { GamCard, Leaderboard } from '../gamification';
+import { GamCard } from '../gamification';
 import { StatsRow, Chart } from './StatsChart';
 import { DebriefCard } from '../debrief/DebriefCard';
 import { ObjectiveBanner } from '../gamification/Objectives';
 import { ActionPlanCard } from '../gamification/Objectives';
 
-function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
+function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
   const isHOS = user.role === 'head_of_sales';
   return (
@@ -24,12 +25,11 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       {!isHOS && <ObjectiveBanner userId={user.id}/>}
       <GamCard gam={gam}/>
       <StatsRow debriefs={debriefs}/>
-      <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 320px', gap:14, alignItems:'start' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, alignItems:'start' }}>
         <Card style={{ padding:20 }}>
           <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>
           <Chart debriefs={debriefs}/>
         </Card>
-        <Leaderboard refreshKey={lbKey}/>
       </div>
 
     {/* Mini Pipeline */}
@@ -37,7 +37,7 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
         <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
       </div>
-      <MiniPipeline navigate={navigate}/>
+      <MiniPipeline navigate={navigate} user={user}/>
     </div>
       {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
       <div>
@@ -56,29 +56,30 @@ function Dashboard({ debriefs, navigate, user, gam, lbKey, toast }) {
 
 
 // ─── MINI PIPELINE (Dashboard) ────────────────────────────────────────────────
-function MiniPipeline({ navigate }) {
+function MiniPipeline({ navigate, user }) {
   const [deals, setDeals] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const stages = React.useMemo(() => {
+    try {
+      return loadPipelineConfig(user?.id).statuses || DEFAULT_PIPELINE_STATUSES;
+    } catch {
+      return DEFAULT_PIPELINE_STATUSES;
+    }
+  }, [user?.id, deals.length]);
+
   React.useEffect(() => {
     apiFetch('/deals').then(setDeals).catch(()=>{}).finally(()=>setLoading(false));
   }, []);
 
   if (loading) return <Spinner/>;
 
-  const signed   = deals.filter(d=>d.status==='signe').reduce((s,d)=>s+(d.value||0),0);
-  const pipeline = deals.filter(d=>!['signe','perdu'].includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
-  const closed   = deals.filter(d=>['signe','perdu'].includes(d.status));
-  const winRate  = closed.length ? Math.round(deals.filter(d=>d.status==='signe').length/closed.length*100) : 0;
-  const late     = deals.filter(d=>d.follow_up_date && new Date(d.follow_up_date)<new Date() && !['signe','perdu'].includes(d.status)).length;
-
-  const stages = [
-    { key:'prospect',     label:'Prospect',   color:'#a09080', bg:'rgba(245,237,230,.6)' },
-    { key:'premier_appel',label:'1er appel',  color:'#e87d6a', bg:'rgba(253,232,228,.6)' },
-    { key:'relance',      label:'Relance',    color:'#c07830', bg:'rgba(254,243,224,.6)' },
-    { key:'negociation',  label:'Négo.',      color:'#3a7a9a', bg:'rgba(218,237,245,.6)' },
-    { key:'signe',        label:'Signés ✓',   color:'#5a9858', bg:'rgba(218,240,216,.6)' },
-    { key:'perdu',        label:'Perdus',     color:'#c05040', bg:'rgba(253,232,228,.6)' },
-  ];
+  const closedKeys = stages.filter(stage => stage.closed).map(stage => stage.key);
+  const wonKeys = stages.filter(stage => stage.won).map(stage => stage.key);
+  const signed   = deals.filter(d=>wonKeys.includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
+  const pipeline = deals.filter(d=>!closedKeys.includes(d.status)).reduce((s,d)=>s+(d.value||0),0);
+  const closed   = deals.filter(d=>closedKeys.includes(d.status));
+  const winRate  = closed.length ? Math.round(deals.filter(d=>wonKeys.includes(d.status)).length/closed.length*100) : 0;
+  const late     = deals.filter(d=>d.follow_up_date && new Date(d.follow_up_date)<new Date() && !closedKeys.includes(d.status)).length;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>

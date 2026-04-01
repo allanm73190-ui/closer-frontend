@@ -59,7 +59,7 @@ export function Textarea({ placeholder, value, onChange, rows=3 }) {
 // ─── BUTTON ──────────────────────────────────────────────────────────────────
 const BTN = {
   primary:   { background:`linear-gradient(135deg,${P},${P2})`, color:'white', border:'none', boxShadow:SH_BTN },
-  secondary: { background:WHITE, color:'var(--txt,#5a4a3a)', border:'none', boxShadow:SH_SM },
+  secondary: { background:'var(--card,#ffffff)', color:'var(--txt,#5a4a3a)', border:'1px solid var(--border)', boxShadow:'var(--sh-sm)' },
   danger:    { background:'rgba(253,232,228,.8)', color:'#c05040', border:'1px solid rgba(192,80,64,.3)', boxShadow:'none' },
   ghost:     { background:'transparent', color:'var(--txt2,#b09080)', border:'none', boxShadow:'none' },
   green:     { background:'rgba(218,240,216,.8)', color:'#5a9858', border:'1px solid rgba(90,152,88,.3)', boxShadow:'none' },
@@ -110,7 +110,7 @@ export function Modal({ title, onClose, children }) {
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(90,74,58,.2)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:WHITE, borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 -8px 32px rgba(174,130,100,.2)' }}>
+      <div style={{ background:'var(--card,#ffffff)', borderRadius:'24px 24px 0 0', padding:24, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
           <h2 style={{ fontSize:17, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{title}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--txt3,#c8b8a8)', cursor:'pointer', fontSize:22, lineHeight:1, padding:'2px 6px' }}>✕</button>

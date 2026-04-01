@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { computeSectionScores, avgSectionScores, fmtDate, copy } from '../../utils/scoring';
+import { computeSectionScores, avgSectionScores, fmtDate, copy, toScore20FromPercentage } from '../../utils/scoring';
 import { openDebriefPdfWindow, renderDebriefPdfWindow, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
@@ -19,6 +19,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
     </div>
   );
   const pct    = Math.round(debrief.percentage || 0);
+  const score20 = toScore20FromPercentage(pct);
   const scores = computeSectionScores(debrief.sections || {});
   const barCol = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
 
@@ -40,7 +41,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       }
 
       renderDebriefPdfWindow(exportWindow, { debrief, comments, analysis, allDebriefs, user });
-      toast("Fenetre d'export ouverte. Utilisez 'Enregistrer en PDF' si besoin.");
+      toast("Fenêtre d'export ouverte. Téléchargez le PDF depuis le navigateur.");
     } catch (e) {
       if (exportWindow && !exportWindow.closed) exportWindow.close();
       toast(e.message || "Impossible de preparer l'export PDF", 'error');
@@ -80,7 +81,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         <>
           <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
             <ScoreGauge percentage={pct}/>
-            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
+            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <Radar scores={scores}/>
           </Card>
           <Card style={{ padding:20 }}>
@@ -107,7 +108,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap:20, alignItems:'start' }}>
           <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
             <ScoreGauge percentage={pct}/>
-            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{debrief.total_score} / {debrief.max_score} points</p>
+            <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <Radar scores={scores}/>
           </Card>
           <Card style={{ padding:24 }}>

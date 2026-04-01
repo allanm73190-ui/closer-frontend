@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { apiFetch } from '../../config/api';
+import React from 'react';
 import { DS } from '../../styles/designSystem';
 import { computeLevel } from '../../utils/scoring';
-import { Card } from '../ui';
 
 function GamCard({ gam }) {
   if (!gam) return null;
@@ -43,36 +41,4 @@ function GamCard({ gam }) {
   );
 }
 
-function Leaderboard({ refreshKey }) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    setLoading(true);
-    apiFetch('/gamification/leaderboard').then(setData).catch(() => setData([])).finally(() => setLoading(false));
-  }, [refreshKey]);
-  if (loading || !data.length) return null;
-  return (
-    <Card style={{ overflow:'hidden' }}>
-      <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)' }}>
-        <h3 style={{ fontSize:14, fontWeight:600, color:'#5a4a3a', margin:0 }}>🏆 Classement</h3>
-      </div>
-      {data.map((c,i) => (
-        <div key={c.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:i<data.length-1?'1px solid rgba(232,125,106,.08)':'none', background:i===0?'#fffbeb':'white' }}>
-          <div style={{ width:28, height:28, borderRadius:'50%', background:i===0?'#fef3c7':i===1?'#f1f5f9':'#f8fafc', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:13, flexShrink:0 }}>
-            {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</p>
-            <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{c.level.icon} {c.level.name} · {c.totalDebriefs} debriefs</p>
-          </div>
-          <div style={{ textAlign:'right', flexShrink:0 }}>
-            <p style={{ fontWeight:700, fontSize:14, color:'#e87d6a', margin:0 }}>{c.points} pts</p>
-            <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{c.avgScore}%</p>
-          </div>
-        </div>
-      ))}
-    </Card>
-  );
-}
-
-export { GamCard, Leaderboard };
+export { GamCard };

@@ -41,17 +41,17 @@ export const DS = {
 
 // Style helpers
 export const card = (extra={}) => ({
-  background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:SH_CARD, ...extra
+  background:'var(--card,#ffffff)', borderRadius:R_LG, boxShadow:'var(--sh-card)', ...extra
 });
 
 export const cardSm = (extra={}) => ({
-  background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:SH_SM, ...extra
+  background:'var(--card,#ffffff)', borderRadius:R_MD, boxShadow:'var(--sh-sm)', ...extra
 });
 
 export const inp = (extra={}) => ({
-  width:'100%', background:'var(--input,#f5ede6)', border:'1px solid rgba(232,125,106,.15)',
-  borderRadius:R_SM, padding:'10px 13px', fontSize:14, color:TXT, outline:'none',
-  boxShadow:SH_IN, fontFamily:'inherit', transition:'border .2s, box-shadow .2s', ...extra
+  width:'100%', background:'var(--input,#f5ede6)', border:'1px solid var(--border)',
+  borderRadius:R_SM, padding:'10px 13px', fontSize:14, color:'var(--txt,#5a4a3a)', outline:'none',
+  boxShadow:'var(--sh-in)', fontFamily:'inherit', transition:'border .2s, box-shadow .2s', ...extra
 });
 
 // Global CSS string
@@ -77,5 +77,22 @@ export const GLOBAL_CSS = `
     --sh-sm: 3px 3px 8px rgba(174,130,100,.15), -2px -2px 6px rgba(255,255,255,.85);
     --sh-in: inset 2px 2px 5px rgba(174,130,100,.15), inset -1px -1px 4px rgba(255,255,255,.9);
     --sidebar: rgba(255,248,244,.97);
+    --nav-hover: rgba(232,125,106,.08);
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: linear-gradient(160deg,#101823 0%,#1a1f2d 100%);
+    --card: #f8fbff;
+    --input: #eef3f9;
+    --txt: #2f3a4b;
+    --txt2: #5d6f84;
+    --txt3: #7f8fa6;
+    --border: rgba(106,172,206,.36);
+    --sh-card: 0 14px 30px rgba(5,10,18,.34);
+    --sh-sm: 0 8px 20px rgba(5,10,18,.28);
+    --sh-in: inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(16,23,34,.08);
+    --sidebar: rgba(15, 22, 33, .95);
+    --nav-hover: rgba(106,172,206,.12);
   }
 `;

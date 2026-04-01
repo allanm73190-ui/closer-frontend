@@ -1,8 +1,8 @@
 // ─── SCORES ───────────────────────────────────────────────────────────────────
 export function computeScore(sections) {
-  let pts = 0, max = 0;
+  let pts = 0, maxRaw = 0;
   const add = (val, pos, total) => {
-    max += total;
+    maxRaw += total;
     if (Array.isArray(pos)) {
       if (Array.isArray(val)) pts += val.filter(v => pos.includes(v)).length;
       else if (pos.includes(val)) pts++;
@@ -32,7 +32,14 @@ export function computeScore(sections) {
   add(c.douleur_reancree, 'oui', 1);
   add(c.objection_isolee, 'oui', 1);
   add(c.resultat_closing, ['close','retrograde','relance'], 1);
-  return { total: pts, max, percentage: max > 0 ? Math.round((pts / max) * 100) : 0 };
+  const percentage = maxRaw > 0 ? Math.round((pts / maxRaw) * 100) : 0;
+  const score20 = maxRaw > 0 ? Math.round(((pts / maxRaw) * 20) * 10) / 10 : 0;
+  return { total: score20, max: 20, percentage, rawTotal: pts, rawMax: maxRaw };
+}
+
+export function toScore20FromPercentage(percentage) {
+  const pct = Number(percentage || 0);
+  return Math.round(((pct / 100) * 20) * 10) / 10;
 }
 
 // Identique au backend — scoring par section sur 5

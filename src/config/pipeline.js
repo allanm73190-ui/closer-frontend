@@ -1,0 +1,96 @@
+const STORAGE_PREFIX = 'cd_pipeline_config_v1';
+
+export const DEFAULT_PIPELINE_STATUSES = [
+  { key:'prospect', label:'Prospects', icon:'👤', color:'#6b7280', bg:'#f1f5f9', closed:false, won:false },
+  { key:'premier_appel', label:'1er appel', icon:'📞', color:'#e87d6a', bg:'rgba(253,232,228,.6)', closed:false, won:false },
+  { key:'relance', label:'Relance', icon:'🔄', color:'#d97706', bg:'#fef3c7', closed:false, won:false },
+  { key:'negociation', label:'Négociation', icon:'🤝', color:'#3b82f6', bg:'#dbeafe', closed:false, won:false },
+  { key:'signe', label:'Signés', icon:'✅', color:'#059669', bg:'#d1fae5', closed:true, won:true },
+  { key:'perdu', label:'Perdus', icon:'❌', color:'#dc2626', bg:'#fee2e2', closed:true, won:false },
+];
+
+export const LEAD_FIELD_OPTIONS = [
+  { key:'source', label:'Source', type:'text', placeholder:'LinkedIn, Inbound...' },
+  { key:'value', label:'Montant (€)', type:'number', placeholder:'0' },
+  { key:'follow_up_date', label:'Date relance', type:'date' },
+  { key:'debrief_id', label:'Debrief lié', type:'debrief' },
+  { key:'notes', label:'Notes', type:'textarea', placeholder:'Informations utiles sur ce lead...' },
+];
+
+export const DEFAULT_PIPELINE_CONFIG = {
+  statuses: DEFAULT_PIPELINE_STATUSES,
+  importantFields: LEAD_FIELD_OPTIONS.map(field => field.key),
+};
+
+function sanitizeKey(value = '', fallback = 'status') {
+  const base = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return base || fallback;
+}
+
+function normalizeStatuses(statuses) {
+  const source = Array.isArray(statuses) ? statuses : DEFAULT_PIPELINE_STATUSES;
+  const seen = new Set();
+  const normalized = source
+    .map((status, idx) => {
+      const key = sanitizeKey(status?.key || status?.label || `status_${idx + 1}`, `status_${idx + 1}`);
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return {
+        key,
+        label: String(status?.label || key).trim() || key,
+        icon: String(status?.icon || '•').trim() || '•',
+        color: String(status?.color || '#6b7280'),
+        bg: String(status?.bg || '#f1f5f9'),
+        closed: Boolean(status?.closed),
+        won: Boolean(status?.won),
+      };
+    })
+    .filter(Boolean);
+  if (normalized.length > 0) return normalized;
+  return DEFAULT_PIPELINE_STATUSES;
+}
+
+function normalizeImportantFields(fields) {
+  const allowed = new Set(LEAD_FIELD_OPTIONS.map(field => field.key));
+  const list = Array.isArray(fields) ? fields.filter(key => allowed.has(key)) : [];
+  return list.length > 0 ? list : DEFAULT_PIPELINE_CONFIG.importantFields;
+}
+
+function normalizePipelineConfig(config) {
+  return {
+    statuses: normalizeStatuses(config?.statuses),
+    importantFields: normalizeImportantFields(config?.importantFields),
+  };
+}
+
+function storageKey(userId) {
+  return `${STORAGE_PREFIX}_${userId || 'anon'}`;
+}
+
+export function loadPipelineConfig(userId) {
+  try {
+    const raw = localStorage.getItem(storageKey(userId));
+    if (!raw) return DEFAULT_PIPELINE_CONFIG;
+    const parsed = JSON.parse(raw);
+    return normalizePipelineConfig(parsed);
+  } catch {
+    return DEFAULT_PIPELINE_CONFIG;
+  }
+}
+
+export function savePipelineConfig(userId, config) {
+  const normalized = normalizePipelineConfig(config);
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify(normalized));
+  } catch {}
+  return normalized;
+}
+
+export function makeStatusKey(label, fallback = 'status') {
+  return sanitizeKey(label, fallback);
+}
