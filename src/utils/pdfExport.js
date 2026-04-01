@@ -441,4 +441,137 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
   targetWindow.focus();
 }
 
+export async function downloadDebriefPdf({ debrief, comments = [], analysis = '' }) {
+  const { jsPDF } = await import('jspdf');
+  const title = `debrief-${slugify(debrief?.prospect_name || 'prospect')}-${debrief?.call_date || 'export'}.pdf`;
+  const pct = Math.round(debrief?.percentage || 0);
+  const score20 = toScore20FromPercentage(pct);
+  const scores = computeSectionScores(debrief?.sections || {});
+  const topSections = getTopSections(scores);
+  const prioritySections = getPrioritySections(scores);
+  const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
+  const keyBullets = extractKeyBullets(analysis);
+  const latestComments = [...comments].slice(-3).reverse();
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+
+  const ensureSpace = (required = 8) => {
+    if (y + required <= pageH - margin) return;
+    doc.addPage();
+    y = margin;
+  };
+
+  const writeText = (text, { size = 11, bold = false, color = [45, 58, 75], line = 5 } = {}) => {
+    const safe = String(text || '').trim();
+    if (!safe) return;
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(safe, contentW);
+    for (const lineText of lines) {
+      ensureSpace(line + 1);
+      doc.text(lineText, margin, y);
+      y += line;
+    }
+  };
+
+  const writeBullet = (text) => {
+    const safe = String(text || '').trim();
+    if (!safe) return;
+    const bulletX = margin + 2;
+    const textX = margin + 7;
+    const textWidth = contentW - 7;
+    const lines = doc.splitTextToSize(safe, textWidth);
+    ensureSpace(6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(65, 65, 65);
+    doc.text('•', bulletX, y);
+    doc.text(lines[0], textX, y);
+    y += 5;
+    for (let i = 1; i < lines.length; i++) {
+      ensureSpace(5);
+      doc.text(lines[i], textX, y);
+      y += 5;
+    }
+  };
+
+  const sectionTitle = (text) => {
+    ensureSpace(9);
+    doc.setDrawColor(235, 125, 106);
+    doc.setFillColor(255, 242, 236);
+    doc.roundedRect(margin, y - 4, contentW, 8, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(212, 96, 78);
+    doc.text(text, margin + 2.5, y + 1.5);
+    y += 10;
+  };
+
+  doc.setFillColor(255, 241, 235);
+  doc.roundedRect(margin, y - 2, contentW, 26, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(17);
+  doc.setTextColor(50, 58, 75);
+  doc.text(`${debrief?.prospect_name || 'Prospect'}`, margin + 3, y + 5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10.5);
+  doc.setTextColor(92, 104, 122);
+  doc.text(`Closer: ${debrief?.closer_name || debrief?.user_name || 'Non renseigné'}`, margin + 3, y + 11);
+  doc.text(`Date: ${fmtDate(debrief?.call_date)} · Résultat: ${debrief?.is_closed ? 'Closé' : 'Non closé'}`, margin + 3, y + 16);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(232, 125, 106);
+  doc.text(`${score20}/20`, pageW - margin - 22, y + 8);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`${pct}%`, pageW - margin - 22, y + 14);
+  y += 31;
+
+  sectionTitle('Vue d’ensemble');
+  writeBullet(`Objection dominante: ${getDominantObjection(debrief)}`);
+  writeBullet(`Points forts: ${topSections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucun'}`);
+  writeBullet(`Priorités: ${prioritySections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucune'}`);
+  if (debrief?.notes) writeBullet(`Note closer: ${debrief.notes}`);
+
+  sectionTitle('Score par section');
+  SECTIONS.forEach(({ key, label }) => {
+    const value = scores[key] || 0;
+    const note = getSectionNote(debrief?.section_notes, key);
+    writeBullet(`${label.replace(/^[^\p{L}\p{N}]+/u, '').trim()}: ${value}/5${note?.improvement ? ` — ${note.improvement}` : ''}`);
+  });
+
+  sectionTitle('Synthèse IA');
+  if (keyBullets.length > 0) {
+    keyBullets.slice(0, 6).forEach(item => writeBullet(item));
+  } else {
+    writeBullet('Aucune synthèse IA disponible.');
+  }
+
+  sectionTitle('Plan d’action');
+  writeText(`Action prioritaire: ${actionPriority}`, { size: 11, bold: true, color: [95, 55, 40], line: 5.5 });
+
+  if (latestComments.length > 0) {
+    sectionTitle('Commentaires récents');
+    latestComments.forEach(comment => {
+      writeText(`${comment.author_name || 'Équipe'} — ${fmtDate(comment.created_at)}`, { size: 10, bold: true, color: [90, 90, 90], line: 4.8 });
+      writeText(comment.content || '', { size: 10.5, color: [72, 72, 72], line: 4.8 });
+      y += 1.5;
+    });
+  }
+
+  ensureSpace(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(145, 145, 145);
+  doc.text(`Généré le ${fmtDate(new Date().toISOString())} — CloserDebrief`, margin, pageH - 7);
+  doc.save(title);
+}
+
 export { getSectionNote };

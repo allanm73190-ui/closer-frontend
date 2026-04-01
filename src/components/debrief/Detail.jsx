@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, copy, toScore20FromPercentage } from '../../utils/scoring';
-import { openDebriefPdfWindow, renderDebriefPdfWindow, getSectionNote } from '../../utils/pdfExport';
+import { downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Empty } from '../ui';
@@ -24,10 +24,8 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const barCol = v => v>=4?'#059669':v>=3?'#d97706':v>=2?'#e87d6a':'#ef4444';
 
   const handleExportPdf = async () => {
-    let exportWindow = null;
     setExportingPdf(true);
     try {
-      exportWindow = openDebriefPdfWindow(debrief);
       const analysis = (() => {
         try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
         catch { return ''; }
@@ -36,15 +34,14 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       let comments = [];
       try {
         comments = await apiFetch(`/debriefs/${debrief.id}/comments`);
-      } catch (err) {
+      } catch {
         comments = [];
       }
 
-      renderDebriefPdfWindow(exportWindow, { debrief, comments, analysis, allDebriefs, user });
-      toast("Fenêtre d'export ouverte. Téléchargez le PDF depuis le navigateur.");
+      await downloadDebriefPdf({ debrief, comments, analysis, allDebriefs, user });
+      toast('PDF téléchargé');
     } catch (e) {
-      if (exportWindow && !exportWindow.closed) exportWindow.close();
-      toast(e.message || "Impossible de preparer l'export PDF", 'error');
+      toast(e.message || "Impossible de télécharger le PDF", 'error');
     } finally {
       setExportingPdf(false);
     }

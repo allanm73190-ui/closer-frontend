@@ -36,17 +36,22 @@ function StatsRow({ debriefs }) {
 }
 
 // ─── CHART ────────────────────────────────────────────────────────────────────
-function Chart({ debriefs }) {
+function Chart({ debriefs, compact = false }) {
   const [hov, setHov] = useState(null);
   const data = [...debriefs]
     .sort((a,b) => new Date(a.call_date||a.date) - new Date(b.call_date||b.date))
     .map(d => ({ date:fmtShort(d.call_date||d.date), score:Math.round(d.percentage||d.score||0), prospect:d.prospect_name||d.prospect||'' }));
   if (!data.length) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:200, color:DS.textMuted, fontSize:14 }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:compact ? 150 : 200, color:DS.textMuted, fontSize:14 }}>
       Aucune donnée — créez votre premier debrief !
     </div>
   );
-  const W=560, H=200, pL=44, pR=20, pT=16, pB=28;
+  const W = compact ? 500 : 560;
+  const H = compact ? 160 : 200;
+  const pL = 42;
+  const pR = 16;
+  const pT = compact ? 12 : 16;
+  const pB = compact ? 22 : 28;
   const iW=W-pL-pR, iH=H-pT-pB;
   const xs = data.map((_,i) => pL + (i / Math.max(data.length-1,1)) * iW);
   const ys = data.map(d  => pT + iH - (d.score / 100) * iH);
@@ -76,7 +81,9 @@ function Chart({ debriefs }) {
                 <text x={Math.max(pL+55, Math.min(xs[i], W-pR-55))} y={ys[i]-18} textAnchor="middle" fontSize="10" fill="#64748b">{d.date} · {d.score}%</text>
               </g>
             )}
-            <text x={xs[i]} y={pT+iH+16} textAnchor="middle" fontSize="10" fill="#94a3b8">{d.date}</text>
+            {(!compact || i % 2 === 0 || i === data.length - 1) && (
+              <text x={xs[i]} y={pT+iH+16} textAnchor="middle" fontSize="10" fill="#94a3b8">{d.date}</text>
+            )}
           </g>
         ))}
       </svg>

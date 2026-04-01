@@ -5,7 +5,6 @@ import { SECTIONS } from '../../config/ai';
 import {
   DEFAULT_PIPELINE_CONFIG,
   DEFAULT_PIPELINE_STATUSES,
-  LEAD_FIELD_OPTIONS,
   normalizePipelineConfig,
   makeStatusKey,
 } from '../../config/pipeline';
@@ -15,6 +14,14 @@ import { Btn, Card, Modal, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Texta
 
 function getStageByKey(stages, key) {
   return stages.find(stage => stage.key === key) || null;
+}
+
+function getWonStatusKey(stages) {
+  return stages.find(stage => stage.won)?.key || 'signe';
+}
+
+function getOpenStatusKey(stages) {
+  return stages.find(stage => !stage.closed)?.key || 'prospect';
 }
 
 function StatusBadge({ stage, compact=false }) {
@@ -40,58 +47,90 @@ function StatusBadge({ stage, compact=false }) {
   );
 }
 
-function LeadSheet({ deal, statuses, importantFields, debriefs, onClose, onSave, onDelete, toast }) {
+function LeadSheet({ deal, statuses, debriefs, onClose, onSave, onDelete, onCreateDebrief, toast }) {
+  const initialDealClosed = typeof deal?.deal_closed === 'boolean'
+    ? deal.deal_closed
+    : !!getStageByKey(statuses, deal?.status)?.won;
   const [form, setForm] = useState({
     prospect_name: deal?.prospect_name || '',
+    first_name: deal?.first_name || '',
+    last_name: deal?.last_name || '',
+    email: deal?.email || '',
+    phone: deal?.phone || '',
     source: deal?.source || '',
     value: deal?.value != null ? String(deal.value) : '',
-    status: deal?.status || statuses[0]?.key || 'prospect',
-    follow_up_date: deal?.follow_up_date || '',
-    notes: deal?.notes || '',
+    contact_date: deal?.contact_date || deal?.follow_up_date || '',
+    note: deal?.note || deal?.notes || '',
     debrief_id: deal?.debrief_id || '',
+    status: deal?.status || statuses[0]?.key || 'prospect',
+    deal_closed: initialDealClosed,
   });
+  const [activeTab, setActiveTab] = useState('contact');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [creatingDebrief, setCreatingDebrief] = useState(false);
   const isNew = !deal?.id;
   const linkedDebrief = debriefs.find(item => item.id === form.debrief_id);
   const activeStage = getStageByKey(statuses, form.status) || statuses[0];
-  const visibleFields = LEAD_FIELD_OPTIONS.filter(field => importantFields.includes(field.key));
 
   const setValue = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
-  const save = async () => {
-    if (!form.prospect_name.trim()) return;
+  const buildProspectName = () => {
+    const fromContact = `${form.first_name || ''} ${form.last_name || ''}`.trim();
+    return fromContact || form.prospect_name.trim();
+  };
+
+  const buildStatus = () => {
+    if (form.deal_closed) return getWonStatusKey(statuses);
+    const isCurrentClosed = !!getStageByKey(statuses, form.status)?.closed;
+    if (isCurrentClosed) return getOpenStatusKey(statuses);
+    return form.status || getOpenStatusKey(statuses);
+  };
+
+  const saveLead = async ({ closeAfter = true, silent = false } = {}) => {
+    const prospectName = buildProspectName();
+    if (!prospectName) {
+      toast('Nom ou prénom requis', 'error');
+      return null;
+    }
     setSaving(true);
     try {
       const payload = {
-        prospect_name: form.prospect_name.trim(),
+        prospect_name: prospectName,
+        first_name: form.first_name || '',
+        last_name: form.last_name || '',
+        email: form.email || '',
+        phone: form.phone || '',
         source: form.source || '',
+        deal_closed: !!form.deal_closed,
         value: Number(form.value) || 0,
-        status: form.status || statuses[0]?.key || 'prospect',
-        follow_up_date: form.follow_up_date || null,
-        notes: form.notes || '',
+        contact_date: form.contact_date || null,
+        note: form.note || '',
         debrief_id: form.debrief_id || null,
+        status: buildStatus(),
       };
       const result = isNew
         ? await apiFetch('/deals', { method:'POST', body: payload })
         : await apiFetch(`/deals/${deal.id}`, { method:'PATCH', body: payload });
       onSave(result, !isNew);
-      toast(isNew ? 'Lead créé !' : 'Lead mis à jour !');
-      onClose();
+      if (!silent) toast(isNew ? 'Contact créé !' : 'Contact mis à jour !');
+      if (closeAfter) onClose();
+      return result;
     } catch (e) {
       toast(e.message, 'error');
+      return null;
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async () => {
-    if (!deal?.id || !confirm('Supprimer ce lead ?')) return;
+    if (!deal?.id || !confirm('Supprimer ce contact ?')) return;
     setDeleting(true);
     try {
       await apiFetch(`/deals/${deal.id}`, { method:'DELETE' });
       onDelete(deal.id);
-      toast('Lead supprimé');
+      toast('Contact supprimé');
       onClose();
     } catch (e) {
       toast(e.message, 'error');
@@ -100,72 +139,36 @@ function LeadSheet({ deal, statuses, importantFields, debriefs, onClose, onSave,
     }
   };
 
-  const renderField = (field) => {
-    if (field.key === 'notes') {
-      return (
-        <div key={field.key}>
-          <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>
-            {field.label}
-          </label>
-          <Textarea
-            rows={3}
-            placeholder={field.placeholder}
-            value={form.notes}
-            onChange={e=>setValue('notes', e.target.value)}
-          />
-        </div>
-      );
+  const createDebrief = async () => {
+    setCreatingDebrief(true);
+    try {
+      let currentDeal = deal;
+      if (!currentDeal?.id) {
+        currentDeal = await saveLead({ closeAfter:false, silent:true });
+        if (!currentDeal?.id) return;
+      }
+      onCreateDebrief({
+        deal_id: currentDeal.id,
+        prospect_name: buildProspectName(),
+        first_name: form.first_name || '',
+        last_name: form.last_name || '',
+        email: form.email || '',
+        phone: form.phone || '',
+        source: form.source || '',
+        value: Number(form.value) || 0,
+        contact_date: form.contact_date || '',
+        note: form.note || '',
+        deal_closed: !!form.deal_closed,
+      });
+      onClose();
+    } finally {
+      setCreatingDebrief(false);
     }
-
-    if (field.key === 'debrief_id') {
-      return (
-        <div key={field.key}>
-          <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>
-            {field.label}
-          </label>
-          <select
-            value={form.debrief_id}
-            onChange={e=>setValue('debrief_id', e.target.value)}
-            style={{
-              width:'100%',
-              borderRadius:10,
-              border:'1px solid var(--border)',
-              background:'var(--card,#fff)',
-              color:'var(--txt,#5a4a3a)',
-              fontFamily:'inherit',
-              fontSize:13,
-              padding:'10px 12px',
-            }}
-          >
-            <option value="">Aucun debrief lié</option>
-            {debriefs.map(d => (
-              <option key={d.id} value={d.id}>
-                {d.prospect_name} — {fmtDate(d.call_date)} ({Math.round(d.percentage || 0)}%)
-              </option>
-            ))}
-          </select>
-        </div>
-      );
-    }
-
-    return (
-      <div key={field.key}>
-        <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>
-          {field.label}
-        </label>
-        <Input
-          type={field.type}
-          placeholder={field.placeholder || ''}
-          value={String(form[field.key] ?? '')}
-          onChange={e=>setValue(field.key, e.target.value)}
-        />
-      </div>
-    );
   };
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(10,15,25,.35)', display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:'var(--card,#fff)', borderRadius:'18px 18px 0 0', width:'100%', maxWidth:620, maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
+      <div style={{ background:'var(--card,#fff)', borderRadius:'18px 18px 0 0', width:'100%', maxWidth:660, maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
         <div style={{ padding:'18px 18px 0', position:'sticky', top:0, background:'var(--card,#fff)', zIndex:2 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <StatusBadge stage={activeStage} />
@@ -175,90 +178,143 @@ function LeadSheet({ deal, statuses, importantFields, debriefs, onClose, onSave,
             </div>
           </div>
 
-          <Input
-            placeholder="Nom du prospect *"
-            value={form.prospect_name}
-            onChange={e=>setValue('prospect_name', e.target.value)}
-            style={{ fontSize:20, fontWeight:700, padding:'10px 2px', border:'none', borderBottom:'2px solid var(--border)', borderRadius:0, boxShadow:'none', background:'transparent' }}
-          />
+          <div style={{ display:'flex', gap:6, marginBottom:12 }}>
+            {[
+              { key:'contact', label:'Fiche contact' },
+              { key:'debrief', label:'Nouveau Debrief' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={()=>setActiveTab(tab.key)}
+                style={{
+                  border:'none',
+                  borderRadius:999,
+                  padding:'7px 12px',
+                  fontFamily:'inherit',
+                  fontSize:12,
+                  fontWeight:700,
+                  cursor:'pointer',
+                  background:activeTab === tab.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
+                  color:activeTab === tab.key ? 'white' : 'var(--txt2,#b09080)',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ padding:'14px 18px 20px', display:'flex', flexDirection:'column', gap:16 }}>
-          <div>
-            <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:8 }}>Statut</label>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-              {statuses.map(stage => (
-                <button
-                  key={stage.key}
-                  type="button"
-                  onClick={()=>setValue('status', stage.key)}
-                  style={{
-                    padding:'6px 12px',
-                    borderRadius:999,
-                    border:`1.5px solid ${form.status===stage.key ? stage.color : 'var(--border)'}`,
-                    background:form.status===stage.key ? stage.bg : 'var(--card,#fff)',
-                    color:form.status===stage.key ? stage.color : 'var(--txt2,#b09080)',
-                    fontFamily:'inherit',
-                    fontSize:12,
-                    fontWeight:700,
-                    cursor:'pointer',
-                  }}
-                >
-                  {stage.icon} {stage.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {visibleFields.filter(field => field.key !== 'notes').map(renderField)}
-          </div>
-          {visibleFields.some(field => field.key === 'notes') && renderField(LEAD_FIELD_OPTIONS.find(field => field.key === 'notes'))}
-
-          {linkedDebrief && (
-            <Card style={{ padding:12, border:'1px solid rgba(106,172,206,.3)' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', marginBottom:8 }}>
+          {activeTab === 'contact' && (
+            <>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                 <div>
-                  <p style={{ margin:0, fontWeight:700, fontSize:14, color:'var(--txt,#5a4a3a)' }}>{linkedDebrief.prospect_name}</p>
-                  <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>{fmtDate(linkedDebrief.call_date)} · {linkedDebrief.closer_name}</p>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Nom *</label>
+                  <Input value={form.last_name} onChange={e=>setValue('last_name', e.target.value)} />
                 </div>
-                <div style={{ display:'flex', gap:6 }}>
-                  <ScoreBadge pct={Math.round(linkedDebrief.percentage || 0)} />
-                  <ClosedBadge isClosed={linkedDebrief.is_closed} />
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Prénom *</label>
+                  <Input value={form.first_name} onChange={e=>setValue('first_name', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Email</label>
+                  <Input type="email" value={form.email} onChange={e=>setValue('email', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Téléphone</label>
+                  <Input value={form.phone} onChange={e=>setValue('phone', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Source</label>
+                  <Input value={form.source} onChange={e=>setValue('source', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Valeur (€)</label>
+                  <Input type="number" value={form.value} onChange={e=>setValue('value', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Date</label>
+                  <Input type="date" value={form.contact_date} onChange={e=>setValue('contact_date', e.target.value)} />
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6 }}>
-                {SECTIONS.map(({ key }) => {
-                  const value = computeSectionScores(linkedDebrief.sections || {})[key] || 0;
-                  return (
-                    <div key={key} style={{ background:'var(--input,#f5ede6)', borderRadius:8, padding:'5px 4px', textAlign:'center', fontSize:11, color:barColor(value), fontWeight:700 }}>
-                      {value}/5
+
+              <div>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:8 }}>Deal (closé ou non)</label>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button
+                    type="button"
+                    onClick={()=>setValue('deal_closed', true)}
+                    style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${form.deal_closed ? '#059669' : 'var(--border)'}`, background:form.deal_closed ? 'rgba(209,250,229,.8)' : 'var(--card,#fff)', color:form.deal_closed ? '#065f46' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
+                  >
+                    ✅ Closé
+                  </button>
+                  <button
+                    type="button"
+                    onClick={()=>setValue('deal_closed', false)}
+                    style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${!form.deal_closed ? '#dc2626' : 'var(--border)'}`, background:!form.deal_closed ? 'rgba(254,226,226,.8)' : 'var(--card,#fff)', color:!form.deal_closed ? '#991b1b' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
+                  >
+                    ❌ Non closé
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:DS.textMuted, textTransform:'uppercase', marginBottom:6 }}>Note</label>
+                <Textarea rows={4} value={form.note} onChange={e=>setValue('note', e.target.value)} />
+              </div>
+            </>
+          )}
+
+          {activeTab === 'debrief' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <Card style={{ padding:14, border:'1px solid rgba(106,172,206,.3)' }}>
+                <p style={{ margin:'0 0 6px', fontWeight:700, fontSize:14, color:'var(--txt,#5a4a3a)' }}>
+                  {buildProspectName() || 'Contact à compléter'}
+                </p>
+                <p style={{ margin:'0 0 8px', fontSize:12, color:DS.textMuted }}>
+                  {form.email || 'Email non renseigné'} · {form.phone || 'Téléphone non renseigné'}
+                </p>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Source: {form.source || '—'}</span>
+                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Valeur: {(Number(form.value) || 0).toLocaleString('fr-FR')} €</span>
+                  <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Date: {form.contact_date ? fmtDate(form.contact_date) : '—'}</span>
+                </div>
+              </Card>
+
+              {linkedDebrief && (
+                <Card style={{ padding:12, border:'1px solid rgba(106,172,206,.3)' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', marginBottom:8 }}>
+                    <div>
+                      <p style={{ margin:0, fontWeight:700, fontSize:14, color:'var(--txt,#5a4a3a)' }}>{linkedDebrief.prospect_name}</p>
+                      <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>{fmtDate(linkedDebrief.call_date)} · {linkedDebrief.closer_name}</p>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <ScoreBadge pct={Math.round(linkedDebrief.percentage || 0)} />
+                      <ClosedBadge isClosed={linkedDebrief.is_closed} />
+                    </div>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6 }}>
+                    {SECTIONS.map(({ key }) => {
+                      const value = computeSectionScores(linkedDebrief.sections || {})[key] || 0;
+                      return (
+                        <div key={key} style={{ background:'var(--input,#f5ede6)', borderRadius:8, padding:'5px 4px', textAlign:'center', fontSize:11, color:barColor(value), fontWeight:700 }}>
+                          {value}/5
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              )}
+
+              <Btn onClick={createDebrief} disabled={creatingDebrief}>
+                {creatingDebrief ? 'Préparation...' : '➕ Nouveau Debrief lié à ce contact'}
+              </Btn>
+            </div>
           )}
 
-          {!isNew && (
-            <Btn
-              variant="secondary"
-              onClick={async()=>{
-                try {
-                  await apiFetch('/zapier/push-deal', { method:'POST', body:{ deal_id: deal.id } });
-                  toast('Synchronisé avec iClosed !');
-                } catch (e) {
-                  toast(e.message, 'error');
-                }
-              }}
-              style={{ fontSize:13 }}
-            >
-              🔄 Synchroniser avec iClosed
-            </Btn>
-          )}
-
-          <Btn onClick={save} disabled={saving || !form.prospect_name.trim()} style={{ width:'100%' }}>
-            {saving ? 'Enregistrement...' : isNew ? 'Créer le lead' : 'Enregistrer'}
+          <Btn onClick={()=>saveLead()} disabled={saving || !buildProspectName()} style={{ width:'100%' }}>
+            {saving ? 'Enregistrement...' : isNew ? 'Créer le contact' : 'Enregistrer la fiche'}
           </Btn>
         </div>
       </div>
@@ -277,6 +333,7 @@ function DealCard({ deal, stages, onOpen }) {
   const [dragging, setDragging] = useState(false);
   const stage = getStageByKey(stages, deal.status) || stages[0] || { color:'#64748b', bg:'#f1f5f9', icon:'•', label:'Statut' };
   const debriefScore = deal.debrief_score != null ? Math.round(deal.debrief_score) : null;
+  const contactName = `${deal.first_name || ''} ${deal.last_name || ''}`.trim() || deal.prospect_name;
   return (
     <div
       draggable
@@ -295,7 +352,7 @@ function DealCard({ deal, stages, onOpen }) {
       }}
     >
       <p style={{ margin:'0 0 6px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-        {deal.prospect_name}
+        {contactName}
       </p>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
         {deal.value > 0 && <span style={{ fontSize:12, fontWeight:700, color:'#059669' }}>{deal.value.toLocaleString('fr-FR')} €</span>}
@@ -404,18 +461,6 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
     });
   };
 
-  const toggleField = (fieldKey) => {
-    setDraft(prev => {
-      const exists = prev.importantFields.includes(fieldKey);
-      return {
-        ...prev,
-        importantFields: exists
-          ? prev.importantFields.filter(key => key !== fieldKey)
-          : [...prev.importantFields, fieldKey],
-      };
-    });
-  };
-
   const addStatus = () => {
     const nextLabel = `Nouveau statut ${draft.statuses.length + 1}`;
     const nextKey = makeStatusKey(nextLabel, `status_${draft.statuses.length + 1}`);
@@ -431,10 +476,6 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
   const save = () => {
     if (!draft.statuses?.length) {
       toast('Ajoutez au moins un statut', 'error');
-      return;
-    }
-    if (!draft.importantFields?.length) {
-      toast('Sélectionnez au moins une information lead', 'error');
       return;
     }
     const usedKeys = new Set();
@@ -454,7 +495,11 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
         icon: String(status.icon || '•').trim() || '•',
       };
     });
-    onSave({ ...draft, statuses: normalizedStatuses });
+    onSave({
+      ...draft,
+      statuses: normalizedStatuses,
+      importantFields: ['source', 'value', 'follow_up_date', 'debrief_id', 'notes'],
+    });
   };
 
   const statusesInUse = new Set((deals || []).map(deal => deal.status));
@@ -463,7 +508,7 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
     <Modal title="Paramètres pipeline" onClose={onClose}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-          Personnalisez les statuts et les informations importantes à afficher dans chaque fiche lead.
+          Personnalisez les statuts pipeline. La fiche contact reste unifiée pour toute l’équipe.
         </p>
 
         <Card style={{ padding:12, border:'1px solid var(--border)' }}>
@@ -510,22 +555,6 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
           </div>
         </Card>
 
-        <Card style={{ padding:12, border:'1px solid var(--border)' }}>
-          <h3 style={{ margin:'0 0 10px', fontSize:13, color:'var(--txt,#5a4a3a)' }}>Informations importantes du lead</h3>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-            {LEAD_FIELD_OPTIONS.map(field => (
-              <label key={field.key} style={{ fontSize:12, color:'var(--txt,#5a4a3a)', display:'flex', alignItems:'center', gap:6, background:'var(--input,#f5ede6)', border:'1px solid var(--border)', borderRadius:8, padding:'8px 10px' }}>
-                <input
-                  type="checkbox"
-                  checked={draft.importantFields.includes(field.key)}
-                  onChange={()=>toggleField(field.key)}
-                />
-                {field.label}
-              </label>
-            ))}
-          </div>
-        </Card>
-
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
           <Btn variant="secondary" onClick={onClose}>Annuler</Btn>
           <Btn onClick={save}>Sauvegarder</Btn>
@@ -535,7 +564,7 @@ function PipelineSettingsModal({ config, deals, onClose, onSave, toast }) {
   );
 }
 
-function PipelinePage({ user, toast, debriefs }) {
+function PipelinePage({ user, toast, debriefs, navigate }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openLead, setOpenLead] = useState(null);
@@ -574,10 +603,6 @@ function PipelinePage({ user, toast, debriefs }) {
     return [...list, ...unknown];
   }, [pipelineConfig, deals]);
 
-  const importantFields = pipelineConfig?.importantFields?.length
-    ? pipelineConfig.importantFields
-    : DEFAULT_PIPELINE_CONFIG.importantFields;
-
   const handleSave = (deal, isEdit) => {
     setDeals(prev => isEdit ? prev.map(item => item.id === deal.id ? deal : item) : [deal, ...prev]);
   };
@@ -615,6 +640,10 @@ function PipelinePage({ user, toast, debriefs }) {
       .catch(err => toast(err.message, 'error'));
   };
 
+  const openNewDebriefFromLead = (leadContext) => {
+    navigate?.('NewDebrief', null, 'Pipeline', { leadContext });
+  };
+
   if (loading) return <Spinner full />;
 
   return (
@@ -624,7 +653,7 @@ function PipelinePage({ user, toast, debriefs }) {
           <div>
             <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h1>
             <p style={{ color:DS.textMuted, fontSize:13, margin:'4px 0 0' }}>
-              {deals.length} lead{deals.length !== 1 ? 's' : ''} · Statuts et informations configurables
+              {deals.length} contact{deals.length !== 1 ? 's' : ''} · fiche contact unifiée
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
@@ -633,10 +662,9 @@ function PipelinePage({ user, toast, debriefs }) {
           </div>
         </div>
         <div style={{ marginTop:10, display:'flex', flexWrap:'wrap', gap:8 }}>
-          {importantFields.map(fieldKey => {
-            const field = LEAD_FIELD_OPTIONS.find(item => item.key === fieldKey);
-            return <span key={fieldKey} style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>{field?.label || fieldKey}</span>;
-          })}
+          {['Nom', 'Prénom', 'Email', 'Téléphone', 'Source', 'Deal closé/non', 'Valeur', 'Date', 'Note'].map(item => (
+            <span key={item} style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>{item}</span>
+          ))}
         </div>
       </Card>
 
@@ -697,11 +725,11 @@ function PipelinePage({ user, toast, debriefs }) {
         <LeadSheet
           deal={openLead?.id ? openLead : null}
           statuses={statuses}
-          importantFields={importantFields}
           debriefs={debriefs || []}
           onClose={()=>setOpenLead(null)}
           onSave={handleSave}
           onDelete={handleDelete}
+          onCreateDebrief={openNewDebriefFromLead}
           toast={toast}
         />
       )}

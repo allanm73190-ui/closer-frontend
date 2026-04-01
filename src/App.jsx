@@ -38,6 +38,7 @@ export default function App() {
   const [burst,   setBurst]   = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [autoAI, setAutoAI] = useState(false);
+  const [leadContext, setLeadContext] = useState(null);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('cd_theme');
     return saved === 'dark' ? 'dark' : 'light';
@@ -98,6 +99,7 @@ export default function App() {
     if (from) setFrom(from);
     else if (p !== 'Detail') setFrom(null);
     setAutoAI(!!opts.autoAI);
+    setLeadContext(opts.leadContext || null);
     window.scrollTo({ top:0, behavior:'smooth' });
   };
 
@@ -158,6 +160,7 @@ export default function App() {
           user={user}
           debriefConfig={debriefConfig}
           setDebriefConfig={setDebriefConfig}
+          leadContext={leadContext}
         />
       )}
       {page==='EditDebrief' && (
@@ -175,7 +178,7 @@ export default function App() {
       )}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
-      {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs}/>}
+      {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
       {page==='HOSPage' && isHOS && <HOSPage toast={toast} allDebriefs={debriefs}/>}
     </>

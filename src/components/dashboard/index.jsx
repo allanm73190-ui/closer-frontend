@@ -26,9 +26,9 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <GamCard gam={gam}/>
       <StatsRow debriefs={debriefs}/>
       <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, alignItems:'start' }}>
-        <Card style={{ padding:20 }}>
+        <Card style={{ padding:14, maxWidth:760 }}>
           <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Évolution du score</h2>
-          <Chart debriefs={debriefs}/>
+          <Chart debriefs={debriefs} compact />
         </Card>
       </div>
 

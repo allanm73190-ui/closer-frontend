@@ -57,11 +57,12 @@ function buildNotesState(configSections, previous = null) {
   return next;
 }
 
-function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, setDebriefConfig, existingDebrief, fromPage }) {
+function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, setDebriefConfig, existingDebrief, fromPage, leadContext }) {
   const mob = useIsMobile();
   const isHOS = user?.role === 'head_of_sales';
   const isEditing = !!existingDebrief?.id;
   const [showDebriefSettings, setShowDebriefSettings] = useState(false);
+  const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const [form, setForm] = useState({
     prospect_name:'',
     call_date:new Date().toISOString().split('T')[0],
@@ -106,7 +107,22 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
 
     setSecs(filledSections);
     setNotes(filledNotes);
+    setLinkedDealId(null);
   }, [isEditing, existingDebrief?.id, debriefConfig]);
+
+  useEffect(() => {
+    if (isEditing || !leadContext) return;
+    const fullName = `${leadContext.first_name || ''} ${leadContext.last_name || ''}`.trim();
+    setForm(prev => ({
+      ...prev,
+      prospect_name: leadContext.prospect_name || fullName || prev.prospect_name,
+      call_date: leadContext.contact_date || prev.call_date,
+      closer_name: prev.closer_name || user?.name || '',
+      is_closed: typeof leadContext.deal_closed === 'boolean' ? leadContext.deal_closed : prev.is_closed,
+      notes: prev.notes || leadContext.note || '',
+    }));
+    setLinkedDealId(leadContext.deal_id || null);
+  }, [leadContext, isEditing, user?.name]);
 
   const setAnswer = (sectionKey, questionId, value) => {
     setSecs(prev => ({
@@ -145,6 +161,17 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, se
           criteria_notes: {},
         },
       });
+      if (!isEditing && linkedDealId) {
+        try {
+          await apiFetch(`/deals/${linkedDealId}`, {
+            method: 'PATCH',
+            body: {
+              debrief_id: r.debrief.id,
+              deal_closed: !!form.is_closed,
+            },
+          });
+        } catch {}
+      }
       if (isEditing) {
         onUpdate?.(r.debrief, r.gamification);
         toast('Debrief modifié');
