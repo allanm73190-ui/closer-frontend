@@ -74,6 +74,15 @@ function formatFieldValue(value) {
   return String(value);
 }
 
+function readSectionNote(noteObj, keys = []) {
+  if (!noteObj || typeof noteObj !== 'object') return '';
+  for (const key of keys) {
+    const value = noteObj[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
 function cleanMarkdownLine(line = '') {
   return String(line || '')
     .replace(/^#{1,6}\s+/, '')
@@ -203,50 +212,57 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
   const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
   const analysisLines = extractAnalysisLines(analysis);
-  const latestComments = [...comments].slice(-6).reverse();
+  const latestComments = [...comments].slice(-4).reverse();
+
+  const scoreRows = SECTION_DETAILS_ORDER.map(({ key, label }) => {
+    const value = scores[key] || 0;
+    return `
+      <div class="score-row">
+        <div class="score-row__label">${escapeHtml(label)}</div>
+        <div class="score-row__bar">
+          <div class="score-row__fill" style="width:${(value / 5) * 100}%;background:${barColor(value)}"></div>
+        </div>
+        <div class="score-row__value">${value}/5</div>
+      </div>
+    `;
+  }).join('');
 
   const sectionRows = SECTION_DETAILS_ORDER.map(({ key, label }) => {
     const value = scores[key] || 0;
     const note = getSectionNote(debrief.section_notes, key);
+    const strength = readSectionNote(note, ['strength', 'strengths']) || 'Point fort non renseigné.';
+    const weakness = readSectionNote(note, ['weakness', 'weaknesses']) || 'Point faible non renseigné.';
+    const improvement = readSectionNote(note, ['improvement', 'improvements']) || 'Piste de progression non renseignée.';
     const sectionData = getSectionData(debrief.sections, key);
     const answers = Object.entries(sectionData || {})
       .map(([answerKey, answerValue]) => ({ label: formatFieldLabel(answerKey), value: formatFieldValue(answerValue) }))
-      .filter(item => item.value);
+      .filter(item => item.value)
+      .slice(0, 6);
 
-    const notesHtml = [
-      note?.strength ? `<p class="note note--good"><strong>Point fort:</strong> ${escapeHtml(note.strength)}</p>` : '',
-      note?.weakness ? `<p class="note note--bad"><strong>Point faible:</strong> ${escapeHtml(note.weakness)}</p>` : '',
-      note?.improvement ? `<p class="note note--warn"><strong>A améliorer:</strong> ${escapeHtml(note.improvement)}</p>` : '',
-    ].filter(Boolean).join('');
-
-    const answersHtml = answers.length > 0
-      ? `<ul class="answers">${answers.map(item => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.value)}</li>`).join('')}</ul>`
-      : '<p class="hint">Aucune réponse détaillée renseignée pour cette section.</p>';
+    const answersText = answers.length > 0
+      ? answers.map(item => `${item.label}: ${item.value}`).join(' · ')
+      : 'Aucune réponse détaillée pour cette section.';
 
     return `
-      <div class="section-row">
-        <div class="section-row__head">
-          <span>${escapeHtml(label)}</span>
-          <strong style="color:${barColor(value)}">${value}/5</strong>
+      <article class="detail-card">
+        <div class="detail-card__head">
+          <h3>${escapeHtml(label)}</h3>
+          <span style="color:${barColor(value)}">${value}/5</span>
         </div>
-        <div class="bar">
-          <div class="fill" style="width:${(value / 5) * 100}%;background:${barColor(value)}"></div>
-        </div>
-        ${notesHtml || '<p class="hint">Aucune note sectionnelle.</p>'}
-        <div class="answers-wrap">
-          <h4>Détails des réponses</h4>
-          ${answersHtml}
-        </div>
-      </div>
+        <p><strong>Bien fait:</strong> ${escapeHtml(strength)}</p>
+        <p><strong>A corriger:</strong> ${escapeHtml(weakness)}</p>
+        <p><strong>Coach note:</strong> ${escapeHtml(improvement)}</p>
+        <p class="answers-line"><strong>Réponses clés:</strong> ${escapeHtml(answersText)}</p>
+      </article>
     `;
   }).join('');
 
   const summaryList = keyBullets.length > 0
     ? `<ul>${keyBullets.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune synthèse IA disponible pour ce debrief.</p>';
+    : '<p class="hint">Aucune synthèse IA disponible.</p>';
 
   const analysisHtml = analysisLines.length > 0
-    ? `<div class="analysis-list">${analysisLines.map(item => `<p>${escapeHtml(item)}</p>`).join('')}</div>`
+    ? `<div class="analysis-list">${analysisLines.slice(0, 10).map(item => `<p>${escapeHtml(item)}</p>`).join('')}</div>`
     : '<p class="hint">Aucune analyse IA complète disponible.</p>';
 
   const commentsHtml = latestComments.length > 0
@@ -256,7 +272,13 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
         <p>${renderText(comment.content || '')}</p>
       </div>
     `).join('')
-    : '<p class="hint">Aucun commentaire ajouté.</p>';
+    : '<p class="hint">Aucun commentaire équipe.</p>';
+
+  const planItems = [
+    `Jours 1-2: drill ciblé sur l'action prioritaire (${actionPriority}).`,
+    'Jours 3-4: application en conditions réelles sur 3 appels.',
+    'Jours 5-7: revue HOS + ajustement des scripts de closing.',
+  ];
 
   return `<!doctype html>
   <html lang="fr">
@@ -266,220 +288,269 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
       <title>${escapeHtml(title)}</title>
       <style>
         :root {
-          --text: #42352b;
-          --muted: #867466;
-          --line: rgba(232, 125, 106, .16);
-          --paper: #fffdfb;
+          --text: #3b2f27;
+          --muted: #8f7d6e;
+          --line: #ead8cb;
+          --bg: #f8f4f0;
+          --paper: #ffffff;
           --accent: #e87d6a;
-          --good: #166534;
-          --good-bg: #f0fdf4;
-          --bad: #991b1b;
-          --bad-bg: #fff5f5;
-          --warn: #92400e;
-          --warn-bg: #fffbeb;
         }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
           font-family: Inter, system-ui, sans-serif;
-          background: #f3eee8;
+          background: var(--bg);
           color: var(--text);
         }
         .topbar {
           position: sticky;
           top: 0;
           z-index: 10;
-          background: rgba(255,255,255,.9);
+          background: rgba(255,255,255,.92);
           border-bottom: 1px solid var(--line);
           padding: 10px 16px;
           font-size: 12px;
           color: var(--muted);
         }
         .sheet {
-          width: min(1020px, calc(100vw - 26px));
-          margin: 16px auto 28px;
+          width: min(1072px, calc(100vw - 28px));
+          margin: 18px auto 32px;
           background: var(--paper);
-          border-radius: 18px;
-          box-shadow: 0 14px 40px rgba(90,74,58,.16);
-          padding: 24px;
+          border-radius: 22px;
+          box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
+          padding: 28px 28px 24px;
         }
-        .hero {
-          display: flex;
-          justify-content: space-between;
-          gap: 16px;
-          align-items: flex-start;
-          padding: 18px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #fff0eb 0%, #f5f8fb 100%);
-          border: 1px solid var(--line);
-        }
-        .hero h1 {
-          margin: 0 0 6px;
-          font-size: 26px;
-          line-height: 1.1;
-        }
-        .meta {
+        .title {
           margin: 0;
-          color: var(--muted);
-          font-size: 13px;
-          line-height: 1.5;
+          font-size: 38px;
+          line-height: 1.1;
+          font-weight: 700;
+          color: var(--text);
         }
-        .score {
-          text-align: right;
-        }
-        .score strong {
-          display: block;
-          font-size: 34px;
-          line-height: 1;
-          color: var(--accent);
-        }
-        .score span {
-          font-size: 12px;
+        .subtitle {
+          margin: 10px 0 0;
+          font-size: 15px;
           color: var(--muted);
         }
-        .grid {
-          margin-top: 16px;
+        .sep {
+          margin: 16px 0;
+          border: none;
+          border-top: 1px solid var(--line);
+        }
+        .section-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .08em;
+          font-weight: 700;
+          color: var(--muted);
+          margin: 0 0 8px;
+        }
+        .identity {
           display: grid;
           gap: 12px;
-          grid-template-columns: 1.1fr .9fr;
+          grid-template-columns: 1fr auto;
+          align-items: start;
         }
-        .card {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 14px;
-          background: white;
-        }
-        .card h2 {
-          margin: 0 0 10px;
-          font-size: 14px;
-        }
-        .hint {
-          margin: 8px 0 0;
-          color: var(--muted);
-          font-size: 12px;
+        .identity p {
+          margin: 0 0 6px;
+          font-size: 15px;
           line-height: 1.45;
         }
-        .chips {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 10px;
+        .score-big {
+          text-align: right;
         }
-        .chip {
-          padding: 5px 10px;
-          border-radius: 999px;
-          font-size: 12px;
-          background: #fff3ef;
-          color: #c05a47;
-          border: 1px solid var(--line);
+        .score-big strong {
+          display: block;
+          font-size: 52px;
+          line-height: 1;
+          color: #d4604e;
         }
-        .section-list {
+        .score-big span {
+          font-size: 14px;
+          color: var(--muted);
+        }
+        .snapshot {
           display: grid;
           gap: 12px;
+          grid-template-columns: repeat(3, 1fr);
         }
-        .section-row {
+        .snapshot-card {
           border: 1px solid var(--line);
-          border-radius: 10px;
-          padding: 10px 11px;
-          background: #fffdfb;
+          border-radius: 12px;
+          padding: 12px;
+          min-height: 120px;
         }
-        .section-row__head {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-          gap: 10px;
+        .snapshot-card h3 {
+          margin: 0 0 8px;
+          font-size: 14px;
+        }
+        .snapshot-card p {
+          margin: 0 0 5px;
           font-size: 13px;
-          font-weight: 700;
+          line-height: 1.45;
+          color: #6e5d4f;
         }
-        .bar {
-          margin-top: 6px;
-          height: 7px;
+        .snapshot-card--a { background: #fff6f2; }
+        .snapshot-card--b { background: #fff9f0; }
+        .snapshot-card--c { background: #f2fbf7; }
+        .score-grid {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fcf8f5;
+          display: grid;
+          gap: 8px;
+        }
+        .score-row {
+          display: grid;
+          grid-template-columns: 170px 1fr 64px;
+          align-items: center;
+          gap: 10px;
+        }
+        .score-row__label {
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .score-row__bar {
+          height: 10px;
           border-radius: 999px;
-          background: rgba(232,125,106,.12);
+          background: #f2e2d8;
           overflow: hidden;
         }
-        .fill {
+        .score-row__fill {
           height: 100%;
           border-radius: inherit;
         }
-        .note {
-          margin: 7px 0 0;
-          padding: 7px 8px;
-          border-radius: 8px;
-          font-size: 12px;
-          line-height: 1.45;
-          border: 1px solid transparent;
+        .score-row__value {
+          font-size: 13px;
+          font-weight: 700;
+          text-align: right;
         }
-        .note--good { color: var(--good); background: var(--good-bg); border-color: #bbf7d0; }
-        .note--bad { color: var(--bad); background: var(--bad-bg); border-color: #fca5a5; }
-        .note--warn { color: var(--warn); background: var(--warn-bg); border-color: #fcd34d; }
-        .answers-wrap {
-          margin-top: 8px;
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        .detail-card {
           border: 1px solid var(--line);
-          border-radius: 8px;
-          padding: 8px;
+          border-radius: 12px;
+          padding: 12px;
           background: #fff;
         }
-        .answers-wrap h4 {
-          margin: 0 0 6px;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: .04em;
-          color: var(--muted);
+        .detail-card__head {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          align-items: center;
+          margin-bottom: 8px;
         }
-        .answers {
+        .detail-card__head h3 {
           margin: 0;
-          padding-left: 18px;
+          font-size: 14px;
+        }
+        .detail-card__head span {
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .detail-card p {
+          margin: 0 0 6px;
+          font-size: 12px;
+          line-height: 1.45;
+          color: #6f5e50;
+        }
+        .detail-card .answers-line {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px dashed var(--line);
+        }
+        .closing-focus {
+          margin-top: 12px;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .closing-focus h3 {
+          margin: 0 0 8px;
+          font-size: 14px;
+        }
+        .closing-focus p {
+          margin: 0 0 6px;
+          font-size: 13px;
+          color: #6d5d4f;
+        }
+        .hint {
+          margin: 0;
+          color: var(--muted);
           font-size: 12px;
           line-height: 1.45;
         }
-        .answers li + li { margin-top: 4px; }
         ul {
           margin: 0;
           padding-left: 18px;
           font-size: 13px;
-          line-height: 1.55;
+          line-height: 1.5;
         }
         li + li {
-          margin-top: 6px;
+          margin-top: 5px;
+        }
+        .bottom-grid {
+          margin-top: 12px;
+          display: grid;
+          gap: 12px;
+          grid-template-columns: 1fr 1fr;
+        }
+        .block {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
         }
         .analysis-list {
           display: grid;
-          gap: 6px;
+          gap: 5px;
         }
         .analysis-list p {
           margin: 0;
           font-size: 12px;
-          line-height: 1.5;
-          border-left: 2px solid rgba(232,125,106,.25);
+          line-height: 1.45;
           padding-left: 8px;
+          border-left: 2px solid rgba(232,125,106,.25);
         }
         .comment + .comment {
-          margin-top: 10px;
-          padding-top: 10px;
+          margin-top: 8px;
+          padding-top: 8px;
           border-top: 1px dashed var(--line);
         }
         .comment p {
           margin: 4px 0 0;
-          font-size: 13px;
-          line-height: 1.55;
+          font-size: 12px;
+          line-height: 1.45;
         }
         .comment__meta {
           margin: 0;
           color: var(--muted);
           font-size: 11px;
         }
-        .action {
-          margin-top: 12px;
-          padding: 10px 12px;
-          border-radius: 10px;
-          background: #fff2ed;
+        .plan-list {
+          margin: 0;
+          padding-left: 18px;
+        }
+        .plan-list li {
+          font-size: 12px;
+          line-height: 1.45;
+          color: #6e5d4f;
+        }
+        .action-box {
+          margin-top: 10px;
           border: 1px solid var(--line);
-          font-size: 13px;
-          line-height: 1.5;
+          background: #fff2ec;
+          border-radius: 10px;
+          padding: 10px;
+          font-size: 12px;
+          line-height: 1.45;
         }
         .footer {
-          margin-top: 16px;
+          margin-top: 14px;
           font-size: 11px;
           color: var(--muted);
           display: flex;
@@ -489,67 +560,96 @@ function buildDebriefPdfHtml({ debrief, comments = [], analysis = '' }) {
           padding-top: 10px;
         }
         @media (max-width: 780px) {
-          .sheet { padding: 16px; }
-          .hero { flex-direction: column; }
-          .score { text-align: left; }
-          .grid { grid-template-columns: 1fr; }
+          .sheet { padding: 16px; border-radius: 14px; }
+          .identity { grid-template-columns: 1fr; }
+          .score-big { text-align: left; }
+          .snapshot { grid-template-columns: 1fr; }
+          .score-row { grid-template-columns: 1fr; gap: 6px; }
+          .score-row__value { text-align: left; }
+          .detail-grid { grid-template-columns: 1fr; }
+          .bottom-grid { grid-template-columns: 1fr; }
         }
       </style>
     </head>
     <body>
-      <div class="topbar">Prévisualisation PDF: relisez puis lancez le téléchargement.</div>
+      <div class="topbar">Prévisualisation PDF: infos détaillées + design minimal.</div>
       <main class="sheet">
-        <section class="hero">
+        <h1 class="title">Export Debrief</h1>
+        <p class="subtitle">Executive details dans un design ultra clean</p>
+        <hr class="sep" />
+
+        <section class="identity">
           <div>
-            <h1>${escapeHtml(debrief.prospect_name || 'Prospect')}</h1>
-            <p class="meta">Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigne')}</p>
-            <p class="meta">Date appel: ${escapeHtml(fmtDate(debrief.call_date))} · Resultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}</p>
-            <p class="meta">Objection dominante: ${escapeHtml(getDominantObjection(debrief))}</p>
-            ${debrief.call_link ? `<p class="meta">Lien appel: ${escapeHtml(debrief.call_link)}</p>` : ''}
+            <p class="section-label">Identité call</p>
+            <p><strong>Prospect:</strong> ${escapeHtml(debrief.prospect_name || 'Non renseigné')}</p>
+            <p><strong>Closer:</strong> ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')} · <strong>Date:</strong> ${escapeHtml(fmtDate(debrief.call_date))}</p>
+            <p><strong>Résultat:</strong> ${debrief.is_closed ? 'Closé' : 'Non closé'} · <strong>Objection dominante:</strong> ${escapeHtml(getDominantObjection(debrief))}</p>
+            ${debrief.call_link ? `<p><strong>Lien appel:</strong> ${escapeHtml(debrief.call_link)}</p>` : ''}
           </div>
-          <div class="score">
-            <strong>${score20}/20</strong>
-            <span>${pct}% de performance</span>
+          <div class="score-big">
+            <strong>${score20}</strong>
+            <span>/20 · ${pct}% de performance</span>
           </div>
         </section>
+        <hr class="sep" />
 
-        <section class="grid">
-          <article class="card">
-            <h2>Résumé stratégique</h2>
-            <div class="chips">
-              ${topSections.map(section => `<span class="chip">Point fort: ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</span>`).join('')}
-              ${prioritySections.map(section => `<span class="chip">Priorite: ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</span>`).join('')}
-            </div>
-            <div class="action"><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority)}</div>
+        <p class="section-label">Snapshot stratégique</p>
+        <section class="snapshot">
+          <article class="snapshot-card snapshot-card--a">
+            <h3>Points forts</h3>
+            ${topSections.length > 0
+              ? topSections.map(section => `<p>- ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</p>`).join('')
+              : '<p>- Non renseigné</p>'}
+          </article>
+          <article class="snapshot-card snapshot-card--b">
+            <h3>Priorités</h3>
+            ${prioritySections.length > 0
+              ? prioritySections.map(section => `<p>- ${escapeHtml(section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim())} (${section.score}/5)</p>`).join('')
+              : '<p>- Non renseigné</p>'}
+          </article>
+          <article class="snapshot-card snapshot-card--c">
+            <h3>Action prioritaire</h3>
+            <p>${escapeHtml(actionPriority)}</p>
             ${debrief.notes ? `<p class="hint"><strong>Note closer:</strong> ${renderText(debrief.notes)}</p>` : ''}
-            ${debrief.strengths ? `<p class="hint"><strong>Forces notées:</strong> ${renderText(debrief.strengths)}</p>` : ''}
-            ${debrief.improvements ? `<p class="hint"><strong>Axes notés:</strong> ${renderText(debrief.improvements)}</p>` : ''}
           </article>
+        </section>
+        <hr class="sep" />
 
-          <article class="card">
-            <h2>Synthèse IA rapide</h2>
+        <p class="section-label">Section scores</p>
+        <section class="score-grid">${scoreRows}</section>
+        <hr class="sep" />
+
+        <p class="section-label">Détails sectionnels</p>
+        <section class="detail-grid">${sectionRows}</section>
+        <section class="closing-focus">
+          <h3>Focus closing & objection</h3>
+          <p><strong>Objection principale:</strong> ${escapeHtml(getDominantObjection(debrief))}</p>
+          ${analysisLines.length > 0 ? `<p><strong>Alternative IA:</strong> ${escapeHtml(analysisLines.slice(0, 1).join(' '))}</p>` : ''}
+          <p><strong>Priorité technique:</strong> annonce prix + silence + isolation objection.</p>
+        </section>
+        <hr class="sep" />
+
+        <p class="section-label">IA, plan 7 jours et commentaires</p>
+        <section class="bottom-grid">
+          <article class="block">
+            <h3 style="margin:0 0 8px;font-size:14px;">Synthèse IA</h3>
             ${summaryList}
-          </article>
-        </section>
-
-        <section class="card" style="margin-top:12px">
-          <h2>Détails debrief par section</h2>
-          <div class="section-list">${sectionRows}</div>
-        </section>
-
-        <section class="grid">
-          <article class="card">
-            <h2>Analyse IA complète</h2>
+            <h3 style="margin:12px 0 8px;font-size:14px;">Analyse IA complète</h3>
             ${analysisHtml}
           </article>
-          <article class="card">
-            <h2>Commentaires équipe</h2>
+          <article class="block">
+            <h3 style="margin:0 0 8px;font-size:14px;">Plan 7 jours</h3>
+            <ol class="plan-list">
+              ${planItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ol>
+            <div class="action-box"><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority)}</div>
+            <h3 style="margin:12px 0 8px;font-size:14px;">Commentaires équipe</h3>
             ${commentsHtml}
           </article>
         </section>
 
         <footer class="footer">
-          <span>CloserDebrief · Export détaillé</span>
+          <span>CloserDebrief · Export debrief</span>
           <span>${escapeHtml(title)}</span>
         </footer>
       </main>
@@ -652,80 +752,175 @@ export async function downloadDebriefPdf({ debrief, comments = [], analysis = ''
     y += 10;
   };
 
-  doc.setFillColor(255, 241, 235);
-  doc.roundedRect(margin, y - 2, contentW, 26, 3, 3, 'F');
+  const drawSeparator = () => {
+    ensureSpace(6);
+    doc.setDrawColor(234, 216, 203);
+    doc.setLineWidth(0.4);
+    doc.line(margin, y, pageW - margin, y);
+    y += 6;
+  };
+
+  const writeLabel = (text) => {
+    ensureSpace(6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(155, 138, 122);
+    doc.text(String(text || '').toUpperCase(), margin, y);
+    y += 5;
+  };
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(17);
-  doc.setTextColor(50, 58, 75);
-  doc.text(`${debrief?.prospect_name || 'Prospect'}`, margin + 3, y + 5);
+  doc.setFontSize(22);
+  doc.setTextColor(59, 47, 39);
+  doc.text('Export Debrief', margin, y + 2);
+  y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
-  doc.setTextColor(92, 104, 122);
-  doc.text(`Closer: ${debrief?.closer_name || debrief?.user_name || 'Non renseigné'}`, margin + 3, y + 11);
-  doc.text(`Date: ${fmtDate(debrief?.call_date)} · Résultat: ${debrief?.is_closed ? 'Closé' : 'Non closé'}`, margin + 3, y + 16);
+  doc.setTextColor(143, 125, 110);
+  doc.text('Executive details dans un design ultra clean', margin, y + 1);
+  y += 6;
+  drawSeparator();
+
+  writeLabel('Identite call');
+  writeText(`Prospect: ${debrief?.prospect_name || 'Non renseigné'}`, { size: 11.2, bold: true, color: [66, 52, 43], line: 5.2 });
+  writeText(`Closer: ${debrief?.closer_name || debrief?.user_name || 'Non renseigné'} · Date: ${fmtDate(debrief?.call_date)}`, { size: 10.5, color: [98, 84, 72], line: 4.8 });
+  writeText(`Résultat: ${debrief?.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${getDominantObjection(debrief)}`, { size: 10.5, color: [98, 84, 72], line: 4.8 });
+  if (debrief?.call_link) writeText(`Lien appel: ${debrief.call_link}`, { size: 10.2, color: [110, 96, 84], line: 4.6 });
+  ensureSpace(10);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(232, 125, 106);
-  doc.text(`${score20}/20`, pageW - margin - 22, y + 8);
+  doc.setFontSize(26);
+  doc.setTextColor(212, 96, 78);
+  doc.text(`${score20}/20`, pageW - margin - 44, y - 12);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`${pct}%`, pageW - margin - 22, y + 14);
-  y += 31;
+  doc.setTextColor(143, 125, 110);
+  doc.text(`${pct}%`, pageW - margin - 20, y - 8);
+  drawSeparator();
 
-  sectionTitle('Vue d’ensemble');
-  writeBullet(`Objection dominante: ${getDominantObjection(debrief)}`);
-  writeBullet(`Points forts: ${topSections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucun'}`);
-  writeBullet(`Priorités: ${prioritySections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`).join(', ') || 'Aucune'}`);
-  if (debrief?.call_link) writeBullet(`Lien d'appel: ${debrief.call_link}`);
-  if (debrief?.notes) writeBullet(`Note closer: ${debrief.notes}`);
-  if (debrief?.strengths) writeBullet(`Points forts notés: ${debrief.strengths}`);
-  if (debrief?.improvements) writeBullet(`Axes d'amélioration notés: ${debrief.improvements}`);
+  writeLabel('Snapshot strategique');
+  ensureSpace(24);
+  const cardW = (contentW - 8) / 3;
+  const cardY = y;
+  const drawMiniCard = (x, titleText, lines, fill) => {
+    doc.setFillColor(...fill);
+    doc.setDrawColor(234, 216, 203);
+    doc.roundedRect(x, cardY, cardW, 24, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.2);
+    doc.setTextColor(74, 58, 47);
+    doc.text(titleText, x + 3, cardY + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.4);
+    doc.setTextColor(106, 91, 79);
+    let ly = cardY + 10;
+    (lines || []).slice(0, 3).forEach(line => {
+      const split = doc.splitTextToSize(line, cardW - 6);
+      split.slice(0, 1).forEach(s => {
+        doc.text(`- ${s}`, x + 3, ly);
+        ly += 4.3;
+      });
+    });
+  };
+  const topLines = topSections.length > 0
+    ? topSections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`)
+    : ['Non renseigné'];
+  const priorityLines = prioritySections.length > 0
+    ? prioritySections.map(section => `${section.label.replace(/^[^\p{L}\p{N}]+/u, '').trim()} (${section.score}/5)`)
+    : ['Non renseigné'];
+  drawMiniCard(margin, 'Points forts', topLines, [255, 246, 242]);
+  drawMiniCard(margin + cardW + 4, 'Priorités', priorityLines, [255, 249, 240]);
+  drawMiniCard(margin + (cardW + 4) * 2, 'Action prioritaire', [actionPriority], [242, 251, 247]);
+  y += 28;
+  drawSeparator();
 
-  sectionTitle('Score et détails par section');
+  writeLabel('Section scores');
+  ensureSpace(38);
+  doc.setFillColor(252, 248, 245);
+  doc.setDrawColor(234, 216, 203);
+  doc.roundedRect(margin, y, contentW, 36, 2, 2, 'FD');
+  let rowY = y + 6;
+  SECTION_DETAILS_ORDER.forEach(({ key, label }) => {
+    const value = scores[key] || 0;
+    const barX = margin + 45;
+    const barW = contentW - 78;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(83, 66, 55);
+    doc.text(label, margin + 3, rowY + 1);
+    doc.setFillColor(242, 226, 216);
+    doc.roundedRect(barX, rowY - 1.6, barW, 2.8, 1.4, 1.4, 'F');
+    const color = barColor(value);
+    const rgb = color === '#059669' ? [5, 150, 105]
+      : color === '#d97706' ? [217, 119, 6]
+        : color === '#e87d6a' ? [232, 125, 106]
+          : [239, 68, 68];
+    doc.setFillColor(...rgb);
+    doc.roundedRect(barX, rowY - 1.6, (barW * value) / 5, 2.8, 1.4, 1.4, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(83, 66, 55);
+    doc.text(`${value}/5`, margin + contentW - 10, rowY + 1, { align: 'right' });
+    rowY += 6.5;
+  });
+  y += 40;
+  drawSeparator();
+
+  writeLabel('Details sectionnels');
   SECTION_DETAILS_ORDER.forEach(({ key, label }) => {
     const value = scores[key] || 0;
     const note = getSectionNote(debrief?.section_notes, key);
+    const strength = readSectionNote(note, ['strength', 'strengths']) || 'Point fort non renseigné.';
+    const weakness = readSectionNote(note, ['weakness', 'weaknesses']) || 'Point faible non renseigné.';
+    const improvement = readSectionNote(note, ['improvement', 'improvements']) || 'Piste de progression non renseignée.';
     const sectionData = getSectionData(debrief?.sections, key);
-    writeText(`${label}: ${value}/5`, { size: 11, bold: true, color: [64, 64, 64], line: 5 });
-    if (note?.strength) writeBullet(`Point fort: ${note.strength}`);
-    if (note?.weakness) writeBullet(`Point faible: ${note.weakness}`);
-    if (note?.improvement) writeBullet(`A améliorer: ${note.improvement}`);
-    const details = Object.entries(sectionData || {})
+    const answers = Object.entries(sectionData || {})
       .map(([fieldKey, fieldValue]) => `${formatFieldLabel(fieldKey)}: ${formatFieldValue(fieldValue)}`)
-      .filter(Boolean);
-    if (details.length === 0) {
-      writeBullet('Aucune réponse détaillée dans cette section.');
-    } else {
-      details.forEach(detail => writeBullet(detail));
-    }
-    y += 1;
-  });
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(' · ');
 
-  sectionTitle('Synthèse IA (points clés)');
-  if (keyBullets.length > 0) {
-    keyBullets.slice(0, 8).forEach(item => writeBullet(item));
-  } else {
-    writeBullet('Aucune synthèse IA disponible.');
-  }
+    ensureSpace(28);
+    doc.setDrawColor(234, 216, 203);
+    doc.roundedRect(margin, y, contentW, 26, 2, 2);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(74, 58, 47);
+    doc.text(`${label} - ${value}/5`, margin + 3, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.4);
+    doc.setTextColor(108, 92, 79);
+    doc.text(doc.splitTextToSize(`Bien fait: ${strength}`, contentW - 6), margin + 3, y + 9);
+    doc.text(doc.splitTextToSize(`A corriger: ${weakness}`, contentW - 6), margin + 3, y + 14);
+    doc.text(doc.splitTextToSize(`Coach note: ${improvement}`, contentW - 6), margin + 3, y + 19);
+    doc.text(doc.splitTextToSize(`Réponses clés: ${answers || 'Aucune réponse détaillée.'}`, contentW - 6), margin + 3, y + 24);
+    y += 30;
+  });
+  drawSeparator();
+
+  writeLabel('Ia, plan 7 jours et commentaires');
+  sectionTitle('Synthèse IA');
+  if (keyBullets.length > 0) keyBullets.slice(0, 8).forEach(item => writeBullet(item));
+  else writeBullet('Aucune synthèse IA disponible.');
 
   sectionTitle('Analyse IA complète');
-  if (analysisLines.length > 0) {
-    analysisLines.forEach(line => writeBullet(line));
-  } else {
-    writeBullet('Aucune analyse IA complète disponible.');
-  }
+  if (analysisLines.length > 0) analysisLines.slice(0, 16).forEach(line => writeBullet(line));
+  else writeBullet('Aucune analyse IA complète disponible.');
 
-  sectionTitle('Plan d’action');
-  writeText(`Action prioritaire: ${actionPriority}`, { size: 11, bold: true, color: [95, 55, 40], line: 5.5 });
+  sectionTitle('Plan 7 jours');
+  writeBullet(`Jours 1-2: drill ciblé sur l'action prioritaire (${actionPriority}).`);
+  writeBullet('Jours 3-4: application en conditions réelles sur 3 appels.');
+  writeBullet('Jours 5-7: revue HOS + ajustement des scripts de closing.');
+  writeText(`Action prioritaire: ${actionPriority}`, { size: 10.5, bold: true, color: [95, 55, 40], line: 5 });
 
+  sectionTitle('Commentaires équipe');
   if (latestComments.length > 0) {
-    sectionTitle('Commentaires récents');
     latestComments.forEach(comment => {
-      writeText(`${comment.author_name || 'Équipe'} — ${fmtDate(comment.created_at)}`, { size: 10, bold: true, color: [90, 90, 90], line: 4.8 });
-      writeText(comment.content || '', { size: 10.5, color: [72, 72, 72], line: 4.8 });
-      y += 1.5;
+      writeText(`${comment.author_name || 'Équipe'} — ${fmtDate(comment.created_at)}`, { size: 9.8, bold: true, color: [90, 90, 90], line: 4.5 });
+      writeText(comment.content || '', { size: 10, color: [72, 72, 72], line: 4.5 });
+      y += 1.2;
     });
+  } else {
+    writeBullet('Aucun commentaire équipe.');
   }
 
   ensureSpace(8);
