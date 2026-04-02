@@ -300,6 +300,14 @@ function buildExecutiveHighlights({ keyBullets, topSections, prioritySections, d
   return dedupeStrings(highlights).slice(0, 6);
 }
 
+function buildDecisionSummary({ debrief, percentage, scoreReading, dominantObjection, actionPriority }) {
+  const status = debrief?.is_closed ? 'Closé' : 'Non closé';
+  const objectionText = String(dominantObjection || '').toLowerCase().includes('aucune')
+    ? 'sans objection bloquante explicite'
+    : `frein principal: ${String(dominantObjection || '').toLowerCase()}`;
+  return `Verdict ${status} · ${percentage}% (${scoreReading}) · ${objectionText}. Priorité suivante: ${actionPriority}`;
+}
+
 function buildExportContext({ debrief, comments = [], analysis = '' }) {
   const safeDebrief = debrief || {};
   const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
@@ -311,7 +319,6 @@ function buildExportContext({ debrief, comments = [], analysis = '' }) {
   const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
   const analysisLines = extractAnalysisLines(analysis);
-  const latestComments = [...comments].slice(-4).reverse();
   const dominantObjection = getDominantObjection(safeDebrief);
   const risk = getRiskMeta(percentage, !!safeDebrief.is_closed);
   const sectionInsights = buildSectionInsights(safeDebrief, scores);
@@ -332,7 +339,14 @@ function buildExportContext({ debrief, comments = [], analysis = '' }) {
     actionPriority,
     sectionInsights,
   });
-  const analysisDigest = dedupeStrings([...keyBullets, ...analysisLines]).slice(0, 6);
+  const analysisDigest = dedupeStrings([...keyBullets, ...analysisLines]).slice(0, 4);
+  const decisionSummary = buildDecisionSummary({
+    debrief: safeDebrief,
+    percentage,
+    scoreReading: getScoreReading(percentage),
+    dominantObjection,
+    actionPriority,
+  });
 
   return {
     title,
@@ -345,13 +359,14 @@ function buildExportContext({ debrief, comments = [], analysis = '' }) {
     actionPriority,
     keyBullets,
     analysisLines,
-    latestComments,
+    latestComments: [...comments].slice(-2).reverse(),
     dominantObjection,
     risk,
     sectionInsights,
-    signals,
-    executiveHighlights,
+    signals: signals.slice(0, 4),
+    executiveHighlights: executiveHighlights.slice(0, 4),
     analysisDigest,
+    decisionSummary,
     scoreReading: getScoreReading(percentage),
   };
 }
@@ -435,18 +450,11 @@ function buildDebriefPdfHtml(payload) {
     signals,
     executiveHighlights,
     analysisDigest,
+    decisionSummary,
     scoreReading,
   } = ctx;
 
   const riskToneClass = risk.tone === 'good' ? 'chip--good' : risk.tone === 'warn' ? 'chip--warn' : 'chip--danger';
-
-  const topList = topSections.length > 0
-    ? topSections.map(section => `<li>${escapeHtml(cleanSectionLabel(section.label))} <strong>${section.score}/5</strong></li>`).join('')
-    : '<li>Non renseigné</li>';
-
-  const priorityList = prioritySections.length > 0
-    ? prioritySections.map(section => `<li>${escapeHtml(cleanSectionLabel(section.label))} <strong>${section.score}/5</strong></li>`).join('')
-    : '<li>Non renseigné</li>';
 
   const highlightsHtml = executiveHighlights.length > 0
     ? `<ul class="list">${executiveHighlights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
@@ -481,6 +489,15 @@ function buildDebriefPdfHtml(payload) {
       </div>
     `).join('')
     : '<p class="hint">Aucun commentaire équipe sur ce debrief.</p>';
+
+  const commentsPanelHtml = latestComments.length > 0
+    ? `
+      <section class="panel" style="margin-top:12px;">
+        <h2>Commentaires équipe récents</h2>
+        ${commentsHtml}
+      </section>
+    `
+    : '';
 
   const annexHtml = sectionInsights.map(section => {
     const evidence = section.evidence.length > 0
@@ -616,33 +633,26 @@ function buildDebriefPdfHtml(payload) {
           color: #795f51;
           margin-top: 6px;
         }
-        .tiles {
+        .decision {
           margin-top: 12px;
-          display: grid;
-          gap: 10px;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-        .tile {
-          border: 1px solid var(--line);
+          border: 1px solid #f3d7ca;
           border-radius: 12px;
-          padding: 12px;
-          background: #fff;
+          background: linear-gradient(160deg, #fff8f4 0%, #fff1ea 100%);
+          padding: 14px;
         }
-        .tile h2 {
-          margin: 0 0 8px;
+        .decision h2 {
+          margin: 0 0 6px;
           font-size: 13px;
           text-transform: uppercase;
           letter-spacing: .06em;
-          color: #7f6b5c;
+          color: #8a6b5a;
         }
-        .tile ul {
+        .decision p {
           margin: 0;
-          padding-left: 17px;
-          font-size: 13px;
-          line-height: 1.45;
-          color: #5f4f41;
+          font-size: 14px;
+          line-height: 1.5;
+          color: #5d4b3e;
         }
-        .tile li + li { margin-top: 5px; }
         .split {
           margin-top: 12px;
           display: grid;
@@ -729,6 +739,28 @@ function buildDebriefPdfHtml(payload) {
           margin-top: 12px;
           background: #fcf8f4;
         }
+        details.panel--soft {
+          padding: 0;
+          overflow: hidden;
+        }
+        details.panel--soft > summary {
+          list-style: none;
+          cursor: pointer;
+          padding: 12px;
+          font-weight: 700;
+          font-size: 14px;
+          color: #4f4035;
+          border-bottom: 1px solid transparent;
+          user-select: none;
+        }
+        details.panel--soft > summary::-webkit-details-marker { display: none; }
+        details.panel--soft[open] > summary {
+          border-bottom-color: var(--line);
+          background: #fff;
+        }
+        .panel--soft__body {
+          padding: 12px;
+        }
         .annex-grid {
           margin-top: 8px;
           display: grid;
@@ -778,7 +810,6 @@ function buildDebriefPdfHtml(payload) {
         @media (max-width: 860px) {
           .sheet { padding: 16px; border-radius: 14px; }
           .hero { grid-template-columns: 1fr; }
-          .tiles { grid-template-columns: 1fr; }
           .split { grid-template-columns: 1fr; }
           .annex-grid { grid-template-columns: 1fr; }
         }
@@ -807,53 +838,51 @@ function buildDebriefPdfHtml(payload) {
           </aside>
         </section>
 
-        <section class="tiles">
-          <article class="tile">
-            <h2>Forces clés</h2>
-            <ul>${topList}</ul>
-          </article>
-          <article class="tile">
-            <h2>Axes critiques</h2>
-            <ul>${priorityList}</ul>
-          </article>
-          <article class="tile">
-            <h2>Action prioritaire</h2>
-            <p style="margin:0;font-size:13px;line-height:1.45;color:#604f42;">${escapeHtml(actionPriority)}</p>
-            ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 220))}</p>` : ''}
-          </article>
+        <section class="decision">
+          <h2>Résumé décisionnel</h2>
+          <p>${escapeHtml(decisionSummary)}</p>
         </section>
 
         <section class="split">
           <article class="panel">
-            <h2>Essentiel en 20 secondes</h2>
+            <h2>Essentiel (4 points max)</h2>
             ${highlightsHtml}
           </article>
           <article class="panel">
-            <h2>Signaux terrain (champs libres)</h2>
-            ${signalsHtml}
+            <h2>Plan immédiat</h2>
+            <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#604f42;">${escapeHtml(actionPriority)}</p>
+            <ul class="list">
+              <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
+              <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
+            </ul>
+            ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 190))}</p>` : ''}
           </article>
         </section>
 
         <section class="panel" style="margin-top:12px;">
-          <h2>Lecture des sections</h2>
+          <h2>Performance par section</h2>
           <div class="score-rows">${scoreRows}</div>
         </section>
 
         <section class="split" style="margin-top:12px;">
           <article class="panel">
-            <h2>Synthèse IA utile</h2>
+            <h2>Synthèse IA (utile)</h2>
             ${analysisHtml}
           </article>
           <article class="panel">
-            <h2>Commentaires équipe</h2>
-            ${commentsHtml}
+            <h2>Verbatims décisifs (champs libres)</h2>
+            ${signalsHtml}
           </article>
         </section>
 
-        <section class="panel panel--soft">
-          <h2>Annexe détaillée</h2>
-          <div class="annex-grid">${annexHtml}</div>
-        </section>
+        ${commentsPanelHtml}
+
+        <details class="panel panel--soft">
+          <summary>Annexe détaillée (optionnelle)</summary>
+          <div class="panel--soft__body">
+            <div class="annex-grid">${annexHtml}</div>
+          </div>
+        </details>
 
         <footer class="footer">
           <span>CloserDebrief · Export debrief</span>
@@ -903,6 +932,7 @@ export async function downloadDebriefPdf(payload) {
     signals,
     executiveHighlights,
     analysisDigest,
+    decisionSummary,
     scoreReading,
   } = ctx;
 
@@ -1040,12 +1070,12 @@ export async function downloadDebriefPdf(payload) {
   y += 27;
 
   drawDivider();
-  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
-    size: 10.4,
+  writeText(decisionSummary, {
+    size: 10.2,
     bold: true,
     color: [78, 63, 52],
   });
-  writeText(`Lecture score: ${scoreReading}. Action prioritaire: ${actionPriority}`, {
+  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
     size: 9.9,
     color: [112, 94, 80],
   });
@@ -1057,9 +1087,9 @@ export async function downloadDebriefPdf(payload) {
   }
 
   drawDivider();
-  sectionTitle('Essentiel en 20 secondes');
+  sectionTitle('Essentiel (4 points max)');
   if (executiveHighlights.length > 0) {
-    executiveHighlights.slice(0, 6).forEach(item => writeBullet(item));
+    executiveHighlights.slice(0, 4).forEach(item => writeBullet(item));
   } else {
     writeBullet('Aucune synthèse disponible.');
   }
@@ -1079,6 +1109,8 @@ export async function downloadDebriefPdf(payload) {
   y += 28;
 
   sectionTitle('Score par section');
+  const priorityKeySet = new Set(prioritySections.map(section => section.key));
+  const topKeySet = new Set(topSections.map(section => section.key));
   for (const section of sectionInsights) {
     ensureSpace(11);
     doc.setFont('helvetica', 'bold');
@@ -1093,16 +1125,22 @@ export async function downloadDebriefPdf(payload) {
     doc.setFillColor(...toRgb(barColor(section.score)));
     doc.roundedRect(trackX, y - 1.4, (trackW * section.score) / 5, 2.9, 1.4, 1.4, 'F');
     y += 4.2;
-    writeText(truncateText(section.focus || 'Aucun axe explicite saisi pour cette section.', 130), {
-      size: 8.9,
-      color: [119, 99, 84],
-      lineHeight: 3.9,
-    });
+    const needsFocus = (priorityKeySet.has(section.key) || topKeySet.has(section.key)) && section.focus;
+    if (needsFocus) {
+      const prefix = priorityKeySet.has(section.key) ? 'Axe critique: ' : 'Levier: ';
+      writeText(truncateText(`${prefix}${section.focus}`, 115), {
+        size: 8.7,
+        color: [119, 99, 84],
+        lineHeight: 3.8,
+      });
+    } else {
+      y += 1.2;
+    }
   }
 
-  sectionTitle('Signaux terrain (champs libres)');
+  sectionTitle('Signaux terrain essentiels');
   if (signals.length > 0) {
-    signals.slice(0, 8).forEach(signal => {
+    signals.slice(0, 4).forEach(signal => {
       writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 135)}`, {
         size: 9.6,
       });
@@ -1113,7 +1151,7 @@ export async function downloadDebriefPdf(payload) {
 
   sectionTitle('Synthèse IA utile');
   if (analysisDigest.length > 0) {
-    analysisDigest.slice(0, 6).forEach(item => writeBullet(item, { size: 9.8 }));
+    analysisDigest.slice(0, 4).forEach(item => writeBullet(item, { size: 9.8 }));
   } else {
     writeBullet('Aucune synthèse IA disponible.');
   }
@@ -1136,30 +1174,35 @@ export async function downloadDebriefPdf(payload) {
     });
   }
 
-  doc.addPage();
-  y = margin;
-  sectionTitle('Annexe détaillée');
-  sectionInsights.forEach(section => {
-    ensureSpace(28);
-    doc.setDrawColor(234, 216, 203);
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(margin, y, contentW, 26, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(80, 64, 53);
-    doc.text(`${section.label} · ${section.score}/5`, margin + 2.8, y + 4.8);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.1);
-    doc.setTextColor(112, 95, 81);
-    doc.text(doc.splitTextToSize(`Point fort: ${section.strength || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 9);
-    doc.text(doc.splitTextToSize(`Point faible: ${section.weakness || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 13.5);
-    doc.text(doc.splitTextToSize(`Action ciblée: ${section.improvement || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 18);
-    const evidenceText = section.evidence.length > 0
-      ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 80)}`).join(' | ')
-      : 'Aucun détail libre saisi.';
-    doc.text(doc.splitTextToSize(`Signaux: ${evidenceText}`, contentW - 5.6), margin + 2.8, y + 22.5);
-    y += 29;
-  });
+  const annexSections = sectionInsights.filter(section =>
+    section.strength || section.weakness || section.improvement || (section.evidence && section.evidence.length > 0)
+  );
+  if (annexSections.length > 0) {
+    doc.addPage();
+    y = margin;
+    sectionTitle('Annexe détaillée (optionnelle)');
+    annexSections.forEach(section => {
+      ensureSpace(28);
+      doc.setDrawColor(234, 216, 203);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, y, contentW, 26, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(80, 64, 53);
+      doc.text(`${section.label} · ${section.score}/5`, margin + 2.8, y + 4.8);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.1);
+      doc.setTextColor(112, 95, 81);
+      doc.text(doc.splitTextToSize(`Point fort: ${section.strength || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 9);
+      doc.text(doc.splitTextToSize(`Point faible: ${section.weakness || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 13.5);
+      doc.text(doc.splitTextToSize(`Action ciblée: ${section.improvement || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 18);
+      const evidenceText = section.evidence.length > 0
+        ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 80)}`).join(' | ')
+        : 'Aucun détail libre saisi.';
+      doc.text(doc.splitTextToSize(`Signaux: ${evidenceText}`, contentW - 5.6), margin + 2.8, y + 22.5);
+      y += 29;
+    });
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.8);

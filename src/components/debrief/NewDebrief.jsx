@@ -252,6 +252,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         method: isEditing ? 'PATCH' : 'POST',
         body:{
           ...form,
+          linked_deal_id: !isEditing && linkedDealId ? linkedDealId : undefined,
           sections: mergedSections,
           section_notes: mergedSectionNotes,
           total_score: total,
@@ -261,19 +262,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           criteria_notes: {},
         },
       });
-      if (!isEditing && linkedDealId) {
-        try {
-          await apiFetch(`/deals/${linkedDealId}`, {
-            method: 'PATCH',
-            body: {
-              debrief_id: r.debrief.id,
-              deal_closed: !!form.is_closed,
-            },
-          });
-        } catch {
-          // Lien deal non bloquant: on garde le debrief même si le patch échoue
-        }
-      }
       if (isEditing) {
         onUpdate?.(r.debrief, r.gamification);
         toast('Debrief modifié');
