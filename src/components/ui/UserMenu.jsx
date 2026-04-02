@@ -40,7 +40,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false, theme
           <>
             <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
               <p style={{ fontSize:13, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.name}</p>
-              <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{user.role==='head_of_sales'?'Head of Sales':'Closer'}</p>
+              <p style={{ fontSize:11, color:'var(--txt3,#c8b8a8)', margin:0 }}>{roleLabel}</p>
             </div>
             {gam && <span style={{ fontSize:13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
             <span style={{ fontSize:10, color:TXT3 }}>{open?'▲':'▼'}</span>
@@ -129,3 +129,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false, theme
 }
 
 export { UserMenu };
+  const roleLabel = user.role === 'admin'
+    ? 'Admin'
+    : user.role === 'head_of_sales'
+      ? 'Head of Sales'
+      : 'Closer';

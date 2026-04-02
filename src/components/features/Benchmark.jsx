@@ -89,16 +89,16 @@ function deltaColor(current, previous) {
 
 export function BenchmarkPage({ user, debriefs, navigate, toast }) {
   const mob = useIsMobile();
-  const isHOS = user?.role === 'head_of_sales';
+  const isManager = user?.role === 'head_of_sales' || user?.role === 'admin';
   const [periodKey, setPeriodKey] = useState(PERIOD_OPTIONS[0].key);
   const [managedClosers, setManagedClosers] = useState([]);
-  const [selectedCloserId, setSelectedCloserId] = useState(isHOS ? '' : user?.id || '');
-  const [closerLoading, setCloserLoading] = useState(isHOS);
+  const [selectedCloserId, setSelectedCloserId] = useState(isManager ? '' : user?.id || '');
+  const [closerLoading, setCloserLoading] = useState(isManager);
   const [patterns, setPatterns] = useState([]);
   const [patternsLoading, setPatternsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isHOS) return;
+    if (!isManager) return;
     let mounted = true;
     setCloserLoading(true);
     apiFetch('/teams')
@@ -128,13 +128,13 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
         setCloserLoading(false);
       });
     return () => { mounted = false; };
-  }, [isHOS, selectedCloserId, toast]);
+  }, [isManager, selectedCloserId, toast]);
 
   const scopedDebriefs = useMemo(() => {
-    const targetId = isHOS ? selectedCloserId : user?.id;
+    const targetId = isManager ? selectedCloserId : user?.id;
     if (!targetId) return [];
     return sortByDateDesc((debriefs || []).filter(item => item.user_id === targetId));
-  }, [debriefs, isHOS, selectedCloserId, user?.id]);
+  }, [debriefs, isManager, selectedCloserId, user?.id]);
 
   const period = PERIOD_OPTIONS.find(option => option.key === periodKey) || PERIOD_OPTIONS[0];
   const buckets = useMemo(() => buildBuckets(scopedDebriefs, period), [scopedDebriefs, period]);
@@ -143,19 +143,19 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
   const currentSections = useMemo(() => avgSectionScores(buckets.current), [buckets.current]);
   const previousSections = useMemo(() => avgSectionScores(buckets.previous), [buckets.previous]);
   const selectedCloserName = useMemo(() => {
-    if (!isHOS) return user?.name || 'Closer';
+    if (!isManager) return user?.name || 'Closer';
     return managedClosers.find(closer => closer.id === selectedCloserId)?.name || 'Closer';
-  }, [isHOS, managedClosers, selectedCloserId, user?.name]);
+  }, [isManager, managedClosers, selectedCloserId, user?.name]);
 
   useEffect(() => {
     let mounted = true;
-    if (isHOS && !selectedCloserId) {
+    if (isManager && !selectedCloserId) {
       setPatterns([]);
       setPatternsLoading(false);
       return () => { mounted = false; };
     }
     setPatternsLoading(true);
-    const query = isHOS ? `?closer_id=${encodeURIComponent(selectedCloserId)}` : '';
+    const query = isManager ? `?closer_id=${encodeURIComponent(selectedCloserId)}` : '';
     apiFetch(`/patterns${query}`)
       .then(data => {
         if (!mounted) return;
@@ -171,7 +171,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
         setPatternsLoading(false);
       });
     return () => { mounted = false; };
-  }, [isHOS, selectedCloserId, toast]);
+  }, [isManager, selectedCloserId, toast]);
 
   const comparisonLabel = period.days
     ? `${period.days} derniers jours vs période précédente`
@@ -223,7 +223,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               {option.label}
             </button>
           ))}
-          {isHOS && (
+          {isManager && (
             <select
               value={selectedCloserId}
               onChange={event => setSelectedCloserId(event.target.value)}

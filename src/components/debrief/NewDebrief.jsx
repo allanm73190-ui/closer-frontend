@@ -120,7 +120,7 @@ function buildNotesState(configSections, previous = null) {
 
 function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, existingDebrief, fromPage, leadContext, autoAiAfterSave = true }) {
   const mob = useIsMobile();
-  const isHOS = user?.role === 'head_of_sales';
+  const isManager = user?.role === 'head_of_sales' || user?.role === 'admin';
   const isEditing = !!existingDebrief?.id;
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const templateCatalog = useMemo(
@@ -363,7 +363,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             </p>
           </div>
         </div>
-        {isHOS && (
+        {isManager && (
           <Btn
             variant="secondary"
             onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}

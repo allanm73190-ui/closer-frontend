@@ -112,7 +112,7 @@ function CloserTeamSettings({ toast }) {
 }
 
 function AccountSettings({ user, onClose, toast }) {
-  const isHOS = user.role === 'head_of_sales';
+  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
   const isCloser = user.role === 'closer';
   const [tab, setTab] = useState('profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
@@ -174,8 +174,8 @@ function AccountSettings({ user, onClose, toast }) {
             <div>
               <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:0 }}>{user.name}</p>
               <p style={{ fontSize:13, color:DS.textSecondary, margin:'2px 0 0' }}>{user.email}</p>
-              <span style={{ display:'inline-block', marginTop:4, background:isHOS?'#fef3c7':'rgba(253,232,228,.6)', color:isHOS?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
-                {isHOS ? '👑 Head of Sales' : '🎯 Closer'}
+              <span style={{ display:'inline-block', marginTop:4, background:isManager?'#fef3c7':'rgba(253,232,228,.6)', color:isManager?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
+                {user.role === 'admin' ? '🛡️ Admin' : isManager ? '👑 Head of Sales' : '🎯 Closer'}
               </span>
             </div>
           </div>

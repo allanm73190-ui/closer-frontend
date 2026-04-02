@@ -533,7 +533,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   const handleDelete = (id) => setDeals(prev => prev.filter(item => item.id !== id));
 
-  const isHOS = user.role === 'head_of_sales';
+  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
   const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
   const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
 
@@ -611,7 +611,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            {isHOS && (
+            {isManager && (
               <Btn
                 variant="secondary"
                 onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
@@ -701,7 +701,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
       </Card>
 
-      {isHOS && closers.length > 1 && (
+      {isManager && closers.length > 1 && (
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}

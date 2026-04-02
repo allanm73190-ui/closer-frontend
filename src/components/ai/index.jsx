@@ -166,7 +166,7 @@ function CommentsSection({ debriefId, user, toast }) {
                 <span style={{ fontWeight:600, fontSize:12, color:'var(--txt,#5a4a3a)' }}>{c.author_name}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(c.created_at)}</span>
-                  {(c.author_id === user.id || user.role === 'head_of_sales') && (
+                  {(c.author_id === user.id || user.role === 'head_of_sales' || user.role === 'admin') && (
                     <button onClick={()=>del(c.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:12, padding:0 }}>✕</button>
                   )}
                 </div>

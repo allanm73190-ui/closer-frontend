@@ -35,7 +35,7 @@ const SCORE_FILTERS = [
 
 function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
-  const isHOS = user.role === 'head_of_sales';
+  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
   const [patternsData, setPatternsData] = useState(null);
   const [patternsLoading, setPatternsLoading] = useState(true);
   const latestDebriefs = [...debriefs]
@@ -87,7 +87,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         </div>
       </Card>
 
-      {isHOS ? (
+      {isManager ? (
         <GamCard gam={gam}/>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1.1fr .9fr', gap:14 }}>
@@ -131,7 +131,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
           <div>
             <h2 style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>🧠 Détection de patterns</h2>
             <p style={{ margin:'3px 0 0', fontSize:12, color:DS.textMuted }}>
-              {isHOS ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
+              {isManager ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
             </p>
           </div>
           <Btn variant="secondary" onClick={()=>navigate('History')} style={{ fontSize:12, padding:'6px 11px' }}>
@@ -246,7 +246,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         </div>
         <MiniPipeline navigate={navigate} user={user}/>
       </div>
-      {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
+      {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
     </div>
   );
 }
@@ -343,7 +343,7 @@ function History({ debriefs, navigate, user }) {
   const [scoreFilter, setScoreFilter] = useState('all');
   const [objectionFilter, setObjectionFilter] = useState('all');
   const [prospectTypeFilter, setProspectTypeFilter] = useState('all');
-  const isHOS = user.role==='head_of_sales';
+  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
   const objectionOptions = [...new Set(
     debriefs.flatMap(d => (d.sections?.closing?.objections || []).filter(obj => obj && obj !== 'aucune'))
   )];
@@ -463,7 +463,7 @@ function History({ debriefs, navigate, user }) {
             {filtered.map(d => (
               <div key={d.id} style={{ display:'flex', alignItems:'stretch', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <DebriefCard debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isHOS}/>
+                  <DebriefCard debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isManager}/>
                 </div>
                 <Btn variant="secondary" onClick={()=>navigate('EditDebrief', d.id, 'History')} style={{ fontSize:12, padding:'0 12px' }}>
                   ✏️ Modifier

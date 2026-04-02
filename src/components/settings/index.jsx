@@ -21,6 +21,16 @@ function fieldLabelByKey(key) {
 
 function AccountSettingsSection({ user, toast }) {
   const isCloser = user.role === 'closer';
+  const roleLabel = user.role === 'admin'
+    ? 'Admin'
+    : user.role === 'head_of_sales'
+      ? 'Head of Sales'
+      : 'Closer';
+  const roleColor = user.role === 'admin'
+    ? '#7c3aed'
+    : user.role === 'head_of_sales'
+      ? '#c07830'
+      : '#3a7a9a';
   const [teamLoading, setTeamLoading] = useState(isCloser);
   const [team, setTeam] = useState(null);
   const [inviteCode, setInviteCode] = useState('');
@@ -101,8 +111,8 @@ function AccountSettingsSection({ user, toast }) {
           <div>
             <p style={{ margin:0, fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{user.name}</p>
             <p style={{ margin:'2px 0 0', fontSize:13, color:DS.textMuted }}>{user.email}</p>
-            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:user.role === 'head_of_sales' ? '#c07830' : '#3a7a9a' }}>
-              {user.role === 'head_of_sales' ? 'Head of Sales' : 'Closer'}
+            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:roleColor }}>
+              {roleLabel}
             </p>
           </div>
         </div>
@@ -260,8 +270,8 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
 }
 
 function SecurityTrustSection({ user, toast }) {
-  const isHOS = user.role === 'head_of_sales';
-  const [scope, setScope] = useState(isHOS ? 'team' : 'own');
+  const isAdmin = user.role === 'admin';
+  const [scope, setScope] = useState('all');
   const [posture, setPosture] = useState(null);
   const [audit, setAudit] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -271,7 +281,7 @@ function SecurityTrustSection({ user, toast }) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const effectiveScope = isHOS ? scope : 'own';
+      const effectiveScope = isAdmin ? scope : 'own';
       const [postureData, auditData] = await Promise.all([
         apiFetch('/security/posture'),
         apiFetch(`/security/audit?limit=40&scope=${encodeURIComponent(effectiveScope)}`),
@@ -284,7 +294,7 @@ function SecurityTrustSection({ user, toast }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isHOS, scope, toast]);
+  }, [isAdmin, scope, toast]);
 
   useEffect(() => {
     load();
@@ -327,13 +337,13 @@ function SecurityTrustSection({ user, toast }) {
             </p>
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-            {isHOS && (
+            {isAdmin && (
               <select
                 value={scope}
                 onChange={e=>setScope(e.target.value)}
                 style={{ border:'1px solid var(--border)', borderRadius:10, background:'var(--card,#fff)', padding:'8px 10px', fontSize:12, fontFamily:'inherit', color:'var(--txt,#5a4a3a)' }}
               >
-                <option value="team">Audit équipe</option>
+                <option value="all">Audit global</option>
                 <option value="own">Audit personnel</option>
               </select>
             )}
@@ -764,17 +774,19 @@ function SettingsPage({
   appSettings,
   onSaveAppSettings,
 }) {
+  const isAdmin = user.role === 'admin';
   const isHOS = user.role === 'head_of_sales';
+  const isManager = isAdmin || isHOS;
   const tabs = useMemo(() => ([
     { key:'account', label:'Compte' },
     { key:'app', label:'Application' },
-    { key:'security', label:'Sécurité' },
-    ...(isHOS ? [
+    ...(isAdmin ? [{ key:'security', label:'Sécurité' }] : []),
+    ...(isManager ? [
       { key:'debrief', label:'Debrief' },
       { key:'templates', label:'Templates' },
       { key:'pipeline', label:'Pipeline' },
     ] : []),
-  ]), [isHOS]);
+  ]), [isAdmin, isManager]);
   const [activeTab, setActiveTab] = useState(() => resolveSettingsTab(tabs, requestedTab));
 
   useEffect(() => {
@@ -830,11 +842,11 @@ function SettingsPage({
           toast={toast}
         />
       )}
-      {activeTab === 'security' && (
+      {activeTab === 'security' && isAdmin && (
         <SecurityTrustSection user={user} toast={toast} />
       )}
 
-      {activeTab === 'debrief' && isHOS && (
+      {activeTab === 'debrief' && isManager && (
         <Card style={{ padding:16 }}>
           <DebriefConfigEditor
             debriefConfig={debriefConfig}
@@ -846,7 +858,7 @@ function SettingsPage({
         </Card>
       )}
 
-      {activeTab === 'templates' && isHOS && (
+      {activeTab === 'templates' && isManager && (
         <DebriefTemplatesSection
           debriefTemplates={debriefTemplates}
           setDebriefTemplates={setDebriefTemplates}
@@ -854,7 +866,7 @@ function SettingsPage({
         />
       )}
 
-      {activeTab === 'pipeline' && isHOS && (
+      {activeTab === 'pipeline' && isManager && (
         <PipelineSettingsSection toast={toast} />
       )}
     </div>

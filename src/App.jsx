@@ -229,14 +229,17 @@ export default function App() {
   };
 
   const selDebrief = debriefs.find(d => d.id===selId);
-  const isHOS = user?.role === 'head_of_sales';
+  const role = user?.role || 'closer';
+  const isAdmin = role === 'admin';
+  const isHOS = role === 'head_of_sales';
+  const isManager = isAdmin || isHOS;
   const navItems = [
     { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
     { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
     { key:'Objections', label:'Objections', icon:'forum' },
     { key:'Benchmark', label:'Benchmark', icon:'query_stats' },
     { key:'Knowledge', label:'Connaissances', icon:'library_books' },
-    ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'groups' }] : []),
+    ...(isManager ? [{ key:'HOSPage', label:'Équipe', icon:'groups' }] : []),
     { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
     { key:'History',   label:'Historique', icon:'history' },
   ];
@@ -302,7 +305,7 @@ export default function App() {
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
       {page==='Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
       {page==='Knowledge' && <KnowledgePage navigate={navigate} toast={toast} />}
-      {page==='HOSPage' && isHOS && <HOSPage toast={toast} allDebriefs={debriefs}/>}
+      {page==='HOSPage' && isManager && <HOSPage toast={toast} allDebriefs={debriefs}/>}
       {page==='Settings' && (
         <SettingsPage
           user={user}
