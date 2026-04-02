@@ -258,14 +258,50 @@ export default function App() {
   const sidebarBg = theme === 'dark'
     ? 'linear-gradient(170deg,#25344d 0%, #1d2a40 58%, #3b2b3a 110%)'
     : `linear-gradient(165deg, ${P}, ${P2})`;
+  const globalThemeStyle = <style>{GLOBAL_CSS}</style>;
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
-  if (authLoading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
-  if (resetToken)  return <ResetPage token={resetToken} onDone={()=>{ setResetToken(null); setAuthView('login'); toast('Mot de passe modifié !'); }}/>;
+  if (authLoading) {
+    return (
+      <>
+        {globalThemeStyle}
+        <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Spinner/>
+        </div>
+      </>
+    );
+  }
+  if (resetToken) {
+    return (
+      <>
+        {globalThemeStyle}
+        <ResetPage token={resetToken} onDone={()=>{ setResetToken(null); setAuthView('login'); toast('Mot de passe modifié !'); }}/>
+      </>
+    );
+  }
   if (!user) {
-    if (authView==='register') return <RegisterPage onLogin={onLogin} goLogin={()=>setAuthView('login')}/>;
-    if (authView==='forgot')   return <ForgotPage   goLogin={()=>setAuthView('login')}/>;
-    return <LoginPage onLogin={onLogin} goRegister={()=>setAuthView('register')} goForgot={()=>setAuthView('forgot')}/>;
+    if (authView==='register') {
+      return (
+        <>
+          {globalThemeStyle}
+          <RegisterPage onLogin={onLogin} goLogin={()=>setAuthView('login')}/>
+        </>
+      );
+    }
+    if (authView==='forgot') {
+      return (
+        <>
+          {globalThemeStyle}
+          <ForgotPage goLogin={()=>setAuthView('login')}/>
+        </>
+      );
+    }
+    return (
+      <>
+        {globalThemeStyle}
+        <LoginPage onLogin={onLogin} goRegister={()=>setAuthView('register')} goForgot={()=>setAuthView('forgot')}/>
+      </>
+    );
   }
 
   // ─── Main app ──────────────────────────────────────────────────────────────
@@ -327,7 +363,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', color:'var(--txt,#5a4a3a)', position:'relative', overflow:'hidden' }}>
-      <style>{GLOBAL_CSS}</style>
+      {globalThemeStyle}
 
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}>
         <div style={{ position:'absolute', top:-160, right:-120, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.24) 0%, rgba(232,125,106,0) 72%)', animation:'floatY 10s ease-in-out infinite' }}/>
