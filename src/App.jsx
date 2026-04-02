@@ -70,8 +70,10 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false);
   const [gam,     setGam]     = useState(null);
   const [resetToken, setResetToken] = useState(null);
+  const [pendingDebriefLink, setPendingDebriefLink] = useState(null);
   const [burst,   setBurst]   = useState(null);
   const [autoAI, setAutoAI] = useState(false);
+  const [autoOpenExport, setAutoOpenExport] = useState(false);
   const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
   const [settingsTabRequest, setSettingsTabRequest] = useState('account');
@@ -87,7 +89,18 @@ export default function App() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const rt = p.get('reset_token');
-    if (rt) { setResetToken(rt); window.history.replaceState({}, '', window.location.pathname); }
+    if (rt) {
+      setResetToken(rt);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+    const deepDebriefId = p.get('debrief_id');
+    if (deepDebriefId) {
+      setPendingDebriefLink({
+        debriefId: deepDebriefId,
+        autoOpenExport: p.get('export') === '1',
+      });
+    }
   }, []);
 
   // Session expiry
@@ -155,10 +168,26 @@ export default function App() {
     if (from) setFrom(from);
     else if (p !== 'Detail') setFrom(null);
     setAutoAI(!!opts.autoAI);
+    setAutoOpenExport(!!opts.autoOpenExport);
     setLeadContext(opts.leadContext || null);
     if (opts.settingsTab) setSettingsTabRequest(opts.settingsTab);
     window.scrollTo({ top:0, behavior:'smooth' });
   };
+
+  useEffect(() => {
+    if (!user || !pendingDebriefLink || dataLoading) return;
+    const targetId = String(pendingDebriefLink.debriefId || '');
+    const target = debriefs.find(item => String(item.id) === targetId);
+    if (!target) {
+      toast('Debrief introuvable pour ce lien', 'error');
+      setPendingDebriefLink(null);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+    navigate('Detail', target.id, 'History', { autoOpenExport: !!pendingDebriefLink.autoOpenExport });
+    setPendingDebriefLink(null);
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [user, pendingDebriefLink, dataLoading, debriefs, toast]);
 
   const saveAppSettings = async (nextSettings, options = {}) => {
     const { silent = false } = options;
@@ -203,6 +232,8 @@ export default function App() {
     setPage('Dashboard');
     setAuthView('login');
     setAutoAiAfterDebrief(true);
+    setAutoOpenExport(false);
+    setPendingDebriefLink(null);
     setSettingsTabRequest('account');
     toast('Déconnecté');
   };
@@ -336,7 +367,7 @@ export default function App() {
         />
       )}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
+      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI} autoOpenExport={autoOpenExport}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
       {page==='Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}

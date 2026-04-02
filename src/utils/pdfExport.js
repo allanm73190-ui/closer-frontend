@@ -1213,6 +1213,28 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
   targetWindow.focus();
 }
 
+export function openDebriefPdfPreviewTab(payload) {
+  const targetWindow = openDebriefPdfWindow(payload?.debrief || {});
+  renderDebriefPdfWindow(targetWindow, payload);
+  return targetWindow;
+}
+
+export function printDebriefPdfFromPreview(payload) {
+  const targetWindow = openDebriefPdfPreviewTab(payload);
+  const triggerPrint = () => {
+    try {
+      targetWindow.focus();
+      targetWindow.print();
+    } catch {}
+  };
+
+  if (targetWindow?.document?.readyState === 'complete') {
+    setTimeout(triggerPrint, 180);
+  } else {
+    targetWindow.addEventListener('load', () => setTimeout(triggerPrint, 180), { once: true });
+  }
+}
+
 export async function downloadDebriefPdf(payload) {
   const ctx = buildExportContext(payload || {});
   const {
