@@ -265,7 +265,7 @@ export default function App() {
     return (
       <>
         {globalThemeStyle}
-        <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{minHeight:'100vh',background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))',display:'flex',alignItems:'center',justifyContent:'center'}}>
           <Spinner/>
         </div>
       </>
@@ -362,7 +362,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)', color:'var(--txt,#5a4a3a)', position:'relative', overflow:'hidden' }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))', color:'var(--txt,#5a4a3a)', position:'relative', overflow:'hidden' }}>
       {globalThemeStyle}
 
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}>

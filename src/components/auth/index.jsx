@@ -52,7 +52,7 @@ const linkBtn = {
 function AuthShell({ title, subtitle, children, wide=false }) {
   const mob = useIsMobile();
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-120, right:-110, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.26), rgba(232,125,106,0) 72%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:-120, left:-120, width:330, height:330, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.24), rgba(106,172,206,0) 72%)', pointerEvents:'none' }} />
 
