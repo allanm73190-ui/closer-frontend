@@ -300,6 +300,28 @@ function buildExecutiveHighlights({ keyBullets, topSections, prioritySections, d
   return dedupeStrings(highlights).slice(0, 6);
 }
 
+function computeClosingRate(allDebriefs = [], fallbackDebrief = {}) {
+  const pool = Array.isArray(allDebriefs) && allDebriefs.length > 0 ? allDebriefs : [fallbackDebrief];
+  const total = pool.length;
+  if (total <= 0) return 0;
+  const closed = pool.filter(item => !!item?.is_closed).length;
+  return Math.round((closed / total) * 100);
+}
+
+function computeAiConfidence({ percentage = 0, hasAnalysis = false, signalCount = 0 }) {
+  const base = 52 + Math.round(percentage * 0.35);
+  const analysisBoost = hasAnalysis ? 8 : 0;
+  const signalBoost = Math.min(8, signalCount * 2);
+  return Math.max(40, Math.min(97, base + analysisBoost + signalBoost));
+}
+
+function buildNextCallGoal({ prioritySections = [], actionPriority = '' }) {
+  const weakest = Array.isArray(prioritySections) && prioritySections.length > 0 ? prioritySections[0] : null;
+  if (!weakest) return actionPriority || 'Stabiliser le closing avant le prochain appel.';
+  const target = Math.min(5, Number(weakest.score || 0) + 1.0);
+  return `${cleanSectionLabel(weakest.label)} à ${target.toFixed(1)}/5 au prochain appel`;
+}
+
 function buildDecisionSummary({ debrief, percentage, scoreReading, dominantObjection, actionPriority }) {
   const status = debrief?.is_closed ? 'Closé' : 'Non closé';
   const objectionText = String(dominantObjection || '').toLowerCase().includes('aucune')
@@ -308,7 +330,7 @@ function buildDecisionSummary({ debrief, percentage, scoreReading, dominantObjec
   return `Verdict ${status} · ${percentage}% (${scoreReading}) · ${objectionText}. Priorité suivante: ${actionPriority}`;
 }
 
-function buildExportContext({ debrief, comments = [], analysis = '' }) {
+function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs = [] }) {
   const safeDebrief = debrief || {};
   const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
   const percentage = Math.round(safeDebrief.percentage || 0);
@@ -331,6 +353,15 @@ function buildExportContext({ debrief, comments = [], analysis = '' }) {
       }))
     )
     .slice(0, 8);
+  const signalCount = signals.length;
+  const closingRate = computeClosingRate(allDebriefs, safeDebrief);
+  const debriefCount = Array.isArray(allDebriefs) && allDebriefs.length > 0 ? allDebriefs.length : 1;
+  const aiConfidence = computeAiConfidence({
+    percentage,
+    hasAnalysis: !!String(analysis || '').trim(),
+    signalCount,
+  });
+  const nextCallGoal = buildNextCallGoal({ prioritySections, actionPriority });
   const executiveHighlights = buildExecutiveHighlights({
     keyBullets,
     topSections,
@@ -359,11 +390,15 @@ function buildExportContext({ debrief, comments = [], analysis = '' }) {
     actionPriority,
     keyBullets,
     analysisLines,
-    latestComments: [...comments].slice(-2).reverse(),
+    latestComments: [...comments].slice(-4).reverse(),
     dominantObjection,
+    debriefCount,
+    closingRate,
+    aiConfidence,
+    nextCallGoal,
     risk,
     sectionInsights,
-    signals: signals.slice(0, 4),
+    signals,
     executiveHighlights: executiveHighlights.slice(0, 4),
     analysisDigest,
     decisionSummary,
@@ -445,6 +480,10 @@ function buildDebriefPdfHtml(payload) {
     actionPriority,
     latestComments,
     dominantObjection,
+    debriefCount,
+    closingRate,
+    aiConfidence,
+    nextCallGoal,
     risk,
     sectionInsights,
     signals,
@@ -454,35 +493,26 @@ function buildDebriefPdfHtml(payload) {
     scoreReading,
   } = ctx;
 
-  const riskToneClass = risk.tone === 'good' ? 'chip--good' : risk.tone === 'warn' ? 'chip--warn' : 'chip--danger';
+  const riskToneClass = risk.tone === 'good'
+    ? 'kpi-value--good'
+    : risk.tone === 'warn'
+      ? 'kpi-value--warn'
+      : 'kpi-value--danger';
 
   const highlightsHtml = executiveHighlights.length > 0
     ? `<ul class="list">${executiveHighlights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
     : '<p class="hint">Aucune synthèse disponible.</p>';
 
-  const signalsHtml = signals.length > 0
-    ? `<ul class="list list--signals">${signals.map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 180))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun champ libre significatif n’a été saisi sur ce debrief.</p>';
-
-  const scoreRows = sectionInsights.map(section => `
-    <article class="score-row">
-      <div class="score-row__head">
-        <strong>${escapeHtml(section.label)}</strong>
-        <span style="color:${barColor(section.score)}">${section.score}/5</span>
-      </div>
-      <div class="score-row__track">
-        <div class="score-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
-      </div>
-      <p class="score-row__focus">${escapeHtml(truncateText(section.focus || 'Aucun axe explicite saisi pour cette section.', 170))}</p>
-    </article>
-  `).join('');
-
   const analysisHtml = analysisDigest.length > 0
     ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
     : '<p class="hint">Aucune analyse IA disponible.</p>';
 
+  const keySignalsHtml = signals.length > 0
+    ? `<ul class="list list--signals">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 160))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucun signal terrain saisi.</p>';
+
   const commentsHtml = latestComments.length > 0
-    ? latestComments.map(comment => `
+    ? latestComments.slice(0, 4).map(comment => `
       <div class="comment">
         <p class="comment__meta"><strong>${escapeHtml(comment.author_name || 'Équipe')}</strong> · ${escapeHtml(fmtDate(comment.created_at))}</p>
         <p>${renderText(comment.content || '')}</p>
@@ -490,24 +520,102 @@ function buildDebriefPdfHtml(payload) {
     `).join('')
     : '<p class="hint">Aucun commentaire équipe sur ce debrief.</p>';
 
-  const annexHtml = sectionInsights.map(section => {
-    const evidence = section.evidence.length > 0
-      ? `<ul class="mini-list">${section.evidence.map(item => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(truncateText(item.value, 150))}</li>`).join('')}</ul>`
-      : '<p class="hint" style="margin-top:6px;">Aucun détail libre saisi.</p>';
+  const sectionBarsHtml = sectionInsights.map(section => `
+    <div class="bar-row">
+      <div class="bar-row__label">
+        <span>${escapeHtml(section.label)}</span>
+        <strong>${section.score}/5</strong>
+      </div>
+      <div class="bar-row__track">
+        <div class="bar-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
+      </div>
+    </div>
+  `).join('');
 
+  const detailRowsHtml = sectionInsights.map(section => {
+    const evidence = section.evidence.length > 0
+      ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 110)}`).join(' · ')
+      : 'Aucun signal libre explicite.';
     return `
-      <article class="annex-card">
-        <div class="annex-card__head">
+      <article class="detail-row">
+        <div class="detail-row__head">
           <h3>${escapeHtml(section.label)}</h3>
           <span style="color:${barColor(section.score)}">${section.score}/5</span>
         </div>
-        <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
-        <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
-        <p><strong>Action ciblée:</strong> ${escapeHtml(section.improvement || 'Non renseigné')}</p>
-        ${evidence}
+        <div class="detail-row__track">
+          <div class="detail-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
+        </div>
+        <p><strong>Focus:</strong> ${escapeHtml(section.focus || 'Non renseigné')}</p>
+        <p><strong>Signaux:</strong> ${escapeHtml(evidence)}</p>
       </article>
     `;
   }).join('');
+
+  const annexHtml = sectionInsights.map(section => `
+    <article class="annex-card">
+      <div class="annex-card__head">
+        <h3>${escapeHtml(section.label)}</h3>
+        <span style="color:${barColor(section.score)}">${section.score}/5</span>
+      </div>
+      <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
+      <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
+      <p><strong>Action ciblée:</strong> ${escapeHtml(section.improvement || 'Non renseigné')}</p>
+    </article>
+  `).join('');
+
+  const keySignal = signals[0]
+    ? `${signals[0].section} · ${signals[0].label}: ${truncateText(signals[0].value, 95)}`
+    : 'Aucun signal prioritaire détecté.';
+
+  const radarSvg = (() => {
+    const axes = sectionInsights.length > 0
+      ? sectionInsights
+      : SECTION_DETAILS_ORDER.map(section => ({
+        key: section.key,
+        label: cleanSectionLabel(section.label),
+        score: 0,
+      }));
+    const count = axes.length || 5;
+    const cx = 132;
+    const cy = 132;
+    const outer = 92;
+    const point = (index, value) => {
+      const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / count);
+      const ratio = Math.max(0, Math.min(5, Number(value || 0))) / 5;
+      const radius = outer * ratio;
+      return {
+        x: cx + (Math.cos(angle) * radius),
+        y: cy + (Math.sin(angle) * radius),
+      };
+    };
+    const ring = value => axes.map((_, index) => {
+      const p = point(index, value);
+      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(' ');
+    const spokes = axes.map((_, index) => {
+      const p = point(index, 5);
+      return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="#E8D9CD" stroke-width="1"/>`;
+    }).join('');
+    const labels = axes.map((axis, index) => {
+      const p = point(index, 5.9);
+      const anchor = p.x < cx - 22 ? 'end' : p.x > cx + 22 ? 'start' : 'middle';
+      return `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="${anchor}" style="font:600 10px Inter,system-ui,sans-serif;fill:#7C695B;">${escapeHtml(cleanSectionLabel(axis.label || axis.key || 'Section'))}</text>`;
+    }).join('');
+    const dataPolygon = axes.map((axis, index) => {
+      const p = point(index, axis.score);
+      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(' ');
+    return `
+      <svg viewBox="0 0 264 264" width="100%" height="250" role="img" aria-label="Radar compétences">
+        <polygon points="${ring(5)}" fill="none" stroke="#E8D9CD" stroke-width="2"/>
+        <polygon points="${ring(3.5)}" fill="none" stroke="#E8D9CD" stroke-width="1.4"/>
+        <polygon points="${ring(2)}" fill="none" stroke="#E8D9CD" stroke-width="1.1"/>
+        ${spokes}
+        <polygon points="${dataPolygon}" fill="rgba(232,125,106,0.22)" stroke="#D4604E" stroke-width="3"/>
+        ${labels}
+      </svg>
+    `;
+  })();
 
   return `<!doctype html>
   <html lang="fr">
@@ -517,25 +625,25 @@ function buildDebriefPdfHtml(payload) {
       <title>${escapeHtml(title)}</title>
       <style>
         :root {
-          --text: #3b2f27;
-          --muted: #8f7d6e;
-          --line: #ead8cb;
-          --bg: #f8f4f0;
-          --paper: #ffffff;
-          --accent-dark: #d4604e;
+          --text: #352a22;
+          --muted: #847264;
+          --line: #eadccf;
+          --paper: #fffdfa;
+          --hero-dark: #253043;
+          --hero-coral: #e87d6a;
         }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
           font-family: Inter, system-ui, sans-serif;
-          background: var(--bg);
+          background: linear-gradient(150deg, #eff2f9 0%, #f7efe8 100%);
           color: var(--text);
         }
         .topbar {
           position: sticky;
           top: 0;
           z-index: 10;
-          background: rgba(255,255,255,.92);
+          background: rgba(255,255,255,.9);
           border-bottom: 1px solid var(--line);
           padding: 10px 16px;
           font-size: 12px;
@@ -560,20 +668,19 @@ function buildDebriefPdfHtml(payload) {
           text-transform: uppercase;
           letter-spacing: .1em;
           font-weight: 700;
-          color: #8f7d6e;
+          color: #8d7769;
         }
-        .hero {
+        .hero-cockpit {
           display: grid;
           grid-template-columns: 1fr minmax(220px, 260px);
-          gap: 16px;
+          gap: 14px;
           align-items: stretch;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
         .hero-main {
-          border: 1px solid var(--line);
-          border-radius: 16px;
-          padding: 16px;
-          background: linear-gradient(160deg, #fffaf6 0%, #fff1ea 100%);
+          border-radius: 18px;
+          padding: 18px;
+          background: linear-gradient(110deg, var(--hero-dark) 0%, #2f3d53 45%, var(--hero-coral) 100%);
         }
         .kicker {
           margin: 0 0 8px;
@@ -581,41 +688,39 @@ function buildDebriefPdfHtml(payload) {
           text-transform: uppercase;
           letter-spacing: .1em;
           font-weight: 700;
-          color: #a48572;
+          color: #d6dde8;
         }
         .hero-main h1 {
           margin: 0;
-          font-size: 29px;
+          font-size: 31px;
           line-height: 1.14;
+          color: #fff;
         }
         .hero-meta {
           margin: 8px 0 0;
-          color: #7a6557;
-          font-size: 14px;
+          color: #f7f1eb;
+          font-size: 15px;
         }
-        .chips {
+        .hero-tags {
           margin-top: 12px;
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
         }
-        .chip {
-          border: 1px solid var(--line);
-          background: #fff;
-          color: #6f5f51;
+        .tag {
+          border: 1px solid rgba(255,255,255,.24);
+          background: rgba(255,255,255,.14);
+          color: #fff;
           font-size: 11px;
           font-weight: 700;
           border-radius: 999px;
-          padding: 6px 10px;
+          padding: 6px 11px;
         }
-        .chip--good { background: #ecfdf5; border-color: #8ce4bf; color: #166534; }
-        .chip--warn { background: #fffbeb; border-color: #f9cf8a; color: #92400e; }
-        .chip--danger { background: #fef2f2; border-color: #f8c6c6; color: #991b1b; }
         .hero-score {
-          border: 1px solid #f1cabf;
-          border-radius: 16px;
-          background: linear-gradient(160deg, #fef2ec 0%, #ffe8df 100%);
-          padding: 14px;
+          border: 1px solid #f2ddd2;
+          border-radius: 18px;
+          background: #fff6f2;
+          padding: 16px;
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -628,34 +733,109 @@ function buildDebriefPdfHtml(payload) {
         .hero-score strong {
           display: block;
           margin-top: 6px;
-          font-size: 54px;
+          font-size: 56px;
           line-height: 1;
-          color: var(--accent-dark);
+          color: #d4604e;
         }
         .hero-score small {
           font-size: 13px;
           color: #795f51;
           margin-top: 6px;
         }
-        .decision {
+        .kpi-grid {
           margin-top: 12px;
-          border: 1px solid #f3d7ca;
-          border-radius: 12px;
-          background: linear-gradient(160deg, #fff8f4 0%, #fff1ea 100%);
-          padding: 14px;
+          display: grid;
+          gap: 10px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
-        .decision h2 {
-          margin: 0 0 6px;
-          font-size: 13px;
-          text-transform: uppercase;
-          letter-spacing: .06em;
-          color: #8a6b5a;
+        .kpi-card {
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          background: #fff;
+          padding: 12px 14px;
         }
-        .decision p {
+        .kpi-title {
           margin: 0;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #5d4b3e;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .1em;
+          color: #8e796b;
+          font-weight: 700;
+        }
+        .kpi-value {
+          margin: 10px 0 0;
+          font-size: 34px;
+          line-height: 1;
+          font-weight: 800;
+          color: #364359;
+        }
+        .kpi-value--good { color: #2f7a4a; }
+        .kpi-value--warn { color: #d97706; }
+        .kpi-value--danger { color: #dc2626; }
+        .kpi-sub {
+          margin: 8px 0 0;
+          font-size: 12px;
+          color: #7e6b5d;
+        }
+        .cockpit-grid {
+          margin-top: 12px;
+          display: grid;
+          gap: 10px;
+          grid-template-columns: 1fr 1fr;
+        }
+        .cockpit-card {
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          background: #fff;
+          padding: 12px;
+        }
+        .cockpit-card h2 {
+          margin: 0 0 8px;
+          font-size: 18px;
+          color: #3f3128;
+        }
+        .radar-note {
+          margin: 4px 0 0;
+          font-size: 12px;
+          color: #7d6a5d;
+        }
+        .bar-row + .bar-row { margin-top: 9px; }
+        .bar-row__label {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 4px;
+          font-size: 13px;
+        }
+        .bar-row__track {
+          height: 10px;
+          border-radius: 999px;
+          background: #efe2d8;
+          overflow: hidden;
+        }
+        .bar-row__fill {
+          height: 100%;
+          border-radius: inherit;
+        }
+        .signal-card {
+          margin-top: 10px;
+          border: 1px solid #f1e2d7;
+          border-radius: 12px;
+          background: #fff8f4;
+          padding: 10px;
+        }
+        .signal-card h3 {
+          margin: 0 0 6px;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: .08em;
+          color: #ab5c49;
+        }
+        .signal-card p {
+          margin: 0;
+          font-size: 13px;
+          color: #6a584b;
+          line-height: 1.45;
         }
         .split {
           margin-top: 12px;
@@ -671,8 +851,21 @@ function buildDebriefPdfHtml(payload) {
         }
         .panel h2 {
           margin: 0 0 8px;
-          font-size: 14px;
-          color: #4e4035;
+          font-size: 16px;
+          color: #433329;
+        }
+        .decision {
+          margin: 8px 0 0;
+          padding: 10px;
+          border: 1px solid #f1e2d7;
+          border-radius: 12px;
+          background: #fffbf8;
+        }
+        .decision p {
+          margin: 0;
+          font-size: 13px;
+          color: #5f4e41;
+          line-height: 1.48;
         }
         .hint {
           margin: 0;
@@ -690,38 +883,46 @@ function buildDebriefPdfHtml(payload) {
         .list--signals li strong {
           color: #5a4a3a;
         }
-        .score-rows {
+        .detail-grid {
           display: grid;
           gap: 10px;
         }
-        .score-row {
-          border: 1px solid #f0e1d7;
-          border-radius: 10px;
+        .detail-row {
+          border: 1px solid #f1e2d7;
+          border-radius: 12px;
           padding: 10px;
-          background: #fffcfa;
+          background: #fffdfa;
         }
-        .score-row__head {
+        .detail-row__head {
           display: flex;
           justify-content: space-between;
           gap: 8px;
           align-items: baseline;
           margin-bottom: 6px;
-          font-size: 13px;
         }
-        .score-row__track {
+        .detail-row__head h3 {
+          margin: 0;
+          font-size: 14px;
+        }
+        .detail-row__head span {
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .detail-row__track {
           height: 10px;
           border-radius: 999px;
-          background: #f2e2d8;
+          background: #efe2d8;
           overflow: hidden;
+          margin-bottom: 7px;
         }
-        .score-row__fill {
+        .detail-row__fill {
           height: 100%;
           border-radius: inherit;
         }
-        .score-row__focus {
-          margin: 8px 0 0;
+        .detail-row p {
+          margin: 5px 0 0;
           font-size: 12px;
-          color: #705f52;
+          color: #6f5d4f;
           line-height: 1.45;
         }
         .comment + .comment {
@@ -739,14 +940,10 @@ function buildDebriefPdfHtml(payload) {
           font-size: 12px;
           line-height: 1.45;
         }
-        .panel--soft {
-          margin-top: 12px;
-          background: #fcf8f4;
-        }
         .annex-grid {
           margin-top: 8px;
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 10px;
         }
         .annex-card {
@@ -771,14 +968,6 @@ function buildDebriefPdfHtml(payload) {
           line-height: 1.45;
           color: #6f5e50;
         }
-        .mini-list {
-          margin: 6px 0 0;
-          padding-left: 16px;
-          font-size: 12px;
-          color: #6f5e50;
-          line-height: 1.4;
-        }
-        .mini-list li + li { margin-top: 4px; }
         .footer {
           margin-top: 12px;
           border-top: 1px solid var(--line);
@@ -791,7 +980,9 @@ function buildDebriefPdfHtml(payload) {
         }
         @media (max-width: 860px) {
           .pdf-page { padding: 16px; border-radius: 14px; }
-          .hero { grid-template-columns: 1fr; }
+          .hero-cockpit { grid-template-columns: 1fr; }
+          .kpi-grid { grid-template-columns: 1fr; }
+          .cockpit-grid { grid-template-columns: 1fr; }
           .split { grid-template-columns: 1fr; }
           .annex-grid { grid-template-columns: 1fr; }
         }
@@ -818,78 +1009,98 @@ function buildDebriefPdfHtml(payload) {
       </style>
     </head>
     <body>
-      <div class="topbar">Prévisualisation PDF: 1 page principale (clés), 1 page secondaire (détails).</div>
+      <div class="topbar">Prévisualisation PDF · Style Data Cockpit (mockup 4) · 2 pages.</div>
       <main class="pdf-stack">
         <section class="pdf-page">
           <p class="page-label">Page principale · Éléments clés</p>
-          <section class="hero">
+          <section class="hero-cockpit">
             <div class="hero-main">
-              <p class="kicker">Export debrief priorisé</p>
-              <h1>${escapeHtml(debrief.prospect_name || 'Prospect non renseigné')}</h1>
+              <p class="kicker">PDF Debrief | Data Cockpit</p>
+              <h1>Performance cockpit debrief</h1>
               <p class="hero-meta">
-                ${escapeHtml(fmtDate(debrief.call_date))} · ${escapeHtml(debrief.closer_name || debrief.user_name || 'Closer non renseigné')}
+                Prospect: ${escapeHtml(debrief.prospect_name || 'Non renseigné')}
+                · Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')}
+                · Date: ${escapeHtml(fmtDate(debrief.call_date))}
               </p>
-              <div class="chips">
-                <span class="chip">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
-                <span class="chip ${riskToneClass}">${escapeHtml(risk.label)}</span>
-                <span class="chip">Objection: ${escapeHtml(dominantObjection)}</span>
+              <div class="hero-tags">
+                <span class="tag">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
+                <span class="tag">Objection: ${escapeHtml(dominantObjection)}</span>
+                <span class="tag">${escapeHtml(scoreReading)}</span>
               </div>
             </div>
             <aside class="hero-score">
-              <p>Score global</p>
+              <p>Score</p>
               <strong>${score20}</strong>
-              <small>/20 · ${percentage}% · ${escapeHtml(scoreReading)}</small>
+              <small>/20 · ${percentage}%</small>
             </aside>
           </section>
 
-          <section class="decision">
-            <h2>Résumé décisionnel</h2>
-            <p>${escapeHtml(decisionSummary)}</p>
+          <section class="kpi-grid">
+            <article class="kpi-card">
+              <p class="kpi-title">Taux closing</p>
+              <p class="kpi-value kpi-value--good">${closingRate}%</p>
+              <p class="kpi-sub">${debriefCount} debrief(s)</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-title">Risque deal</p>
+              <p class="kpi-value ${riskToneClass}">${escapeHtml(risk.label.replace('Risque ', ''))}</p>
+              <p class="kpi-sub">${debrief.is_closed ? 'Issue gagnée' : 'Issue à confirmer'}</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-title">Confiance IA</p>
+              <p class="kpi-value">${aiConfidence}%</p>
+              <p class="kpi-sub">base signaux + score</p>
+            </article>
           </section>
 
-          <section class="split">
-            <article class="panel">
-              <h2>Essentiel (4 points max)</h2>
-              ${highlightsHtml}
+          <section class="cockpit-grid">
+            <article class="cockpit-card">
+              <h2>Radar compétences</h2>
+              ${radarSvg}
+              <p class="radar-note">Pleine: ce debrief · Axes: découverte à closing</p>
             </article>
-            <article class="panel">
-              <h2>Plan immédiat</h2>
-              <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#604f42;">${escapeHtml(actionPriority)}</p>
-              <ul class="list">
-                <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
-                <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
-              </ul>
-              ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 190))}</p>` : ''}
+            <article class="cockpit-card">
+              <h2>Barres par section</h2>
+              ${sectionBarsHtml}
+              <div class="signal-card">
+                <h3>Signal prioritaire</h3>
+                <p>${escapeHtml(keySignal)}</p>
+              </div>
             </article>
           </section>
 
           <section class="split" style="margin-top:12px;">
             <article class="panel">
-              <h2>Synthèse IA en bref</h2>
+              <h2>Synthèse IA court format</h2>
               ${analysisHtml}
+              <div class="decision" style="margin-top:10px;">
+                <p>${escapeHtml(decisionSummary)}</p>
+              </div>
             </article>
             <article class="panel">
-              <h2>Repères rapides</h2>
+              <h2>Next Call Goal</h2>
+              <p style="margin:0 0 8px;font-size:14px;color:#5f4d40;line-height:1.5;">${escapeHtml(nextCallGoal)}</p>
               <ul class="list">
-                <li>Statut: ${debrief.is_closed ? 'Closé' : 'Non closé'}</li>
-                <li>Score: ${score20}/20</li>
-                <li>Risque: ${escapeHtml(risk.label)}</li>
+                <li>Action prioritaire: ${escapeHtml(actionPriority)}</li>
+                <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
+                <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
               </ul>
+              ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 170))}</p>` : ''}
             </article>
           </section>
         </section>
 
         <section class="pdf-page">
           <p class="page-label">Page secondaire · Détails complets</p>
-          <section class="panel" style="margin-top:0;">
+          <section class="panel">
             <h2>Performance détaillée par section</h2>
-            <div class="score-rows">${scoreRows}</div>
+            <div class="detail-grid">${detailRowsHtml}</div>
           </section>
 
           <section class="split" style="margin-top:12px;">
             <article class="panel">
               <h2>Verbatims décisifs (champs libres)</h2>
-              ${signalsHtml}
+              ${keySignalsHtml}
             </article>
             <article class="panel">
               <h2>Commentaires équipe</h2>
@@ -897,8 +1108,8 @@ function buildDebriefPdfHtml(payload) {
             </article>
           </section>
 
-          <section class="panel panel--soft">
-            <h2>Annexe détaillée</h2>
+          <section class="panel">
+            <h2>Annexe compacte</h2>
             <div class="annex-grid">${annexHtml}</div>
           </section>
 
@@ -947,6 +1158,11 @@ export async function downloadDebriefPdf(payload) {
     actionPriority,
     latestComments,
     dominantObjection,
+    debriefCount,
+    closingRate,
+    aiConfidence,
+    nextCallGoal,
+    risk,
     sectionInsights,
     signals,
     executiveHighlights,
@@ -1051,42 +1267,39 @@ export async function downloadDebriefPdf(payload) {
     });
   };
 
-  ensureSpace(24);
-  doc.setFillColor(255, 245, 238);
-  doc.setDrawColor(240, 208, 194);
-  doc.roundedRect(margin, y - 2, contentW, 24, 3, 3, 'FD');
+  ensureSpace(26);
+  doc.setFillColor(37, 48, 67);
+  doc.setDrawColor(37, 48, 67);
+  doc.roundedRect(margin, y - 2, contentW, 26, 3, 3, 'FD');
+  doc.setFillColor(232, 125, 106);
+  doc.roundedRect(margin + contentW - 45, y - 2, 45, 26, 0, 3, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16.8);
-  doc.setTextColor(73, 58, 47);
-  doc.text('Export Debrief', margin + 3, y + 4.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Performance cockpit debrief', margin + 3, y + 4.5);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.2);
-  doc.setTextColor(118, 100, 86);
-  doc.text('Lecture stratégique priorisée', margin + 3, y + 9.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(73, 58, 47);
-  doc.text(truncateText(debrief.prospect_name || 'Prospect non renseigné', 56), margin + 3, y + 15);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(128, 108, 93);
-  doc.text(`${fmtDate(debrief.call_date)} · ${debrief.closer_name || debrief.user_name || 'Closer non renseigné'}`, margin + 3, y + 19.3);
+  doc.setFontSize(9.8);
+  doc.setTextColor(225, 232, 242);
+  doc.text('PDF Debrief | Data Cockpit', margin + 3, y + 9.2);
+  doc.setTextColor(245, 247, 250);
+  doc.text(`Prospect: ${truncateText(debrief.prospect_name || 'Non renseigné', 32)} · Closer: ${truncateText(debrief.closer_name || debrief.user_name || 'Non renseigné', 22)}`, margin + 3, y + 14.2);
+  doc.text(`Date: ${fmtDate(debrief.call_date)} · ${debrief.is_closed ? 'Closé' : 'Non closé'} · ${dominantObjection}`, margin + 3, y + 18.9);
 
   const scoreBoxW = 38;
   const scoreBoxX = pageW - margin - scoreBoxW;
-  doc.setFillColor(255, 234, 226);
-  doc.setDrawColor(240, 192, 175);
-  doc.roundedRect(scoreBoxX, y + 1, scoreBoxW, 20, 2, 2, 'FD');
+  doc.setFillColor(255, 246, 241);
+  doc.setDrawColor(241, 214, 201);
+  doc.roundedRect(scoreBoxX, y + 1.4, scoreBoxW, 20.5, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.setTextColor(212, 96, 78);
-  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 10.8, { align: 'center' });
+  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 11.2, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.6);
   doc.setTextColor(122, 101, 88);
-  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 15.7, { align: 'center' });
-  y += 27;
+  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 16.2, { align: 'center' });
+  y += 29;
 
   drawDivider();
   writeText(decisionSummary, {
@@ -1122,17 +1335,45 @@ export async function downloadDebriefPdf(payload) {
   const priorityLines = prioritySections.length > 0
     ? prioritySections.map(section => `${cleanSectionLabel(section.label)} (${section.score}/5)`)
     : ['Non renseigné'];
-  drawSummaryCard(margin, cardTop, cardW, 24, 'Forces', topLines, [255, 246, 241]);
-  drawSummaryCard(margin + cardW + 4, cardTop, cardW, 24, 'Axes critiques', priorityLines, [255, 250, 241]);
-  drawSummaryCard(margin + (cardW + 4) * 2, cardTop, cardW, 24, 'Action', [truncateText(actionPriority, 92)], [243, 250, 246]);
+  drawSummaryCard(
+    margin,
+    cardTop,
+    cardW,
+    24,
+    'Taux closing',
+    [`${closingRate}%`, `${debriefCount} debrief(s)`],
+    [244, 250, 255],
+  );
+  drawSummaryCard(
+    margin + cardW + 4,
+    cardTop,
+    cardW,
+    24,
+    'Risque deal',
+    [risk.label, `Objection: ${truncateText(dominantObjection, 42)}`],
+    [255, 249, 241],
+  );
+  drawSummaryCard(
+    margin + (cardW + 4) * 2,
+    cardTop,
+    cardW,
+    24,
+    'Confiance IA',
+    [`${aiConfidence}%`, truncateText(nextCallGoal, 62)],
+    [245, 250, 246],
+  );
   y += 28;
 
-  sectionTitle('Synthèse IA en bref');
+  sectionTitle('Synthèse IA court format');
   if (analysisDigest.length > 0) {
     analysisDigest.slice(0, 3).forEach(item => writeBullet(item, { size: 9.8 }));
   } else {
     writeBullet('Aucune synthèse IA disponible.');
   }
+  writeText(`Next call goal: ${nextCallGoal}`, {
+    size: 9.2,
+    color: [88, 75, 65],
+  });
   if (debrief.notes) {
     writeText(`Note closer: ${truncateText(debrief.notes, 170)}`, {
       size: 9.2,
@@ -1143,7 +1384,7 @@ export async function downloadDebriefPdf(payload) {
   doc.addPage();
   y = margin;
 
-  sectionTitle('Détails complets');
+  sectionTitle('Cockpit détaillé');
   writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
     size: 9.9,
     color: [112, 94, 80],
