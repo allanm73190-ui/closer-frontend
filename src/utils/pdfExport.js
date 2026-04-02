@@ -330,6 +330,64 @@ function buildDecisionSummary({ debrief, percentage, scoreReading, dominantObjec
   return `Verdict ${status} · ${percentage}% (${scoreReading}) · ${objectionText}. Priorité suivante: ${actionPriority}`;
 }
 
+function normalizeAiLine(line = '') {
+  return String(line || '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/`/g, '')
+    .replace(/^[-•]\s*/, '')
+    .trim();
+}
+
+function pickAiLine(lines = [], patterns = []) {
+  const source = Array.isArray(lines) ? lines : [];
+  const tests = Array.isArray(patterns) ? patterns : [];
+  for (const line of source) {
+    const normalized = normalizeAiLine(line);
+    if (!normalized) continue;
+    if (tests.some(pattern => pattern.test(normalized))) return normalized;
+  }
+  return '';
+}
+
+function buildAiInsights({ analysisLines = [], actionPriority = '', topSections = [], prioritySections = [] }) {
+  const cleanLines = dedupeStrings((analysisLines || []).map(normalizeAiLine).filter(Boolean));
+  const strongFallback = topSections[0]
+    ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
+    : 'Levier principal non identifié.';
+  const weakFallback = prioritySections[0]
+    ? `Point faible principal: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
+    : 'Point faible principal non identifié.';
+
+  const pointFort = pickAiLine(cleanLines, [/point fort|strength|atout|réussi|reussi|solide|maitri|maîtris/i]) || strongFallback;
+  const pointFaible = pickAiLine(cleanLines, [/point faible|weak|risque|bloqu|frein|manque|amélior|amelior/i]) || weakFallback;
+
+  const recommendationCandidates = cleanLines.filter(line => {
+    if (!line) return false;
+    if (line === pointFort || line === pointFaible) return false;
+    return /action|priorit|recommand|prochain|corrig|travaill|objectif|next/i.test(line);
+  });
+
+  const fallbackRecs = [
+    actionPriority || 'Formaliser une action prioritaire mesurable avant le prochain appel.',
+    prioritySections[0]
+      ? `Travailler la section ${cleanSectionLabel(prioritySections[0].label)} avec répétition ciblée.`
+      : 'Stabiliser la phase de closing avec un script d’isolation.',
+    topSections[0]
+      ? `Conserver le levier ${cleanSectionLabel(topSections[0].label)} dans le prochain call.`
+      : 'Capitaliser sur les points forts observés lors du call.',
+  ];
+
+  const recommendations = dedupeStrings([...recommendationCandidates, ...fallbackRecs])
+    .slice(0, 3)
+    .map((item, idx) => ({
+      priority: idx === 0 ? 'Haute' : idx === 1 ? 'Moyenne' : 'Basse',
+      text: item,
+    }));
+
+  return { pointFort, pointFaible, recommendations };
+}
+
 function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs = [] }) {
   const safeDebrief = debrief || {};
   const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
@@ -370,13 +428,23 @@ function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs
     actionPriority,
     sectionInsights,
   });
-  const analysisDigest = dedupeStrings([...keyBullets, ...analysisLines]).slice(0, 4);
+  const analysisDigest = dedupeStrings(
+    [...keyBullets, ...analysisLines]
+      .map(normalizeAiLine)
+      .filter(Boolean)
+  ).slice(0, 4);
   const decisionSummary = buildDecisionSummary({
     debrief: safeDebrief,
     percentage,
     scoreReading: getScoreReading(percentage),
     dominantObjection,
     actionPriority,
+  });
+  const { pointFort, pointFaible, recommendations } = buildAiInsights({
+    analysisLines,
+    actionPriority,
+    topSections,
+    prioritySections,
   });
 
   return {
@@ -402,6 +470,9 @@ function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs
     executiveHighlights: executiveHighlights.slice(0, 4),
     analysisDigest,
     decisionSummary,
+    aiStrongPoint: pointFort,
+    aiWeakPoint: pointFaible,
+    recommendations,
     scoreReading: getScoreReading(percentage),
   };
 }
@@ -475,50 +546,37 @@ function buildDebriefPdfHtml(payload) {
     debrief,
     percentage,
     score20,
-    topSections,
-    prioritySections,
     actionPriority,
-    latestComments,
     dominantObjection,
-    debriefCount,
     closingRate,
     aiConfidence,
-    nextCallGoal,
     risk,
     sectionInsights,
     signals,
-    executiveHighlights,
     analysisDigest,
-    decisionSummary,
     scoreReading,
+    aiStrongPoint,
+    aiWeakPoint,
+    recommendations,
   } = ctx;
 
-  const riskToneClass = risk.tone === 'good'
-    ? 'kpi-value--good'
-    : risk.tone === 'warn'
-      ? 'kpi-value--warn'
-      : 'kpi-value--danger';
-
-  const highlightsHtml = executiveHighlights.length > 0
-    ? `<ul class="list">${executiveHighlights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune synthèse disponible.</p>';
-
   const analysisHtml = analysisDigest.length > 0
-    ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune analyse IA disponible.</p>';
+    ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(normalizeAiLine(item))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucune synthèse IA disponible.</p>';
 
-  const keySignalsHtml = signals.length > 0
-    ? `<ul class="list list--signals">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 160))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun signal terrain saisi.</p>';
-
-  const commentsHtml = latestComments.length > 0
-    ? latestComments.slice(0, 4).map(comment => `
-      <div class="comment">
-        <p class="comment__meta"><strong>${escapeHtml(comment.author_name || 'Équipe')}</strong> · ${escapeHtml(fmtDate(comment.created_at))}</p>
-        <p>${renderText(comment.content || '')}</p>
-      </div>
+  const recommendationsHtml = recommendations.length > 0
+    ? recommendations.map(rec => `
+      <li class="rec-item">
+        <span class="rec-priority rec-priority--${slugify(rec.priority || 'moyenne')}">${escapeHtml(rec.priority || 'Moyenne')}</span>
+        <span>${escapeHtml(normalizeAiLine(rec.text || ''))}</span>
+      </li>
     `).join('')
-    : '<p class="hint">Aucun commentaire équipe sur ce debrief.</p>';
+    : `
+      <li class="rec-item">
+        <span class="rec-priority rec-priority--moyenne">Moyenne</span>
+        <span>Aucune recommandation IA disponible.</span>
+      </li>
+    `;
 
   const sectionBarsHtml = sectionInsights.map(section => `
     <div class="bar-row">
@@ -700,6 +758,14 @@ function buildDebriefPdfHtml(payload) {
           margin: 8px 0 0;
           color: #f7f1eb;
           font-size: 15px;
+        }
+        .hero-link {
+          color: #fff;
+          text-decoration: none;
+          border-bottom: 1px solid rgba(255,255,255,.5);
+        }
+        .hero-link:hover {
+          border-bottom-color: #fff;
         }
         .hero-tags {
           margin-top: 12px;
@@ -883,6 +949,49 @@ function buildDebriefPdfHtml(payload) {
         .list--signals li strong {
           color: #5a4a3a;
         }
+        .rec-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          gap: 8px;
+        }
+        .rec-item {
+          display: flex;
+          gap: 8px;
+          align-items: flex-start;
+          font-size: 13px;
+          line-height: 1.45;
+          color: #5f4d40;
+        }
+        .rec-priority {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 68px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .06em;
+          text-transform: uppercase;
+          flex-shrink: 0;
+        }
+        .rec-priority--haute {
+          background: #fee2e2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+        .rec-priority--moyenne {
+          background: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+        }
+        .rec-priority--basse {
+          background: #dcfce7;
+          color: #166534;
+          border: 1px solid #bbf7d0;
+        }
         .detail-grid {
           display: grid;
           gap: 10px;
@@ -923,21 +1032,6 @@ function buildDebriefPdfHtml(payload) {
           margin: 5px 0 0;
           font-size: 12px;
           color: #6f5d4f;
-          line-height: 1.45;
-        }
-        .comment + .comment {
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px dashed var(--line);
-        }
-        .comment__meta {
-          margin: 0;
-          color: #8f7d6e;
-          font-size: 11px;
-        }
-        .comment p {
-          margin: 4px 0 0;
-          font-size: 12px;
           line-height: 1.45;
         }
         .annex-grid {
@@ -1016,14 +1110,20 @@ function buildDebriefPdfHtml(payload) {
           <section class="hero-cockpit">
             <div class="hero-main">
               <p class="kicker">PDF Debrief | Data Cockpit</p>
-              <h1>Performance cockpit debrief</h1>
+              <h1>${escapeHtml(debrief.prospect_name || 'Nom prénom lead non renseigné')}</h1>
               <p class="hero-meta">
-                Prospect: ${escapeHtml(debrief.prospect_name || 'Non renseigné')}
-                · Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')}
-                · Date: ${escapeHtml(fmtDate(debrief.call_date))}
+                Date: ${escapeHtml(fmtDate(debrief.call_date))}
+                · Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}
+              </p>
+              <p class="hero-meta">Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')}</p>
+              <p class="hero-meta">
+                Lien de l'appel:
+                ${debrief.call_link
+                  ? `<a class="hero-link" href="${escapeHtml(debrief.call_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(truncateText(debrief.call_link, 60))}</a>`
+                  : 'Non renseigné'}
               </p>
               <div class="hero-tags">
-                <span class="tag">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
+                <span class="tag">Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
                 <span class="tag">Objection: ${escapeHtml(dominantObjection)}</span>
                 <span class="tag">${escapeHtml(scoreReading)}</span>
               </div>
@@ -1033,24 +1133,6 @@ function buildDebriefPdfHtml(payload) {
               <strong>${score20}</strong>
               <small>/20 · ${percentage}%</small>
             </aside>
-          </section>
-
-          <section class="kpi-grid">
-            <article class="kpi-card">
-              <p class="kpi-title">Taux closing</p>
-              <p class="kpi-value kpi-value--good">${closingRate}%</p>
-              <p class="kpi-sub">${debriefCount} debrief(s)</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-title">Risque deal</p>
-              <p class="kpi-value ${riskToneClass}">${escapeHtml(risk.label.replace('Risque ', ''))}</p>
-              <p class="kpi-sub">${debrief.is_closed ? 'Issue gagnée' : 'Issue à confirmer'}</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-title">Confiance IA</p>
-              <p class="kpi-value">${aiConfidence}%</p>
-              <p class="kpi-sub">base signaux + score</p>
-            </article>
           </section>
 
           <section class="cockpit-grid">
@@ -1071,21 +1153,16 @@ function buildDebriefPdfHtml(payload) {
 
           <section class="split" style="margin-top:12px;">
             <article class="panel">
-              <h2>Synthèse IA court format</h2>
+              <h2>Synthèse IA</h2>
               ${analysisHtml}
               <div class="decision" style="margin-top:10px;">
-                <p>${escapeHtml(decisionSummary)}</p>
+                <p><strong>Point fort:</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
+                <p style="margin-top:6px;"><strong>Point faible:</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
               </div>
             </article>
             <article class="panel">
-              <h2>Next Call Goal</h2>
-              <p style="margin:0 0 8px;font-size:14px;color:#5f4d40;line-height:1.5;">${escapeHtml(nextCallGoal)}</p>
-              <ul class="list">
-                <li>Action prioritaire: ${escapeHtml(actionPriority)}</li>
-                <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
-                <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
-              </ul>
-              ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 170))}</p>` : ''}
+              <h2>3 recommandations priorisées</h2>
+              <ul class="rec-list">${recommendationsHtml}</ul>
             </article>
           </section>
         </section>
@@ -1097,19 +1174,9 @@ function buildDebriefPdfHtml(payload) {
             <div class="detail-grid">${detailRowsHtml}</div>
           </section>
 
-          <section class="split" style="margin-top:12px;">
-            <article class="panel">
-              <h2>Verbatims décisifs (champs libres)</h2>
-              ${keySignalsHtml}
-            </article>
-            <article class="panel">
-              <h2>Commentaires équipe</h2>
-              ${commentsHtml}
-            </article>
-          </section>
-
           <section class="panel">
             <h2>Annexe compacte</h2>
+            <p class="hint" style="margin-bottom:8px;">Taux closing: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${escapeHtml(risk.label)} · Action prioritaire: ${escapeHtml(actionPriority)}</p>
             <div class="annex-grid">${annexHtml}</div>
           </section>
 
@@ -1156,19 +1223,16 @@ export async function downloadDebriefPdf(payload) {
     topSections,
     prioritySections,
     actionPriority,
-    latestComments,
     dominantObjection,
-    debriefCount,
     closingRate,
     aiConfidence,
-    nextCallGoal,
     risk,
     sectionInsights,
     signals,
-    executiveHighlights,
     analysisDigest,
-    decisionSummary,
-    scoreReading,
+    aiStrongPoint,
+    aiWeakPoint,
+    recommendations,
   } = ctx;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -1226,14 +1290,6 @@ export async function downloadDebriefPdf(payload) {
     }
   };
 
-  const drawDivider = () => {
-    ensureSpace(5);
-    doc.setDrawColor(233, 216, 203);
-    doc.setLineWidth(0.35);
-    doc.line(margin, y, pageW - margin, y);
-    y += 5;
-  };
-
   const sectionTitle = text => {
     ensureSpace(8);
     doc.setFillColor(255, 243, 236);
@@ -1245,156 +1301,166 @@ export async function downloadDebriefPdf(payload) {
     doc.text(String(text || ''), margin + 2.4, y + 1.1);
     y += 7.5;
   };
-
-  const drawSummaryCard = (x, topY, w, h, titleText, lines, fill = [255, 249, 244]) => {
-    doc.setFillColor(...fill);
-    doc.setDrawColor(234, 216, 203);
-    doc.roundedRect(x, topY, w, h, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(84, 68, 56);
-    doc.text(titleText, x + 2.8, topY + 4.8);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
-    doc.setTextColor(110, 93, 78);
-    let ly = topY + 9.2;
-    (lines || []).slice(0, 3).forEach(item => {
-      const split = doc.splitTextToSize(item, w - 5.6);
-      if (split.length > 0) {
-        doc.text(`- ${split[0]}`, x + 2.8, ly);
-        ly += 3.9;
-      }
-    });
+  const radarPoint = (cx, cy, outerRadius, index, total, valueOnFive) => {
+    const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / total);
+    const ratio = Math.max(0, Math.min(5, Number(valueOnFive || 0))) / 5;
+    const radius = outerRadius * ratio;
+    return {
+      x: cx + (Math.cos(angle) * radius),
+      y: cy + (Math.sin(angle) * radius),
+    };
   };
 
-  ensureSpace(26);
+  const drawRadarBlock = ({ x, top, w, h }) => {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(233, 216, 203);
+    doc.roundedRect(x, top, w, h, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(84, 68, 56);
+    doc.text('Radar compétences', x + 2.4, top + 4.8);
+
+    const safeAxes = sectionInsights.length > 0
+      ? sectionInsights
+      : SECTION_DETAILS_ORDER.map(section => ({ label: cleanSectionLabel(section.label), score: 0 }));
+    const count = safeAxes.length || 5;
+    const cx = x + (w / 2);
+    const cy = top + (h / 2) + 2.5;
+    const outer = Math.min(w, h) * 0.31;
+    const rings = [5, 3.5, 2];
+
+    doc.setDrawColor(232, 217, 205);
+    rings.forEach(ringValue => {
+      for (let idx = 0; idx < count; idx += 1) {
+        const p1 = radarPoint(cx, cy, outer, idx, count, ringValue);
+        const p2 = radarPoint(cx, cy, outer, (idx + 1) % count, count, ringValue);
+        doc.line(p1.x, p1.y, p2.x, p2.y);
+      }
+    });
+
+    for (let idx = 0; idx < count; idx += 1) {
+      const spoke = radarPoint(cx, cy, outer, idx, count, 5);
+      doc.line(cx, cy, spoke.x, spoke.y);
+    }
+
+    doc.setDrawColor(212, 96, 78);
+    doc.setLineWidth(0.75);
+    for (let idx = 0; idx < count; idx += 1) {
+      const p1 = radarPoint(cx, cy, outer, idx, count, safeAxes[idx].score);
+      const p2 = radarPoint(cx, cy, outer, (idx + 1) % count, count, safeAxes[(idx + 1) % count].score);
+      doc.line(p1.x, p1.y, p2.x, p2.y);
+    }
+    doc.setLineWidth(0.2);
+  };
+
+  const drawCompactBarsBlock = ({ x, top, w, h }) => {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(233, 216, 203);
+    doc.roundedRect(x, top, w, h, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(84, 68, 56);
+    doc.text('Barres par section', x + 2.4, top + 4.8);
+
+    let localY = top + 9;
+    const trackW = w - 28;
+    sectionInsights.forEach(section => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.6);
+      doc.setTextColor(100, 82, 68);
+      doc.text(truncateText(section.label, 24), x + 2.4, localY);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${section.score}/5`, x + w - 2.4, localY, { align: 'right' });
+
+      doc.setFillColor(243, 228, 216);
+      doc.roundedRect(x + 2.4, localY + 1.5, trackW, 2.4, 1.2, 1.2, 'F');
+      doc.setFillColor(...toRgb(barColor(section.score)));
+      doc.roundedRect(x + 2.4, localY + 1.5, (trackW * section.score) / 5, 2.4, 1.2, 1.2, 'F');
+      localY += 8;
+    });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.2);
+    doc.setTextColor(116, 95, 80);
+    doc.text(`Signal clé: ${truncateText(signals[0] ? `${signals[0].section} - ${signals[0].label}` : 'non renseigné', 48)}`, x + 2.4, top + h - 3.2);
+  };
+
+  ensureSpace(30);
   doc.setFillColor(37, 48, 67);
   doc.setDrawColor(37, 48, 67);
-  doc.roundedRect(margin, y - 2, contentW, 26, 3, 3, 'FD');
+  doc.roundedRect(margin, y - 2, contentW, 30, 3, 3, 'FD');
   doc.setFillColor(232, 125, 106);
-  doc.roundedRect(margin + contentW - 45, y - 2, 45, 26, 0, 3, 'F');
+  doc.roundedRect(margin + contentW - 44, y - 2, 44, 30, 0, 3, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16.8);
+  doc.setFontSize(17);
   doc.setTextColor(255, 255, 255);
-  doc.text('Performance cockpit debrief', margin + 3, y + 4.5);
+  doc.text(truncateText(debrief.prospect_name || 'Nom prénom lead non renseigné', 52), margin + 3, y + 5.2);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.8);
-  doc.setTextColor(225, 232, 242);
-  doc.text('PDF Debrief | Data Cockpit', margin + 3, y + 9.2);
-  doc.setTextColor(245, 247, 250);
-  doc.text(`Prospect: ${truncateText(debrief.prospect_name || 'Non renseigné', 32)} · Closer: ${truncateText(debrief.closer_name || debrief.user_name || 'Non renseigné', 22)}`, margin + 3, y + 14.2);
-  doc.text(`Date: ${fmtDate(debrief.call_date)} · ${debrief.is_closed ? 'Closé' : 'Non closé'} · ${dominantObjection}`, margin + 3, y + 18.9);
+  doc.setFontSize(9.6);
+  doc.setTextColor(229, 236, 244);
+  doc.text(`Date: ${fmtDate(debrief.call_date)} · Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}`, margin + 3, y + 10.5);
+  doc.text(`Closer: ${truncateText(debrief.closer_name || debrief.user_name || 'Non renseigné', 36)}`, margin + 3, y + 15.2);
+  doc.text(`Lien appel: ${truncateText(debrief.call_link || 'Non renseigné', 66)}`, margin + 3, y + 19.9);
 
   const scoreBoxW = 38;
   const scoreBoxX = pageW - margin - scoreBoxW;
   doc.setFillColor(255, 246, 241);
   doc.setDrawColor(241, 214, 201);
-  doc.roundedRect(scoreBoxX, y + 1.4, scoreBoxW, 20.5, 2, 2, 'FD');
+  doc.roundedRect(scoreBoxX, y + 1.8, scoreBoxW, 22, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(19.5);
   doc.setTextColor(212, 96, 78);
-  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 11.2, { align: 'center' });
+  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 12.4, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.6);
+  doc.setFontSize(8.3);
   doc.setTextColor(122, 101, 88);
-  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 16.2, { align: 'center' });
-  y += 29;
+  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 17, { align: 'center' });
+  y += 33;
 
-  drawDivider();
-  writeText(decisionSummary, {
-    size: 10.2,
+  ensureSpace(66);
+  const radarBlockW = Math.min(78, contentW * 0.4);
+  const barsBlockW = contentW - radarBlockW - 4;
+  const blockTop = y;
+  const blockHeight = 64;
+  drawRadarBlock({ x: margin, top: blockTop, w: radarBlockW, h: blockHeight });
+  drawCompactBarsBlock({ x: margin + radarBlockW + 4, top: blockTop, w: barsBlockW, h: blockHeight });
+  y += blockHeight + 5;
+
+  sectionTitle('Synthèse IA');
+  if (analysisDigest.length > 0) {
+    analysisDigest.slice(0, 3).forEach(item => writeBullet(normalizeAiLine(item), { size: 9.6 }));
+  } else {
+    writeBullet('Aucune synthèse IA disponible.', { size: 9.6 });
+  }
+  writeText(`Point fort: ${aiStrongPoint || 'Non renseigné'}`, {
+    size: 9.4,
     bold: true,
     color: [78, 63, 52],
+    lineHeight: 4.1,
   });
-  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
-    size: 9.9,
+  writeText(`Point faible: ${aiWeakPoint || 'Non renseigné'}`, {
+    size: 9.4,
+    bold: true,
     color: [112, 94, 80],
-  });
-  if (debrief.call_link) {
-    writeText(`Lien appel: ${debrief.call_link}`, {
-      size: 9.2,
-      color: [120, 103, 89],
-    });
-  }
-
-  drawDivider();
-  sectionTitle('Essentiel (4 points max)');
-  if (executiveHighlights.length > 0) {
-    executiveHighlights.slice(0, 4).forEach(item => writeBullet(item));
-  } else {
-    writeBullet('Aucune synthèse disponible.');
-  }
-
-  ensureSpace(26);
-  const cardW = (contentW - 8) / 3;
-  const cardTop = y;
-  const topLines = topSections.length > 0
-    ? topSections.map(section => `${cleanSectionLabel(section.label)} (${section.score}/5)`)
-    : ['Non renseigné'];
-  const priorityLines = prioritySections.length > 0
-    ? prioritySections.map(section => `${cleanSectionLabel(section.label)} (${section.score}/5)`)
-    : ['Non renseigné'];
-  drawSummaryCard(
-    margin,
-    cardTop,
-    cardW,
-    24,
-    'Taux closing',
-    [`${closingRate}%`, `${debriefCount} debrief(s)`],
-    [244, 250, 255],
-  );
-  drawSummaryCard(
-    margin + cardW + 4,
-    cardTop,
-    cardW,
-    24,
-    'Risque deal',
-    [risk.label, `Objection: ${truncateText(dominantObjection, 42)}`],
-    [255, 249, 241],
-  );
-  drawSummaryCard(
-    margin + (cardW + 4) * 2,
-    cardTop,
-    cardW,
-    24,
-    'Confiance IA',
-    [`${aiConfidence}%`, truncateText(nextCallGoal, 62)],
-    [245, 250, 246],
-  );
-  y += 28;
-
-  sectionTitle('Synthèse IA court format');
-  if (analysisDigest.length > 0) {
-    analysisDigest.slice(0, 3).forEach(item => writeBullet(item, { size: 9.8 }));
-  } else {
-    writeBullet('Aucune synthèse IA disponible.');
-  }
-  writeText(`Next call goal: ${nextCallGoal}`, {
-    size: 9.2,
-    color: [88, 75, 65],
-  });
-  if (debrief.notes) {
-    writeText(`Note closer: ${truncateText(debrief.notes, 170)}`, {
-      size: 9.2,
-      color: [112, 94, 80],
-    });
-  }
-
-  doc.addPage();
-  y = margin;
-
-  sectionTitle('Cockpit détaillé');
-  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
-    size: 9.9,
-    color: [112, 94, 80],
+    lineHeight: 4.1,
   });
 
-  sectionTitle('Performance par section');
+  sectionTitle('3 recommandations priorisées');
+  (recommendations.length > 0 ? recommendations : [
+    { priority: 'Haute', text: actionPriority || 'Définir une action prioritaire avant le prochain appel.' },
+    { priority: 'Moyenne', text: 'Consolider les points faibles identifiés sur les sections basses.' },
+    { priority: 'Basse', text: 'Capitaliser sur le levier principal observé.' },
+  ]).slice(0, 3).forEach(rec => {
+    const label = (rec.priority || 'Moyenne').toUpperCase();
+    writeBullet(`${label} · ${normalizeAiLine(rec.text || '')}`, { size: 9.5 });
+  });
+
+  sectionTitle('Barres détaillées par section');
   const priorityKeySet = new Set(prioritySections.map(section => section.key));
   const topKeySet = new Set(topSections.map(section => section.key));
   for (const section of sectionInsights) {
-    ensureSpace(11);
+    ensureSpace(12);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.7);
     doc.setTextColor(81, 65, 53);
@@ -1420,41 +1486,30 @@ export async function downloadDebriefPdf(payload) {
     }
   }
 
-  sectionTitle('Verbatims décisifs');
-  if (signals.length > 0) {
-    signals.slice(0, 6).forEach(signal => {
-      writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 125)}`, { size: 9.4 });
-    });
-  } else {
-    writeBullet('Aucun signal terrain libre saisi sur ce debrief.');
-  }
-
-  if (latestComments.length > 0) {
-    sectionTitle('Commentaires équipe');
-    latestComments.slice(0, 2).forEach(comment => {
-      writeText(`${comment.author_name || 'Équipe'} · ${fmtDate(comment.created_at)}`, {
-        bold: true,
-        size: 9.2,
-        color: [93, 76, 64],
-        lineHeight: 4.0,
-      });
-      writeText(truncateText(comment.content || '', 180), {
-        size: 9.2,
-        color: [108, 91, 78],
-        lineHeight: 4.0,
-      });
-      y += 0.8;
-    });
-  }
-
   const annexSections = sectionInsights.filter(section =>
     section.strength || section.weakness || section.improvement || (section.evidence && section.evidence.length > 0)
   );
-  if (annexSections.length > 0) {
+  if (annexSections.length > 0 || signals.length > 0) {
     sectionTitle('Annexe compacte');
     annexSections.slice(0, 5).forEach(section => {
       const summaryLine = `${section.label} (${section.score}/5) · + ${truncateText(section.strength || 'n/a', 34)} · - ${truncateText(section.weakness || 'n/a', 34)} · → ${truncateText(section.improvement || 'n/a', 34)}`;
       writeBullet(summaryLine, { size: 8.9, color: [106, 89, 75] });
+    });
+    if (signals.length > 0) {
+      writeText('Signaux utiles:', {
+        size: 9,
+        bold: true,
+        color: [93, 76, 64],
+        lineHeight: 4,
+      });
+      signals.slice(0, 4).forEach(signal => {
+        writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 105)}`, { size: 8.8, color: [106, 89, 75] });
+      });
+    }
+    writeText(`Taux closing global: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${risk.label} · Objection: ${dominantObjection}`, {
+      size: 8.5,
+      color: [124, 106, 92],
+      lineHeight: 3.8,
     });
   }
 
