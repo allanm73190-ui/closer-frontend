@@ -651,16 +651,16 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     }
   };
 
-  const purgeLegacyIClosed = async () => {
+  const purgeLegacyProfiles = async () => {
     if (!isAdmin) return;
-    const ok = confirm('Supprimer toutes les traces iClosed / Zapier / tests du pipeline ?');
+    const ok = confirm('Supprimer toutes les traces legacy / Zapier / tests du pipeline ?');
     if (!ok) return;
     try {
       const response = await apiFetch('/deals/purge-profile', {
         method:'POST',
         body:{
-          profile_key:'legacy_iclosed_cleanup',
-          legacy_source:'iclosed',
+          profile_key:'legacy_cleanup',
+          cleanup_scope:'legacy',
         },
       });
       await loadDeals();
@@ -693,8 +693,8 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
               </Btn>
             )}
             {isAdmin && (
-              <Btn variant="danger" onClick={purgeLegacyIClosed}>
-                🧹 Nettoyer iClosed
+              <Btn variant="danger" onClick={purgeLegacyProfiles}>
+                🧹 Nettoyer legacy
               </Btn>
             )}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
