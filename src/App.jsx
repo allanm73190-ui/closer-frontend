@@ -17,6 +17,7 @@ import { LoginPage, RegisterPage, ForgotPage, ResetPage } from './components/aut
 import { Dashboard, History } from './components/dashboard';
 import { Detail } from './components/debrief/Detail';
 import { NewDebrief } from './components/debrief/NewDebrief';
+import { PdfViewer } from './components/debrief/PdfViewer';
 import { PipelinePage } from './components/pipeline';
 import { HOSPage } from './components/team';
 import { ObjectionLibrary } from './components/objections';
@@ -37,6 +38,7 @@ const PAGE_META = {
   EditDebrief: { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
   History: { title:'Historique', subtitle:'Retrouvez et filtrez vos debriefs passés' },
   Detail: { title:'Détail debrief', subtitle:'Analyse complète, IA et export PDF' },
+  PdfViewer: { title:'Visualisateur PDF', subtitle:'Rendu web fidèle et export 2 pages' },
   Settings: { title:'Paramètres', subtitle:'Configuration synchronisée de votre espace' },
 };
 
@@ -73,7 +75,6 @@ export default function App() {
   const [pendingDebriefLink, setPendingDebriefLink] = useState(null);
   const [burst,   setBurst]   = useState(null);
   const [autoAI, setAutoAI] = useState(false);
-  const [autoOpenExport, setAutoOpenExport] = useState(false);
   const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
   const [settingsTabRequest, setSettingsTabRequest] = useState('account');
@@ -95,10 +96,11 @@ export default function App() {
       return;
     }
     const deepDebriefId = p.get('debrief_id');
+    const wantsPdfViewer = p.get('pdf_view') === '1' || p.get('export') === '1';
     if (deepDebriefId) {
       setPendingDebriefLink({
         debriefId: deepDebriefId,
-        autoOpenExport: p.get('export') === '1',
+        page: wantsPdfViewer ? 'PdfViewer' : 'Detail',
       });
     }
   }, []);
@@ -168,7 +170,6 @@ export default function App() {
     if (from) setFrom(from);
     else if (p !== 'Detail') setFrom(null);
     setAutoAI(!!opts.autoAI);
-    setAutoOpenExport(!!opts.autoOpenExport);
     setLeadContext(opts.leadContext || null);
     if (opts.settingsTab) setSettingsTabRequest(opts.settingsTab);
     window.scrollTo({ top:0, behavior:'smooth' });
@@ -184,7 +185,7 @@ export default function App() {
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
-    navigate('Detail', target.id, 'History', { autoOpenExport: !!pendingDebriefLink.autoOpenExport });
+    navigate(pendingDebriefLink.page || 'Detail', target.id, 'History');
     setPendingDebriefLink(null);
     window.history.replaceState({}, '', window.location.pathname);
   }, [user, pendingDebriefLink, dataLoading, debriefs, toast]);
@@ -232,7 +233,6 @@ export default function App() {
     setPage('Dashboard');
     setAuthView('login');
     setAutoAiAfterDebrief(true);
-    setAutoOpenExport(false);
     setPendingDebriefLink(null);
     setSettingsTabRequest('account');
     toast('Déconnecté');
@@ -282,6 +282,7 @@ export default function App() {
     { key:'History',   label:'Historique', icon:'history' },
   ];
   const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
+  const isPdfViewerPage = page === 'PdfViewer';
   const appSettingsValue = useMemo(() => ({
     theme,
     autoAiAfterDebrief,
@@ -367,7 +368,8 @@ export default function App() {
         />
       )}
       {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI} autoOpenExport={autoOpenExport}/>}
+      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
+      {page==='PdfViewer' && <PdfViewer debrief={selDebrief} allDebriefs={debriefs} user={user} toast={toast} navigate={navigate} />}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
       {page==='Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
@@ -405,7 +407,11 @@ export default function App() {
         {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
         <Toasts list={toasts}/>
 
-        {mob ? (
+        {isPdfViewerPage ? (
+          <main style={{ minHeight:'100vh' }}>
+            {dataLoading ? <Spinner full/> : Content()}
+          </main>
+        ) : mob ? (
           <>
             <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar)', borderBottom:'1px solid var(--border)', backdropFilter:'blur(16px)' }}>
               <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', minHeight:58 }}>

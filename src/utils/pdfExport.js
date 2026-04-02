@@ -1213,333 +1213,90 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
   targetWindow.focus();
 }
 
-export function openDebriefPdfPreviewTab(payload) {
-  const targetWindow = openDebriefPdfWindow(payload?.debrief || {});
-  renderDebriefPdfWindow(targetWindow, payload);
-  return targetWindow;
-}
-
-export function printDebriefPdfFromPreview(payload) {
-  const targetWindow = openDebriefPdfPreviewTab(payload);
-  const triggerPrint = () => {
-    try {
-      targetWindow.focus();
-      targetWindow.print();
-    } catch {}
-  };
-
-  if (targetWindow?.document?.readyState === 'complete') {
-    setTimeout(triggerPrint, 180);
-  } else {
-    targetWindow.addEventListener('load', () => setTimeout(triggerPrint, 180), { once: true });
-  }
-}
-
 export async function downloadDebriefPdf(payload) {
   const ctx = buildExportContext(payload || {});
-  const {
-    title,
-    debrief,
-    percentage,
-    score20,
-    topSections,
-    prioritySections,
-    actionPriority,
-    dominantObjection,
-    closingRate,
-    aiConfidence,
-    risk,
-    sectionInsights,
-    signals,
-    analysisDigest,
-    aiStrongPoint,
-    aiWeakPoint,
-    recommendations,
-  } = ctx;
+  const { title } = ctx;
+  const html = buildDebriefPdfHtml(payload || {});
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 14;
-  const contentW = pageW - margin * 2;
-  let y = margin;
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-10000px';
+  iframe.style.top = '0';
+  iframe.style.width = '1280px';
+  iframe.style.height = '1810px';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
+  document.body.appendChild(iframe);
 
-  const ensureSpace = (required = 8) => {
-    if (y + required <= pageH - margin) return;
-    doc.addPage();
-    y = margin;
+  const cleanup = () => {
+    try { iframe.remove(); } catch {}
   };
 
-  const writeText = (text, {
-    x = margin,
-    width = contentW,
-    size = 10.5,
-    bold = false,
-    color = [72, 60, 50],
-    lineHeight = 4.6,
-  } = {}) => {
-    const safe = String(text || '').trim();
-    if (!safe) return;
-    doc.setFont('helvetica', bold ? 'bold' : 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(safe, width);
-    for (const line of lines) {
-      ensureSpace(lineHeight + 0.5);
-      doc.text(line, x, y);
-      y += lineHeight;
-    }
-  };
+  try {
+    await new Promise((resolve, reject) => {
+      let done = false;
+      const timeoutId = window.setTimeout(() => {
+        if (done) return;
+        done = true;
+        reject(new Error("Le visualisateur PDF met trop de temps à se charger."));
+      }, 12000);
 
-  const writeBullet = (text, { indent = 0, size = 10.2, color = [79, 66, 56], width = contentW - indent - 6 } = {}) => {
-    const safe = String(text || '').trim();
-    if (!safe) return;
-    const x = margin + indent;
-    const bulletX = x + 1.2;
-    const textX = x + 5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(safe, width);
-    ensureSpace(5);
-    doc.text('•', bulletX, y);
-    doc.text(lines[0], textX, y);
-    y += 4.8;
-    for (let i = 1; i < lines.length; i += 1) {
-      ensureSpace(4.8);
-      doc.text(lines[i], textX, y);
-      y += 4.8;
-    }
-  };
+      iframe.onload = () => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(timeoutId);
+        resolve();
+      };
 
-  const sectionTitle = text => {
-    ensureSpace(8);
-    doc.setFillColor(255, 243, 236);
-    doc.setDrawColor(236, 191, 174);
-    doc.roundedRect(margin, y - 3.4, contentW, 7.4, 1.8, 1.8, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(191, 87, 69);
-    doc.text(String(text || ''), margin + 2.4, y + 1.1);
-    y += 7.5;
-  };
-  const radarPoint = (cx, cy, outerRadius, index, total, valueOnFive) => {
-    const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / total);
-    const ratio = Math.max(0, Math.min(5, Number(valueOnFive || 0))) / 5;
-    const radius = outerRadius * ratio;
-    return {
-      x: cx + (Math.cos(angle) * radius),
-      y: cy + (Math.sin(angle) * radius),
-    };
-  };
-
-  const drawRadarBlock = ({ x, top, w, h }) => {
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(233, 216, 203);
-    doc.roundedRect(x, top, w, h, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(84, 68, 56);
-    doc.text('Radar compétences', x + 2.4, top + 4.8);
-
-    const safeAxes = sectionInsights.length > 0
-      ? sectionInsights
-      : SECTION_DETAILS_ORDER.map(section => ({ label: cleanSectionLabel(section.label), score: 0 }));
-    const count = safeAxes.length || 5;
-    const cx = x + (w / 2);
-    const cy = top + (h / 2) + 2.5;
-    const outer = Math.min(w, h) * 0.31;
-    const rings = [5, 3.5, 2];
-
-    doc.setDrawColor(232, 217, 205);
-    rings.forEach(ringValue => {
-      for (let idx = 0; idx < count; idx += 1) {
-        const p1 = radarPoint(cx, cy, outer, idx, count, ringValue);
-        const p2 = radarPoint(cx, cy, outer, (idx + 1) % count, count, ringValue);
-        doc.line(p1.x, p1.y, p2.x, p2.y);
-      }
+      iframe.srcdoc = html;
     });
 
-    for (let idx = 0; idx < count; idx += 1) {
-      const spoke = radarPoint(cx, cy, outer, idx, count, 5);
-      doc.line(cx, cy, spoke.x, spoke.y);
+    const docRef = iframe.contentDocument;
+    if (!docRef) throw new Error("Impossible de préparer le rendu PDF.");
+
+    if (docRef.fonts?.ready) {
+      try { await docRef.fonts.ready; } catch {}
     }
+    await new Promise(resolve => window.setTimeout(resolve, 180));
 
-    doc.setDrawColor(212, 96, 78);
-    doc.setLineWidth(0.75);
-    for (let idx = 0; idx < count; idx += 1) {
-      const p1 = radarPoint(cx, cy, outer, idx, count, safeAxes[idx].score);
-      const p2 = radarPoint(cx, cy, outer, (idx + 1) % count, count, safeAxes[(idx + 1) % count].score);
-      doc.line(p1.x, p1.y, p2.x, p2.y);
-    }
-    doc.setLineWidth(0.2);
-  };
+    const pages = Array.from(docRef.querySelectorAll('.pdf-page'));
+    if (pages.length === 0) throw new Error("Aucune page PDF à exporter.");
 
-  const drawCompactBarsBlock = ({ x, top, w, h }) => {
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(233, 216, 203);
-    doc.roundedRect(x, top, w, h, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(84, 68, 56);
-    doc.text('Barres par section', x + 2.4, top + 4.8);
+    const { default: html2canvas } = await import('html2canvas');
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const targetPages = pages.slice(0, 2);
 
-    let localY = top + 9;
-    const trackW = w - 28;
-    sectionInsights.forEach(section => {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.6);
-      doc.setTextColor(100, 82, 68);
-      doc.text(truncateText(section.label, 24), x + 2.4, localY);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${section.score}/5`, x + w - 2.4, localY, { align: 'right' });
-
-      doc.setFillColor(243, 228, 216);
-      doc.roundedRect(x + 2.4, localY + 1.5, trackW, 2.4, 1.2, 1.2, 'F');
-      doc.setFillColor(...toRgb(barColor(section.score)));
-      doc.roundedRect(x + 2.4, localY + 1.5, (trackW * section.score) / 5, 2.4, 1.2, 1.2, 'F');
-      localY += 8;
-    });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.2);
-    doc.setTextColor(116, 95, 80);
-    doc.text(`Signal clé: ${truncateText(signals[0] ? `${signals[0].section} - ${signals[0].label}` : 'non renseigné', 48)}`, x + 2.4, top + h - 3.2);
-  };
-
-  ensureSpace(30);
-  doc.setFillColor(37, 48, 67);
-  doc.setDrawColor(37, 48, 67);
-  doc.roundedRect(margin, y - 2, contentW, 30, 3, 3, 'FD');
-  doc.setFillColor(232, 125, 106);
-  doc.roundedRect(margin + contentW - 44, y - 2, 44, 30, 0, 3, 'F');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(17);
-  doc.setTextColor(255, 255, 255);
-  doc.text(truncateText(debrief.prospect_name || 'Nom prénom lead non renseigné', 52), margin + 3, y + 5.2);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.6);
-  doc.setTextColor(229, 236, 244);
-  doc.text(`Date: ${fmtDate(debrief.call_date)} · Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}`, margin + 3, y + 10.5);
-  doc.text(`Closer: ${truncateText(debrief.closer_name || debrief.user_name || 'Non renseigné', 36)}`, margin + 3, y + 15.2);
-  doc.text(`Lien appel: ${truncateText(debrief.call_link || 'Non renseigné', 66)}`, margin + 3, y + 19.9);
-
-  const scoreBoxW = 38;
-  const scoreBoxX = pageW - margin - scoreBoxW;
-  doc.setFillColor(255, 246, 241);
-  doc.setDrawColor(241, 214, 201);
-  doc.roundedRect(scoreBoxX, y + 1.8, scoreBoxW, 22, 2, 2, 'FD');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(19.5);
-  doc.setTextColor(212, 96, 78);
-  doc.text(`${score20}`, scoreBoxX + scoreBoxW / 2, y + 12.4, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.3);
-  doc.setTextColor(122, 101, 88);
-  doc.text(`/20 · ${percentage}%`, scoreBoxX + scoreBoxW / 2, y + 17, { align: 'center' });
-  y += 33;
-
-  ensureSpace(66);
-  const radarBlockW = Math.min(78, contentW * 0.4);
-  const barsBlockW = contentW - radarBlockW - 4;
-  const blockTop = y;
-  const blockHeight = 64;
-  drawRadarBlock({ x: margin, top: blockTop, w: radarBlockW, h: blockHeight });
-  drawCompactBarsBlock({ x: margin + radarBlockW + 4, top: blockTop, w: barsBlockW, h: blockHeight });
-  y += blockHeight + 5;
-
-  sectionTitle('Synthèse IA');
-  if (analysisDigest.length > 0) {
-    analysisDigest.slice(0, 3).forEach(item => writeBullet(normalizeAiLine(item), { size: 9.6 }));
-  } else {
-    writeBullet('Aucune synthèse IA disponible.', { size: 9.6 });
-  }
-  writeText(`Point fort: ${aiStrongPoint || 'Non renseigné'}`, {
-    size: 9.4,
-    bold: true,
-    color: [78, 63, 52],
-    lineHeight: 4.1,
-  });
-  writeText(`Point faible: ${aiWeakPoint || 'Non renseigné'}`, {
-    size: 9.4,
-    bold: true,
-    color: [112, 94, 80],
-    lineHeight: 4.1,
-  });
-
-  sectionTitle('3 recommandations priorisées');
-  (recommendations.length > 0 ? recommendations : [
-    { priority: 'Haute', text: actionPriority || 'Définir une action prioritaire avant le prochain appel.' },
-    { priority: 'Moyenne', text: 'Consolider les points faibles identifiés sur les sections basses.' },
-    { priority: 'Basse', text: 'Capitaliser sur le levier principal observé.' },
-  ]).slice(0, 3).forEach(rec => {
-    const label = (rec.priority || 'Moyenne').toUpperCase();
-    writeBullet(`${label} · ${normalizeAiLine(rec.text || '')}`, { size: 9.5 });
-  });
-
-  sectionTitle('Barres détaillées par section');
-  const priorityKeySet = new Set(prioritySections.map(section => section.key));
-  const topKeySet = new Set(topSections.map(section => section.key));
-  for (const section of sectionInsights) {
-    ensureSpace(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.7);
-    doc.setTextColor(81, 65, 53);
-    doc.text(section.label, margin + 1.2, y + 1.3);
-    doc.text(`${section.score}/5`, margin + contentW - 1.2, y + 1.3, { align: 'right' });
-    const trackX = margin + 36;
-    const trackW = contentW - 48;
-    doc.setFillColor(243, 228, 216);
-    doc.roundedRect(trackX, y - 1.4, trackW, 2.9, 1.4, 1.4, 'F');
-    doc.setFillColor(...toRgb(barColor(section.score)));
-    doc.roundedRect(trackX, y - 1.4, (trackW * section.score) / 5, 2.9, 1.4, 1.4, 'F');
-    y += 4.2;
-    const needsFocus = (priorityKeySet.has(section.key) || topKeySet.has(section.key)) && section.focus;
-    if (needsFocus) {
-      const prefix = priorityKeySet.has(section.key) ? 'Axe critique: ' : 'Levier: ';
-      writeText(truncateText(`${prefix}${section.focus}`, 110), {
-        size: 8.7,
-        color: [119, 99, 84],
-        lineHeight: 3.8,
+    for (let i = 0; i < targetPages.length; i += 1) {
+      const pageEl = targetPages[i];
+      const canvas = await html2canvas(pageEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fffdfa',
+        logging: false,
+        windowWidth: 1280,
+        windowHeight: 1810,
+        scrollX: 0,
+        scrollY: 0,
       });
-    } else {
-      y += 1.1;
-    }
-  }
 
-  const annexSections = sectionInsights.filter(section =>
-    section.strength || section.weakness || section.improvement || (section.evidence && section.evidence.length > 0)
-  );
-  if (annexSections.length > 0 || signals.length > 0) {
-    sectionTitle('Annexe compacte');
-    annexSections.slice(0, 5).forEach(section => {
-      const summaryLine = `${section.label} (${section.score}/5) · + ${truncateText(section.strength || 'n/a', 34)} · - ${truncateText(section.weakness || 'n/a', 34)} · → ${truncateText(section.improvement || 'n/a', 34)}`;
-      writeBullet(summaryLine, { size: 8.9, color: [106, 89, 75] });
-    });
-    if (signals.length > 0) {
-      writeText('Signaux utiles:', {
-        size: 9,
-        bold: true,
-        color: [93, 76, 64],
-        lineHeight: 4,
-      });
-      signals.slice(0, 4).forEach(signal => {
-        writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 105)}`, { size: 8.8, color: [106, 89, 75] });
-      });
+      const img = canvas.toDataURL('image/jpeg', 0.95);
+      const props = pdf.getImageProperties(img);
+      const ratio = Math.min(pageW / props.width, pageH / props.height);
+      const renderW = props.width * ratio;
+      const renderH = props.height * ratio;
+      const x = (pageW - renderW) / 2;
+      const y = (pageH - renderH) / 2;
+      if (i > 0) pdf.addPage();
+      pdf.addImage(img, 'JPEG', x, y, renderW, renderH, undefined, 'FAST');
     }
-    writeText(`Taux closing global: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${risk.label} · Objection: ${dominantObjection}`, {
-      size: 8.5,
-      color: [124, 106, 92],
-      lineHeight: 3.8,
-    });
-  }
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
-  doc.setTextColor(145, 145, 145);
-  doc.text(`Généré le ${fmtDate(new Date().toISOString())} · CloserDebrief`, margin, pageH - 7);
-  doc.save(title);
+    pdf.save(title);
+  } finally {
+    cleanup();
+  }
 }
 
 export { getSectionNote };

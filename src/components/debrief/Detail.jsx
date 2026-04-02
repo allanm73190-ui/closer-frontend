@@ -1,22 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentage } from '../../utils/scoring';
-import { buildDebriefPdfPreviewHtml, openDebriefPdfPreviewTab, printDebriefPdfFromPreview, getSectionNote } from '../../utils/pdfExport';
+import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
 
-function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI, autoOpenExport = false }) {
+function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
   const mob = useIsMobile();
   const [exportingPdf, setExportingPdf] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewPayload, setPreviewPayload] = useState(null);
-  const [sharingPreview, setSharingPreview] = useState(false);
-  const autoOpenedRef = useRef(false);
+  const [downloadingPreview, setDownloadingPreview] = useState(false);
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
       <p style={{ color:DS.textMuted }}>Debrief introuvable</p>
@@ -58,54 +57,33 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
     }
   };
 
-  const handlePrintFromPreview = async () => {
+  const handleDownloadFromPreview = async () => {
     if (!previewPayload) return;
-    setSharingPreview(true);
+    setDownloadingPreview(true);
     try {
-      printDebriefPdfFromPreview(previewPayload);
-      toast('Fenêtre d’impression ouverte. Choisis "Enregistrer en PDF" pour un rendu fidèle.');
+      await downloadDebriefPdf(previewPayload);
+      toast('PDF téléchargé (rendu fidèle en 2 pages)');
     } catch (e) {
-      toast(e.message || "Impossible d'ouvrir l'impression PDF", 'error');
+      toast(e.message || "Impossible de télécharger le PDF", 'error');
     } finally {
-      setSharingPreview(false);
-    }
-  };
-
-  const handleOpenPreviewInTab = async () => {
-    if (!previewPayload) return;
-    setSharingPreview(true);
-    try {
-      openDebriefPdfPreviewTab(previewPayload);
-      toast('Rendu ouvert dans un nouvel onglet');
-    } catch (e) {
-      toast(e.message || "Impossible d'ouvrir le rendu dans un nouvel onglet", 'error');
-    } finally {
-      setSharingPreview(false);
+      setDownloadingPreview(false);
     }
   };
 
   const handleCopyShareLink = async () => {
-    setSharingPreview(true);
+    setDownloadingPreview(true);
     try {
-      const shareUrl = new URL(window.location.href);
-      shareUrl.search = '';
-      shareUrl.hash = '';
+      const shareUrl = new URL(window.location.origin + window.location.pathname);
       shareUrl.searchParams.set('debrief_id', debrief.id);
-      shareUrl.searchParams.set('export', '1');
+      shareUrl.searchParams.set('pdf_view', '1');
       await navigator.clipboard.writeText(shareUrl.toString());
-      toast('Lien de partage copié');
+      toast('Lien du visualisateur copié');
     } catch {
       toast("Impossible de copier le lien pour l'instant", 'error');
     } finally {
-      setSharingPreview(false);
+      setDownloadingPreview(false);
     }
   };
-
-  useEffect(() => {
-    if (!autoOpenExport || autoOpenedRef.current) return;
-    autoOpenedRef.current = true;
-    handleExportPdf();
-  }, [autoOpenExport, debrief?.id]);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
@@ -222,7 +200,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
             justifyContent:'center',
             padding:mob ? 8 : 20,
           }}
-          onClick={e => e.target === e.currentTarget && !sharingPreview && setPreviewOpen(false)}
+          onClick={e => e.target === e.currentTarget && !downloadingPreview && setPreviewOpen(false)}
         >
           <div
             style={{
@@ -241,20 +219,17 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
             <div style={{ padding:'10px 12px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
               <div>
                 <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Prévisualisation export PDF</p>
-                <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>Rendu fidèle: ouvre ou imprime ce visuel.</p>
+                <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>Rendu fidèle en 2 pages, identique au visualisateur.</p>
               </div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                <Btn variant="secondary" onClick={()=>setPreviewOpen(false)} disabled={sharingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
+                <Btn variant="secondary" onClick={()=>setPreviewOpen(false)} disabled={downloadingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
                   Fermer
                 </Btn>
-                <Btn variant="secondary" onClick={handleCopyShareLink} disabled={sharingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
+                <Btn variant="secondary" onClick={handleCopyShareLink} disabled={downloadingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
                   🔗 Copier le lien
                 </Btn>
-                <Btn variant="secondary" onClick={handleOpenPreviewInTab} disabled={sharingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
-                  ↗️ Ouvrir le rendu
-                </Btn>
-                <Btn onClick={handlePrintFromPreview} disabled={sharingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
-                  {sharingPreview ? 'Ouverture...' : '🖨️ Enregistrer en PDF'}
+                <Btn onClick={handleDownloadFromPreview} disabled={downloadingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
+                  {downloadingPreview ? 'Téléchargement...' : '⬇️ Télécharger le PDF'}
                 </Btn>
               </div>
             </div>
