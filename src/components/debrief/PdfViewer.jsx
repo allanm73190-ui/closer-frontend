@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DS } from '../../styles/designSystem';
 import { apiFetch } from '../../config/api';
-import { fetchAIDebriefExportSynthesis } from '../../config/ai';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf } from '../../utils/pdfExport';
 import { Btn, Spinner } from '../ui';
 
@@ -21,47 +20,13 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
           try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
           catch { return ''; }
         })();
-        let analysisCoaching = '';
         let comments = [];
         try {
           comments = await apiFetch(`/debriefs/${debrief.id}/comments`);
         } catch {
           comments = [];
         }
-        if (analysis.trim()) {
-          const cacheKey = `cd_ai_export_${debrief.id}`;
-          try {
-            const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-            if (cached && cached.source === analysis && typeof cached.content === 'string' && cached.content.trim()) {
-              analysisCoaching = cached.content.trim();
-            }
-          } catch {}
-
-          if (!analysisCoaching) {
-            try {
-              const generated = await fetchAIDebriefExportSynthesis(debrief.id, analysis);
-              analysisCoaching = String(generated || '').trim();
-              if (analysisCoaching) {
-                try {
-                  localStorage.setItem(cacheKey, JSON.stringify({
-                    source: analysis,
-                    content: analysisCoaching,
-                    generated_at: Date.now(),
-                  }));
-                } catch {}
-              }
-            } catch {}
-          }
-        }
-
-        const nextPayload = {
-          debrief,
-          comments,
-          analysis,
-          analysis_coaching: analysisCoaching || analysis,
-          allDebriefs,
-          user,
-        };
+        const nextPayload = { debrief, comments, analysis, allDebriefs, user };
         if (!mounted) return;
         setPayload(nextPayload);
         setHtml(buildDebriefPdfPreviewHtml(nextPayload));

@@ -477,176 +477,6 @@ function parseAiStructuredContent(text = '') {
   };
 }
 
-const COACHING_SECTION_BY_INDEX = {
-  1: 'note',
-  2: 'verdict',
-  3: 'forces',
-  4: 'failles',
-  5: 'risque',
-  6: 'pattern',
-  7: 'competence',
-  8: 'script',
-  9: 'action10',
-};
-
-function mapCoachingHeadingToKey(heading = '', explicitIndex = 0) {
-  if (explicitIndex && COACHING_SECTION_BY_INDEX[explicitIndex]) {
-    return COACHING_SECTION_BY_INDEX[explicitIndex];
-  }
-  const normalized = normalizeToken(heading);
-  if (!normalized) return '';
-  if (/^note\b/.test(normalized)) return 'note';
-  if (/^verdict\b/.test(normalized)) return 'verdict';
-  if (/^forces?\b/.test(normalized)) return 'forces';
-  if (/^failles?\b/.test(normalized)) return 'failles';
-  if (/^risque\b/.test(normalized)) return 'risque';
-  if (/^pattern\b/.test(normalized)) return 'pattern';
-  if (/^competence\b/.test(normalized)) return 'competence';
-  if (/^script\b/.test(normalized)) return 'script';
-  if (/^action\b/.test(normalized)) return 'action10';
-  return '';
-}
-
-function parseCoachingExportAnalysis(text = '') {
-  const source = String(text || '').trim();
-  if (!source) {
-    return {
-      noteLabel: '',
-      verdict: '',
-      forces: [],
-      failles: [],
-      risque: [],
-      pattern: [],
-      competence: [],
-      script: [],
-      action10: [],
-      axes: [],
-      actions: [],
-      summaryLines: [],
-    };
-  }
-
-  const lines = source
-    .split('\n')
-    .map(line => normalizeAiLine(cleanMarkdownLine(line)))
-    .filter(Boolean);
-
-  const buckets = {
-    note: [],
-    verdict: [],
-    forces: [],
-    failles: [],
-    risque: [],
-    pattern: [],
-    competence: [],
-    script: [],
-    action10: [],
-    free: [],
-  };
-
-  const headingOnly = /^(\d{1,2})\s*[.)-:]\s*(.+)$/;
-  const numberedWithInline = /^(\d{1,2})\s*[.)-:]\s*([^:]+)\s*:\s*(.+)$/;
-  let currentKey = '';
-
-  const pushToBucket = (key, value) => {
-    const clean = normalizeAiLine(String(value || ''));
-    if (!clean) return;
-    if (!buckets[key]) buckets[key] = [];
-    buckets[key].push(clean);
-  };
-
-  for (const line of lines) {
-    const inlineMatch = line.match(numberedWithInline);
-    if (inlineMatch) {
-      const index = Number(inlineMatch[1]);
-      const label = inlineMatch[2];
-      const key = mapCoachingHeadingToKey(label, index);
-      if (key) {
-        currentKey = key;
-        pushToBucket(key, inlineMatch[3]);
-        continue;
-      }
-    }
-
-    const headingMatch = line.match(headingOnly);
-    if (headingMatch) {
-      const index = Number(headingMatch[1]);
-      const label = headingMatch[2];
-      const key = mapCoachingHeadingToKey(label, index);
-      if (key) {
-        currentKey = key;
-        continue;
-      }
-    }
-
-    const plainHeadingKey = mapCoachingHeadingToKey(line.replace(/:$/, ''), 0);
-    if (plainHeadingKey && /:$/.test(line)) {
-      currentKey = plainHeadingKey;
-      continue;
-    }
-
-    if (currentKey) {
-      pushToBucket(currentKey, line.replace(/^[-•]\s*/, ''));
-    } else {
-      pushToBucket('free', line.replace(/^[-•]\s*/, ''));
-    }
-  }
-
-  const pack = (arr = []) => dedupeStrings(arr.map(item => normalizeAiLine(item)).filter(Boolean));
-  const notePool = pack([...buckets.note, ...buckets.free]);
-  const noteText = notePool.join(' ');
-  const noteMatch = noteText.match(/(\d{1,3})\s*\/\s*100/) || noteText.match(/\b(\d{1,3})\b/);
-  const noteRaw = noteMatch?.[1] ? Math.max(0, Math.min(100, Number(noteMatch[1]))) : null;
-  const noteLabel = Number.isFinite(noteRaw) ? `${noteRaw}/100` : '';
-
-  const forces = pack(buckets.forces);
-  const failles = pack(buckets.failles);
-  const risque = pack(buckets.risque);
-  const pattern = pack(buckets.pattern);
-  const competence = pack(buckets.competence);
-  const script = pack(buckets.script);
-  const action10 = pack(buckets.action10);
-
-  const verdict = pack(buckets.verdict).join(' ');
-
-  const summaryLines = dedupeStrings([
-    noteLabel ? `Note /100: ${noteLabel}` : '',
-    verdict ? `Verdict global: ${verdict}` : '',
-    forces[0] ? `Forces décisives: ${forces[0]}` : '',
-    failles[0] ? `Failles structurelles: ${failles[0]}` : '',
-    risque[0] ? `Risque caché: ${risque[0]}` : '',
-    pattern[0] ? `Pattern du closer: ${pattern[0]}` : '',
-    competence[0] ? `Compétence à automatiser: ${competence[0]}` : '',
-  ]);
-
-  const axes = dedupeStrings([
-    ...failles,
-    ...risque,
-    ...pattern,
-    ...competence,
-  ]);
-
-  const actions = dedupeStrings([
-    ...script,
-    ...action10,
-  ]);
-
-  return {
-    noteLabel,
-    verdict,
-    forces,
-    failles,
-    risque,
-    pattern,
-    competence,
-    script,
-    action10,
-    axes,
-    actions,
-    summaryLines,
-  };
-}
-
 function pickAiLine(lines = [], patterns = []) {
   const source = Array.isArray(lines) ? lines : [];
   const tests = Array.isArray(patterns) ? patterns : [];
@@ -664,11 +494,9 @@ function buildAiInsights({
   topSections = [],
   prioritySections = [],
   structuredAi = null,
-  coachingExport = null,
 }) {
   const cleanLines = dedupeStrings((analysisLines || []).map(normalizeAiLine).filter(Boolean));
   const structured = structuredAi || { strong: [], weak: [], recommendations: [] };
-  const coaching = coachingExport || { forces: [], failles: [], risque: [], actions: [] };
   const strongFallback = topSections[0]
     ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
     : 'Levier principal non identifié.';
@@ -676,13 +504,10 @@ function buildAiInsights({
     ? `Point faible principal: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
     : 'Point faible principal non identifié.';
 
-  const pointFort = coaching.forces?.[0]
-    || structured.strong?.[0]
+  const pointFort = structured.strong?.[0]
     || pickAiLine(cleanLines, [/point fort|strength|atout|réussi|reussi|solide|maitri|maîtris/i])
     || strongFallback;
-  const pointFaible = coaching.failles?.[0]
-    || coaching.risque?.[0]
-    || structured.weak?.[0]
+  const pointFaible = structured.weak?.[0]
     || pickAiLine(cleanLines, [/point faible|weak|risque|bloqu|frein|manque|amélior|amelior/i])
     || weakFallback;
 
@@ -704,7 +529,6 @@ function buildAiInsights({
   ];
 
   const recommendations = dedupeStrings([
-    ...(coaching.actions || []),
     ...(structured.recommendations || []),
     ...recommendationCandidates,
     ...fallbackRecs,
@@ -718,20 +542,18 @@ function buildAiInsights({
   return { pointFort, pointFaible, recommendations };
 }
 
-function buildExportContext({ debrief, comments = [], analysis = '', analysis_coaching = '', allDebriefs = [] }) {
+function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs = [] }) {
   const safeDebrief = debrief || {};
-  const analysisSource = String(analysis_coaching || analysis || '');
   const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
   const percentage = Math.round(safeDebrief.percentage || 0);
   const score20 = toScore20FromPercentage(percentage);
   const scores = computeSectionScores(safeDebrief.sections || {});
   const topSections = getTopSections(scores);
   const prioritySections = getPrioritySections(scores);
-  const structuredAi = parseAiStructuredContent(analysisSource);
-  const coachingExport = parseCoachingExportAnalysis(analysisSource);
-  const actionPriority = coachingExport.actions[0] || structuredAi.priority || extractActionPriority(analysisSource) || "Formaliser une action mesurable avant le prochain appel.";
-  const keyBullets = extractKeyBullets(analysisSource);
-  const analysisLines = extractAnalysisLines(analysisSource);
+  const structuredAi = parseAiStructuredContent(analysis);
+  const actionPriority = structuredAi.priority || extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
+  const keyBullets = extractKeyBullets(analysis);
+  const analysisLines = extractAnalysisLines(analysis);
   const dominantObjection = getDominantObjection(safeDebrief);
   const risk = getRiskMeta(percentage, !!safeDebrief.is_closed);
   const sectionInsights = buildSectionInsights(safeDebrief, scores);
@@ -749,7 +571,7 @@ function buildExportContext({ debrief, comments = [], analysis = '', analysis_co
   const debriefCount = Array.isArray(allDebriefs) && allDebriefs.length > 0 ? allDebriefs.length : 1;
   const aiConfidence = computeAiConfidence({
     percentage,
-    hasAnalysis: !!String(analysisSource || '').trim(),
+    hasAnalysis: !!String(analysis || '').trim(),
     signalCount,
   });
   const nextCallGoal = buildNextCallGoal({ prioritySections, actionPriority });
@@ -768,19 +590,11 @@ function buildExportContext({ debrief, comments = [], analysis = '', analysis_co
       .filter(line => !/^(point(s)?\s+fort|point(s)?\s+faible|recommandation|action prioritaire)\b/i.test(line))
   );
   const analysisDigest = dedupeStrings([
-    ...(coachingExport.summaryLines || []),
-    ...(structuredAi.summary || []).slice(0, 3),
-    ...(coachingExport.forces || []).slice(0, 2).map(item => `Forces décisives: ${item}`),
-    ...(coachingExport.failles || []).slice(0, 2).map(item => `Failles structurelles: ${item}`),
-    ...(coachingExport.risque || []).slice(0, 1).map(item => `Risque caché: ${item}`),
-    ...(coachingExport.pattern || []).slice(0, 1).map(item => `Pattern du closer: ${item}`),
-    ...(coachingExport.competence || []).slice(0, 1).map(item => `Compétence à automatiser: ${item}`),
-    ...(coachingExport.script || []).slice(0, 1).map(item => `Script de correction: ${item}`),
-    ...(coachingExport.action10 || []).slice(0, 1).map(item => `Action concrète (10 prochains calls): ${item}`),
+    ...(structuredAi.summary || []),
     ...(structuredAi.strong?.[0] ? [`Point fort: ${structuredAi.strong[0]}`] : []),
     ...(structuredAi.weak?.[0] ? [`Point faible: ${structuredAi.weak[0]}`] : []),
     ...fallbackDigest,
-  ]).slice(0, 10);
+  ]).slice(0, 6);
   const decisionSummary = buildDecisionSummary({
     debrief: safeDebrief,
     percentage,
@@ -794,20 +608,7 @@ function buildExportContext({ debrief, comments = [], analysis = '', analysis_co
     topSections,
     prioritySections,
     structuredAi,
-    coachingExport,
   });
-  const improvementAxes = dedupeStrings([
-    ...(coachingExport.axes || []),
-    pointFaible || '',
-    prioritySections[0]
-      ? `Renforcer la section ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
-      : '',
-  ]).slice(0, 3);
-  const actionPlan = dedupeStrings([
-    ...(coachingExport.actions || []),
-    ...(recommendations || []).map(item => item.text),
-    actionPriority || '',
-  ]).slice(0, 3);
 
   return {
     title,
@@ -834,10 +635,7 @@ function buildExportContext({ debrief, comments = [], analysis = '', analysis_co
     decisionSummary,
     aiStrongPoint: pointFort,
     aiWeakPoint: pointFaible,
-    coachScoreNote: coachingExport.noteLabel,
     recommendations,
-    improvementAxes,
-    actionPlan,
     scoreReading: getScoreReading(percentage),
   };
 }
@@ -897,7 +695,7 @@ function buildLoadingHtml(title) {
         <div class="dot"></div>
         <div>
           <p class="title">Préparation du PDF</p>
-          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles.</p>
+          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles en annexe.</p>
         </div>
       </div>
     </body>
@@ -917,13 +715,12 @@ function buildDebriefPdfHtml(payload) {
     aiConfidence,
     risk,
     sectionInsights,
+    signals,
     analysisDigest,
     scoreReading,
     aiStrongPoint,
     aiWeakPoint,
-    coachScoreNote,
-    improvementAxes,
-    actionPlan,
+    recommendations,
   } = ctx;
 
   const analysisHtml = analysisDigest.length > 0
@@ -936,13 +733,16 @@ function buildDebriefPdfHtml(payload) {
       }).join('')}</ul>`
     : '<p class="hint">Synthèse IA non disponible.</p>';
 
-  const axisHtml = improvementAxes.length > 0
-    ? `<ul class="list list--signals">${improvementAxes.map(item => `<li>${escapeHtml(normalizeAiLine(item))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun axe prioritaire détecté.</p>';
-
-  const actionPlanHtml = actionPlan.length > 0
-    ? `<ul class="list list--signals">${actionPlan.map(item => `<li>${escapeHtml(normalizeAiLine(item))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune action immédiate détectée.</p>';
+  const recommendationsHtml = (recommendations.length > 0 ? recommendations : [
+    { priority: 'Haute', text: actionPriority || 'Définir une action prioritaire claire.' },
+    { priority: 'Moyenne', text: 'Consolider les sections les plus faibles.' },
+    { priority: 'Basse', text: 'Renforcer le levier principal déjà présent.' },
+  ]).slice(0, 3).map(rec => `
+    <li class="rec-item">
+      <span class="rec-priority rec-priority--${slugify(rec.priority || 'moyenne')}">${escapeHtml(rec.priority || 'Moyenne')}</span>
+      <span>${escapeHtml(normalizeAiLine(rec.text || ''))}</span>
+    </li>
+  `).join('');
 
   const sectionBarsHtml = sectionInsights.map(section => `
     <div class="bar-row">
@@ -974,6 +774,10 @@ function buildDebriefPdfHtml(payload) {
       </article>
     `;
   }).join('');
+
+  const keySignalsHtml = signals.length > 0
+    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)} : ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucun extrait libre saisi dans le debrief.</p>';
 
   const shortLink = debrief.call_link ? truncateText(debrief.call_link, 72) : 'Non renseigné';
 
@@ -1213,6 +1017,11 @@ function buildDebriefPdfHtml(payload) {
           font-size: 16px;
           color: #3f3128;
         }
+        .radar-note {
+          margin: 4px 0 0;
+          font-size: 12px;
+          color: #7d6a5d;
+        }
         .bar-row + .bar-row { margin-top: 10px; }
         .bar-row__label {
           display: flex;
@@ -1244,13 +1053,6 @@ function buildDebriefPdfHtml(payload) {
           text-transform: uppercase;
           letter-spacing: .08em;
           color: #ab5c49;
-        }
-        .signal-card--weak {
-          background: #fff6f6;
-          border-color: #f5dddd;
-        }
-        .signal-card--weak h3 {
-          color: #b25050;
         }
         .signal-card p {
           margin: 0;
@@ -1314,14 +1116,51 @@ function buildDebriefPdfHtml(payload) {
           line-height: 1.5;
           color: #5f4e41;
         }
-        .execution-grid {
+        .recommendations {
           margin-top: 10px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
         }
-        .execution-col h2 {
-          margin-bottom: 8px;
+        .rec-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          gap: 8px;
+        }
+        .rec-item {
+          display: flex;
+          gap: 8px;
+          align-items: flex-start;
+          font-size: 13px;
+          line-height: 1.45;
+          color: #5f4d40;
+        }
+        .rec-priority {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 68px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .06em;
+          text-transform: uppercase;
+          flex-shrink: 0;
+        }
+        .rec-priority--haute {
+          background: #fee2e2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+        .rec-priority--moyenne {
+          background: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+        }
+        .rec-priority--basse {
+          background: #dcfce7;
+          color: #166534;
+          border: 1px solid #bbf7d0;
         }
         .detail-grid {
           display: grid;
@@ -1365,6 +1204,29 @@ function buildDebriefPdfHtml(payload) {
           color: #6f5d4f;
           line-height: 1.45;
         }
+        .annex-box {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .annex-box h3 {
+          margin: 0 0 8px;
+          font-size: 14px;
+          color: #433329;
+        }
+        .annex-box p {
+          margin: 6px 0 0;
+          font-size: 12px;
+          line-height: 1.45;
+          color: #6f5e50;
+        }
+        .annex-grid {
+          margin-top: 10px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
         .footer {
           margin-top: 16px;
           border-top: 1px solid var(--line);
@@ -1380,7 +1242,7 @@ function buildDebriefPdfHtml(payload) {
           .hero-cockpit { grid-template-columns: 1fr; }
           .kpi-grid { grid-template-columns: 1fr 1fr; }
           .cockpit-grid { grid-template-columns: 1fr; }
-          .execution-grid { grid-template-columns: 1fr; }
+          .annex-grid { grid-template-columns: 1fr; }
         }
         @media print {
           body { background: #fff; }
@@ -1459,43 +1321,56 @@ function buildDebriefPdfHtml(payload) {
             <article class="cockpit-card">
               <h2>Radar compétences</h2>
               ${radarSvg}
+              <p class="radar-note">Axes: découverte → closing</p>
             </article>
             <article class="cockpit-card">
               <h2>Barres par section</h2>
               ${sectionBarsHtml}
               <div class="signal-card">
-                <h3>Point fort</h3>
-                <p>${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
-              </div>
-              <div class="signal-card signal-card--weak">
-                <h3>Point faible</h3>
-                <p>${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
+                <h3>Signal prioritaire</h3>
+                <p>${escapeHtml(signals[0] ? `${signals[0].section} · ${signals[0].label}: ${truncateText(signals[0].value, 95)}` : 'Aucun signal prioritaire détecté.')}</p>
               </div>
             </article>
           </section>
 
           <section class="panel" style="margin-top:14px;">
-            <h2>Synthèse IA ${coachScoreNote ? `· Note ${escapeHtml(coachScoreNote)}` : ''}</h2>
+            <h2>Synthèse IA</h2>
             ${analysisHtml}
+            <div class="decision ai-summary">
+              <p><strong>Point fort :</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
+              <p><strong>Point faible :</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
+            </div>
           </section>
 
-          <section class="execution-grid">
-            <article class="panel execution-col">
-              <h2>Axe d'amélioration</h2>
-              ${axisHtml}
-            </article>
-            <article class="panel execution-col">
-              <h2>Action à mener</h2>
-              ${actionPlanHtml}
-            </article>
+          <section class="panel recommendations">
+            <h2>3 recommandations priorisées</h2>
+            <ul class="rec-list">${recommendationsHtml}</ul>
           </section>
         </section>
 
         <section class="pdf-page">
           <p class="page-label">Page secondaire · Détails complets</p>
-          <section class="panel" style="margin-top:10px;">
+          <section class="panel">
             <h2>Performance détaillée par section</h2>
             <div class="detail-grid">${sectionDetailsHtml}</div>
+          </section>
+
+          <section class="panel" style="margin-top:10px;">
+            <h2>Annexe compacte</h2>
+            <div class="annex-grid">
+              <article class="annex-box">
+                <h3>Résumé opérationnel</h3>
+                <p><strong>Action prioritaire :</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
+                <p><strong>Score global :</strong> ${score20}/20 (${percentage}%)</p>
+                <p><strong>Note closer :</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
+                <p><strong>Taux closing :</strong> ${closingRate}% · <strong>Confiance IA :</strong> ${aiConfidence}%</p>
+              </article>
+              <article class="annex-box">
+                <h3>Extraits saisis (champs libres)</h3>
+                ${keySignalsHtml}
+              </article>
+            </div>
+            <p class="hint" style="margin-top:10px;">Risque actuel : ${escapeHtml(risk.label)} · Objection dominante : ${escapeHtml(dominantObjection || 'Aucune')}</p>
           </section>
 
           <footer class="footer">

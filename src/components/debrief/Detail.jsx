@@ -3,7 +3,7 @@ import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentage } from '../../utils/scoring';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
-import { SECTIONS, fetchAIDebriefExportSynthesis } from '../../config/ai';
+import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
@@ -32,7 +32,6 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
       catch { return ''; }
     })();
-    let analysisCoaching = '';
 
     let comments = [];
     try {
@@ -41,40 +40,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       comments = [];
     }
 
-    if (analysis.trim()) {
-      const cacheKey = `cd_ai_export_${debrief.id}`;
-      try {
-        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-        if (cached && cached.source === analysis && typeof cached.content === 'string' && cached.content.trim()) {
-          analysisCoaching = cached.content.trim();
-        }
-      } catch {}
-
-      if (!analysisCoaching) {
-        try {
-          const generated = await fetchAIDebriefExportSynthesis(debrief.id, analysis);
-          analysisCoaching = String(generated || '').trim();
-          if (analysisCoaching) {
-            try {
-              localStorage.setItem(cacheKey, JSON.stringify({
-                source: analysis,
-                content: analysisCoaching,
-                generated_at: Date.now(),
-              }));
-            } catch {}
-          }
-        } catch {}
-      }
-    }
-
-    return {
-      debrief,
-      comments,
-      analysis,
-      analysis_coaching: analysisCoaching || analysis,
-      allDebriefs,
-      user,
-    };
+    return { debrief, comments, analysis, allDebriefs, user };
   };
 
   const handleExportPdf = async () => {

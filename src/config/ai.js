@@ -180,13 +180,3 @@ export async function fetchAIAnalysis(debriefId) {
   const data = await apiFetch('/ai/analyze', { method: 'POST', body: { debrief_id: debriefId } });
   return data.analysis || '';
 }
-
-export async function fetchAIDebriefExportSynthesis(debriefId, debriefText) {
-  const payload = {
-    debrief_id: debriefId,
-    debrief_text: String(debriefText || '').trim(),
-  };
-  if (!payload.debrief_text) return '';
-  const data = await apiFetch('/ai/export-coaching', { method: 'POST', body: payload });
-  return data.analysis || '';
-}
