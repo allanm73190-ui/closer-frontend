@@ -21,6 +21,8 @@ import { PipelinePage } from './components/pipeline';
 import { HOSPage } from './components/team';
 import { ObjectionLibrary } from './components/objections';
 import { SettingsPage } from './components/settings';
+import { BenchmarkPage } from './components/features/Benchmark';
+import { KnowledgePage } from './components/features/Knowledge';
 
 const DESKTOP_SIDEBAR_WIDTH = 214;
 
@@ -28,6 +30,8 @@ const PAGE_META = {
   Dashboard: { title:'Tableau de bord', subtitle:'Performance globale et priorités du jour' },
   Pipeline: { title:'Pipeline', subtitle:'Suivi dynamique des opportunités en cours' },
   Objections: { title:'Objections', subtitle:'Bibliothèque active et réponses validées' },
+  Benchmark: { title:'Benchmark interne', subtitle:'Progression personnelle sans classement public' },
+  Knowledge: { title:'Centre de connaissances', subtitle:'Snippets validés et scripts réutilisables' },
   HOSPage: { title:'Espace équipe', subtitle:'Pilotage des équipes et objectifs HOS' },
   NewDebrief: { title:'Nouveau debrief', subtitle:'Capture structurée de votre dernier appel' },
   EditDebrief: { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
@@ -230,7 +234,16 @@ export default function App() {
     { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
     { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
     { key:'Objections', label:'Objections', icon:'forum' },
+    { key:'Benchmark', label:'Benchmark', icon:'query_stats' },
+    { key:'Knowledge', label:'Connaissances', icon:'library_books' },
     ...(isHOS ? [{ key:'HOSPage', label:'Équipe', icon:'groups' }] : []),
+    { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
+    { key:'History',   label:'Historique', icon:'history' },
+  ];
+  const mobileNavItems = [
+    { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
+    { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
+    { key:'Objections', label:'Objections', icon:'forum' },
     { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
     { key:'History',   label:'Historique', icon:'history' },
   ];
@@ -287,6 +300,8 @@ export default function App() {
       {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
       {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
       {page==='Objections' && <ObjectionLibrary toast={toast}/>}
+      {page==='Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
+      {page==='Knowledge' && <KnowledgePage navigate={navigate} toast={toast} />}
       {page==='HOSPage' && isHOS && <HOSPage toast={toast} allDebriefs={debriefs}/>}
       {page==='Settings' && (
         <SettingsPage
@@ -348,7 +363,7 @@ export default function App() {
             </main>
 
             <nav style={{ position:'fixed', left:10, right:10, bottom:'max(10px, env(safe-area-inset-bottom))', background:'var(--sidebar)', border:'1px solid var(--border)', borderRadius:16, boxShadow:'var(--sh-card)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 4px', zIndex:45, backdropFilter:'blur(14px)' }}>
-              {navItems.map(({ key, label, icon }) => (
+              {mobileNavItems.map(({ key, label, icon }) => (
                 <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit', flex:1 }}>
                   <div style={{ minWidth:34, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>
                     <NavIcon name={icon} active={page===key} size={17} color={page===key ? 'white' : TXT2} />

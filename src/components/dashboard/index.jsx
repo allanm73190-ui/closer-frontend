@@ -98,6 +98,34 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 
       <StatsRow debriefs={debriefs}/>
 
+      <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(2,minmax(0,1fr))', gap:12 }}>
+        <Card style={{ padding:16, background:'linear-gradient(140deg, rgba(232,125,106,.18), rgba(255,255,255,.95))' }}>
+          <p style={{ margin:'0 0 4px', fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:DS.textMuted, fontWeight:700 }}>
+            Feature
+          </p>
+          <h2 style={{ margin:'0 0 6px', fontSize:16, color:'var(--txt,#5a4a3a)' }}>Benchmark interne</h2>
+          <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt2,#b09080)' }}>
+            Compare ta progression uniquement à ton historique, sans classement public.
+          </p>
+          <Btn variant="secondary" onClick={()=>navigate('Benchmark')} style={{ fontSize:12, padding:'7px 11px' }}>
+            Ouvrir le benchmark
+          </Btn>
+        </Card>
+
+        <Card style={{ padding:16, background:'linear-gradient(140deg, rgba(106,172,206,.18), rgba(255,255,255,.95))' }}>
+          <p style={{ margin:'0 0 4px', fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:DS.textMuted, fontWeight:700 }}>
+            Feature
+          </p>
+          <h2 style={{ margin:'0 0 6px', fontSize:16, color:'var(--txt,#5a4a3a)' }}>Centre de connaissances</h2>
+          <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt2,#b09080)' }}>
+            Retrouve les meilleurs scripts validés et réutilise-les en 1 clic.
+          </p>
+          <Btn variant="secondary" onClick={()=>navigate('Knowledge')} style={{ fontSize:12, padding:'7px 11px' }}>
+            Ouvrir le centre
+          </Btn>
+        </Card>
+      </div>
+
       <Card style={{ padding:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap', marginBottom:10 }}>
           <div>
