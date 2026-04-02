@@ -75,7 +75,22 @@ function toReadableResult(debrief = {}) {
   return debrief?.is_closed ? 'Closé' : 'Non closé';
 }
 
-function extractSummaryItems(analysisText = '') {
+function toSingleParagraph(value = '') {
+  return String(value || '')
+    .replace(/\r/g, '\n')
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .split('\n')
+    .map(line => line.trim())
+    .map(line => line.replace(/^[-*•]\s+/, ''))
+    .map(line => line.replace(/^\d+\s*[.)]\s+/, ''))
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildFallbackSummary(analysisText = '') {
   const lines = toCleanLines(analysisText)
     .filter(line => !/^#+\s*/.test(line))
     .filter(line => !/^\d+\s*[\.\)]\s*$/.test(line))
@@ -111,7 +126,7 @@ function extractSummaryItems(analysisText = '') {
       if (picked.length >= 4) break;
     }
   }
-  return picked.slice(0, 4);
+  return toSingleParagraph(picked.slice(0, 4).join(' '));
 }
 
 function normalizeActionText(value = '') {
@@ -370,6 +385,7 @@ function buildContext(payload = {}) {
   const scores = computeSectionScores(debrief.sections || {});
   const resultLabel = toReadableResult(debrief);
   const analysisText = asText(payload?.analysis || '');
+  const exportSummary = toSingleParagraph(payload?.exportSummary || '');
 
   return {
     debrief,
@@ -379,6 +395,7 @@ function buildContext(payload = {}) {
     scores,
     resultLabel,
     analysisText,
+    exportSummary,
   };
 }
 
@@ -392,9 +409,10 @@ function buildDebriefPdfHtml(payload) {
     scores,
     resultLabel,
     analysisText,
+    exportSummary,
   } = ctx;
 
-  const summaryItems = extractSummaryItems(analysisText);
+  const summaryText = exportSummary || buildFallbackSummary(analysisText);
   const priorityActions = extractPriorityActions(analysisText, debrief);
   const extremes = getScoreExtremes(scores);
   const sectionBars = buildSectionBars(scores);
@@ -528,13 +546,12 @@ function buildDebriefPdfHtml(payload) {
           background: rgba(255, 255, 255, .18);
           border: 1px solid rgba(255, 255, 255, .25);
         }
-        .summary-list {
+        .summary-text {
           margin: 0;
-          padding-left: 20px;
-          display: grid;
-          gap: 6px;
           font-size: 13px;
-          line-height: 1.5;
+          line-height: 1.62;
+          color: #46392e;
+          white-space: pre-wrap;
         }
         .summary-note {
           margin: 8px 0 0;
@@ -817,11 +834,11 @@ function buildDebriefPdfHtml(payload) {
           <section class="card">
             <h2 style="margin:0 0 8px;font-size:16px;">Résumé IA</h2>
             ${
-              summaryItems.length > 0
-                ? `<ul class="summary-list">${summaryItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+              summaryText
+                ? `<p class="summary-text">${escapeHtml(summaryText)}</p>`
                 : '<p class="hint">Aucune synthèse IA disponible pour ce debrief.</p>'
             }
-            <p class="summary-note">Résumé extrait de la synthèse IA du debrief. Le prompt de condensation peut être personnalisé.</p>
+            <p class="summary-note">Résumé généré via appel IA dédié à partir de la synthèse du debrief.</p>
           </section>
 
           <section class="viz-grid">

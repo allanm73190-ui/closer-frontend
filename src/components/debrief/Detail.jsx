@@ -3,7 +3,7 @@ import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentage } from '../../utils/scoring';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
-import { SECTIONS } from '../../config/ai';
+import { SECTIONS, fetchAIExportSummary } from '../../config/ai';
 import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
@@ -28,8 +28,13 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const globalScores = avgSectionScores((allDebriefs || []).filter(item => item.id !== debrief.id));
 
   const buildPdfPayload = async () => {
+    const summaryCacheKey = `cd_ai_export_summary_${debrief.id}`;
     const analysis = (() => {
       try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
+      catch { return ''; }
+    })();
+    let exportSummary = (() => {
+      try { return localStorage.getItem(summaryCacheKey) || ''; }
       catch { return ''; }
     })();
 
@@ -40,7 +45,19 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       comments = [];
     }
 
-    return { debrief, comments, analysis, allDebriefs, user };
+    if (analysis) {
+      try {
+        const freshSummary = await fetchAIExportSummary(analysis);
+        if (freshSummary) {
+          exportSummary = freshSummary;
+          try { localStorage.setItem(summaryCacheKey, freshSummary); } catch {}
+        }
+      } catch {
+        // Fallback silencieux: on garde le cache local ou un résumé calculé côté export.
+      }
+    }
+
+    return { debrief, comments, analysis, exportSummary, allDebriefs, user };
   };
 
   const handleExportPdf = async () => {

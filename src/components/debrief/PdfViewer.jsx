@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DS } from '../../styles/designSystem';
 import { apiFetch } from '../../config/api';
+import { fetchAIExportSummary } from '../../config/ai';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf } from '../../utils/pdfExport';
 import { Btn, Spinner } from '../ui';
 
@@ -16,8 +17,13 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
       if (!debrief?.id) return;
       setLoading(true);
       try {
+        const summaryCacheKey = `cd_ai_export_summary_${debrief.id}`;
         const analysis = (() => {
           try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
+          catch { return ''; }
+        })();
+        let exportSummary = (() => {
+          try { return localStorage.getItem(summaryCacheKey) || ''; }
           catch { return ''; }
         })();
         let comments = [];
@@ -26,7 +32,18 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
         } catch {
           comments = [];
         }
-        const nextPayload = { debrief, comments, analysis, allDebriefs, user };
+        if (analysis) {
+          try {
+            const freshSummary = await fetchAIExportSummary(analysis);
+            if (freshSummary) {
+              exportSummary = freshSummary;
+              try { localStorage.setItem(summaryCacheKey, freshSummary); } catch {}
+            }
+          } catch {
+            // Fallback silencieux: cache local ou résumé de secours côté export.
+          }
+        }
+        const nextPayload = { debrief, comments, analysis, exportSummary, allDebriefs, user };
         if (!mounted) return;
         setPayload(nextPayload);
         setHtml(buildDebriefPdfPreviewHtml(nextPayload));
