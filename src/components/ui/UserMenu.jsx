@@ -7,6 +7,11 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false, theme
   const ref = useRef(null);
   const mob = useIsMobile();
   const isDark = theme === 'dark';
+  const roleLabel = user.role === 'admin'
+    ? 'Admin'
+    : user.role === 'head_of_sales'
+      ? 'Head of Sales'
+      : 'Closer';
 
   useEffect(() => {
     const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -129,8 +134,3 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar=false, theme
 }
 
 export { UserMenu };
-  const roleLabel = user.role === 'admin'
-    ? 'Admin'
-    : user.role === 'head_of_sales'
-      ? 'Head of Sales'
-      : 'Closer';
