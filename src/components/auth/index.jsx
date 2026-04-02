@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { apiFetch, setToken } from '../../config/api';
 import { DS, P, P2 } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
+import { PASSWORD_POLICY, getPasswordStrength, validatePasswordPolicy } from '../../utils/security';
 import { AlertBox } from '../ui';
 
 const fieldWrap = { display:'flex', flexDirection:'column', gap:6 };
@@ -199,7 +200,8 @@ function RegisterPage({ onLogin, goLogin }) {
     e.preventDefault();
     setErr('');
     if (f.password !== f.confirm) return setErr('Les mots de passe ne correspondent pas');
-    if (f.password.length < 8) return setErr('Mot de passe trop court (8 car. min)');
+    const pwdPolicy = validatePasswordPolicy(f.password, { email:f.email, name:f.name });
+    if (!pwdPolicy.ok) return setErr(pwdPolicy.message);
     if (f.role === 'closer' && !f.invite_code) return setErr("Un code d'invitation est requis");
     setLoading(true);
     try {
@@ -221,6 +223,7 @@ function RegisterPage({ onLogin, goLogin }) {
       setLoading(false);
     }
   };
+  const strength = getPasswordStrength(f.password);
 
   return (
     <AuthShell wide title="Créer un compte" subtitle="Choisissez votre rôle pour activer la bonne expérience (Closer ou Head of Sales).">
@@ -292,7 +295,7 @@ function RegisterPage({ onLogin, goLogin }) {
           type="password"
           value={f.password}
           onChange={e => setF({ ...f, password:e.target.value })}
-          placeholder="8 caractères minimum"
+          placeholder={`${PASSWORD_POLICY.minLength} caractères minimum`}
           required
         />
         <TextField
@@ -303,6 +306,14 @@ function RegisterPage({ onLogin, goLogin }) {
           placeholder="••••••••"
           required
         />
+        <div style={{ gridColumn:'1 / -1', marginTop:-4 }}>
+          <p style={{ margin:0, fontSize:11, color:strength.color, fontWeight:700 }}>
+            Sécurité du mot de passe: {strength.label}
+          </p>
+          <p style={{ margin:'2px 0 0', fontSize:11, color:DS.textMuted }}>
+            Requis: {PASSWORD_POLICY.minLength}+ caractères, 3 éléments parmi majuscule, minuscule, chiffre, symbole.
+          </p>
+        </div>
 
         {f.role === 'closer' && (
           <div style={{ gridColumn:'1 / -1' }}>
@@ -398,7 +409,8 @@ function ResetPage({ token, onDone }) {
     e.preventDefault();
     setErr('');
     if (f.password !== f.confirm) return setErr('Les mots de passe ne correspondent pas');
-    if (f.password.length < 8) return setErr('Mot de passe trop court');
+    const pwdPolicy = validatePasswordPolicy(f.password);
+    if (!pwdPolicy.ok) return setErr(pwdPolicy.message);
     setLoading(true);
     try {
       await apiFetch('/auth/reset-password', { method:'POST', body:{ token, password:f.password } });
@@ -410,6 +422,7 @@ function ResetPage({ token, onDone }) {
       setLoading(false);
     }
   };
+  const strength = getPasswordStrength(f.password);
 
   return (
     <AuthShell title="Nouveau mot de passe" subtitle="Définissez un mot de passe sécurisé pour reprendre l’accès.">
@@ -424,7 +437,7 @@ function ResetPage({ token, onDone }) {
               type="password"
               value={f.password}
               onChange={e => setF({ ...f, password:e.target.value })}
-              placeholder="8 caractères minimum"
+              placeholder={`${PASSWORD_POLICY.minLength} caractères minimum`}
               required
               autoFocus
             />
@@ -436,6 +449,9 @@ function ResetPage({ token, onDone }) {
               placeholder="••••••••"
               required
             />
+            <p style={{ margin:'-2px 0 0', fontSize:11, color:strength.color, fontWeight:700 }}>
+              Sécurité du mot de passe: {strength.label}
+            </p>
             <button type="submit" disabled={loading} style={{ ...primaryBtn, opacity:loading ? .7 : 1, cursor:loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Modification...' : 'Modifier le mot de passe'}
             </button>

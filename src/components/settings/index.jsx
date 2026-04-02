@@ -3,6 +3,7 @@ import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { DEFAULT_PIPELINE_CONFIG, LEAD_FIELD_OPTIONS, makeStatusKey, normalizePipelineConfig } from '../../config/pipeline';
 import { getDefaultTemplateCatalog, normalizeDebriefTemplateCatalog } from '../../config/debriefTemplates';
+import { PASSWORD_POLICY, getPasswordStrength, validatePasswordPolicy } from '../../utils/security';
 import { DebriefConfigEditor } from '../debrief/Settings';
 import { AlertBox, Btn, Card, Input, Spinner, Textarea } from '../ui';
 
@@ -27,6 +28,7 @@ function AccountSettingsSection({ user, toast }) {
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdError, setPwdError] = useState('');
+  const pwdStrength = useMemo(() => getPasswordStrength(pwd.next), [pwd.next]);
 
   const loadTeam = useCallback(async () => {
     if (!isCloser) return;
@@ -64,12 +66,13 @@ function AccountSettingsSection({ user, toast }) {
 
   const changePassword = async () => {
     setPwdError('');
-    if (pwd.next.length < 8) {
-      setPwdError('Le nouveau mot de passe doit contenir 8 caractères minimum.');
-      return;
-    }
     if (pwd.next !== pwd.confirm) {
       setPwdError('La confirmation du mot de passe ne correspond pas.');
+      return;
+    }
+    const policy = validatePasswordPolicy(pwd.next, { email:user?.email, name:user?.name });
+    if (!policy.ok) {
+      setPwdError(policy.message);
       return;
     }
     setPwdSaving(true);
@@ -148,6 +151,12 @@ function AccountSettingsSection({ user, toast }) {
             <Input type="password" value={pwd.confirm} onChange={e=>setPwd(prev => ({ ...prev, confirm:e.target.value }))} />
           </div>
         </div>
+        <p style={{ margin:'10px 0 0', fontSize:11, color:pwdStrength.color, fontWeight:700 }}>
+          Force du mot de passe: {pwdStrength.label}
+        </p>
+        <p style={{ margin:'3px 0 0', fontSize:11, color:DS.textMuted }}>
+          Politique: {PASSWORD_POLICY.minLength}+ caractères et 3 éléments parmi majuscule, minuscule, chiffre, symbole.
+        </p>
         <div style={{ marginTop:12 }}>
           <Btn onClick={changePassword} disabled={pwdSaving || !pwd.current || !pwd.next || !pwd.confirm}>
             {pwdSaving ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
@@ -246,6 +255,159 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
           {saving ? 'Enregistrement...' : 'Enregistrer les préférences'}
         </Btn>
       </div>
+    </div>
+  );
+}
+
+function SecurityTrustSection({ user, toast }) {
+  const isHOS = user.role === 'head_of_sales';
+  const [scope, setScope] = useState(isHOS ? 'team' : 'own');
+  const [posture, setPosture] = useState(null);
+  const [audit, setAudit] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const effectiveScope = isHOS ? scope : 'own';
+      const [postureData, auditData] = await Promise.all([
+        apiFetch('/security/posture'),
+        apiFetch(`/security/audit?limit=40&scope=${encodeURIComponent(effectiveScope)}`),
+      ]);
+      setPosture(postureData || null);
+      setAudit(Array.isArray(auditData?.events) ? auditData.events : []);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [isHOS, scope, toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const statusColor = (outcome) => {
+    if (outcome === 'failure') return { bg:'var(--danger-bg)', color:'var(--danger-txt)' };
+    return { bg:'var(--positive-bg)', color:'var(--positive-txt)' };
+  };
+
+  const formatDateTime = (value) => {
+    try {
+      return new Date(value).toLocaleString('fr-FR', {
+        day:'2-digit',
+        month:'short',
+        hour:'2-digit',
+        minute:'2-digit',
+      });
+    } catch {
+      return value || '—';
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card style={{ padding:16 }}>
+        <Spinner size={22} />
+      </Card>
+    );
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <Card style={{ padding:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <div>
+            <p style={{ margin:'0 0 4px', fontSize:11, letterSpacing:'.08em', textTransform:'uppercase', color:DS.textMuted, fontWeight:700 }}>Confiance</p>
+            <p style={{ margin:0, fontSize:13, color:'var(--txt,#5a4a3a)' }}>
+              Socle sécurité actif: verrouillage anti brute-force, politique mot de passe renforcée, audit des actions sensibles.
+            </p>
+          </div>
+          <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+            {isHOS && (
+              <select
+                value={scope}
+                onChange={e=>setScope(e.target.value)}
+                style={{ border:'1px solid var(--border)', borderRadius:10, background:'var(--card,#fff)', padding:'8px 10px', fontSize:12, fontFamily:'inherit', color:'var(--txt,#5a4a3a)' }}
+              >
+                <option value="team">Audit équipe</option>
+                <option value="own">Audit personnel</option>
+              </select>
+            )}
+            <Btn variant="secondary" onClick={()=>load(true)} disabled={refreshing}>
+              {refreshing ? 'Actualisation...' : '↻ Actualiser'}
+            </Btn>
+          </div>
+        </div>
+      </Card>
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:8 }}>
+        <Card style={{ padding:'12px 12px' }}>
+          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>JWT session</p>
+          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+            {posture?.auth?.jwt_expiration || '—'}
+          </p>
+        </Card>
+        <Card style={{ padding:'12px 12px' }}>
+          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Verrouillage login</p>
+          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+            {posture?.protections?.brute_force_lock?.threshold || 0} tentatives
+          </p>
+        </Card>
+        <Card style={{ padding:'12px 12px' }}>
+          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Politique mot de passe</p>
+          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+            {posture?.password_policy?.min_length || PASSWORD_POLICY.minLength}+ caractères
+          </p>
+        </Card>
+        <Card style={{ padding:'12px 12px' }}>
+          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Événements audit</p>
+          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{audit.length}</p>
+        </Card>
+      </div>
+
+      <Card style={{ padding:14 }}>
+        <p style={{ margin:'0 0 8px', fontSize:11, letterSpacing:'.08em', textTransform:'uppercase', color:DS.textMuted, fontWeight:700 }}>
+          Journal d’audit sécurité
+        </p>
+        {audit.length === 0 ? (
+          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
+            Aucun événement récent.
+          </p>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:7, maxHeight:420, overflowY:'auto', paddingRight:2 }}>
+            {audit.map(event => {
+              const state = statusColor(event.outcome);
+              return (
+                <div key={event.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'var(--card,#fff)' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{event.action}</span>
+                      <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:state.bg, color:state.color }}>
+                        {event.outcome === 'failure' ? 'Échec' : 'Succès'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize:11, color:DS.textMuted }}>
+                      {formatDateTime(event.created_at)}
+                    </span>
+                  </div>
+                  <p style={{ margin:'0 0 3px', fontSize:11, color:DS.textMuted }}>
+                    Acteur: {event.actor_role || 'n/a'} · IP: {event.ip || 'n/a'}
+                  </p>
+                  {event.details && Object.keys(event.details).length > 0 && (
+                    <p style={{ margin:0, fontSize:11, color:'var(--txt2,#b09080)' }}>
+                      Détails: {Object.entries(event.details).slice(0, 4).map(([key, value]) => `${key}=${String(value)}`).join(' · ')}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
@@ -606,6 +768,7 @@ function SettingsPage({
   const tabs = useMemo(() => ([
     { key:'account', label:'Compte' },
     { key:'app', label:'Application' },
+    { key:'security', label:'Sécurité' },
     ...(isHOS ? [
       { key:'debrief', label:'Debrief' },
       { key:'templates', label:'Templates' },
@@ -666,6 +829,9 @@ function SettingsPage({
           onSaveAppSettings={onSaveAppSettings}
           toast={toast}
         />
+      )}
+      {activeTab === 'security' && (
+        <SecurityTrustSection user={user} toast={toast} />
       )}
 
       {activeTab === 'debrief' && isHOS && (
