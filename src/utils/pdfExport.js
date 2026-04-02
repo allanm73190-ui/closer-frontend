@@ -61,6 +61,20 @@ function toCleanLines(value = '') {
     .filter(Boolean);
 }
 
+function toParagraphs(value = '') {
+  return String(value || '')
+    .replace(/\r/g, '\n')
+    .split(/\n{2,}/)
+    .map(block => block
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .join(' '))
+    .map(stripMarkdown)
+    .map(block => block.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
 function toBarColor(score) {
   if (score >= 4) return '#059669';
   if (score >= 3) return '#d97706';
@@ -130,16 +144,39 @@ function buildFallbackSummary(analysisText = '') {
 }
 
 function normalizeActionText(value = '') {
-  return String(value || '')
+  const cleaned = String(value || '')
     .replace(/^[-*•]\s*/, '')
     .replace(/^action prioritaire\s*[:\-]\s*/i, '')
     .replace(/^action concr[eè]te\s*[:\-]\s*/i, '')
+    .replace(/^action concr[eè]te pour les 10 prochains calls\s*[:\-]\s*/i, '')
+    .replace(/^action pour les 10 prochains calls\s*[:\-]\s*/i, '')
+    .replace(/^\d+\s*[.)]\s*action prioritaire\s*[:\-]\s*/i, '')
+    .replace(/^\d+\s*[.)]\s*action concr[eè]te(?: pour les 10 prochains calls)?\s*[:\-]\s*/i, '')
+    .replace(/^\d+\s*[.)]\s*script de correction\s*[:\-]\s*/i, '')
+    .replace(/^script de correction\s*$/i, '')
     .replace(/^script de correction\s*[:\-]\s*/i, '')
     .trim();
+
+  const idx = cleaned.indexOf(':');
+  if (idx > 0 && idx < 70) {
+    const head = cleaned.slice(0, idx).toLowerCase();
+    if (
+      head.includes('action')
+      || head.includes('script')
+      || head.includes('prioritaire')
+      || head.includes('prochains calls')
+    ) {
+      return cleaned.slice(idx + 1).trim();
+    }
+  }
+  return cleaned;
 }
 
 function extractPriorityActions(analysisText = '', debrief = {}) {
   const lines = toCleanLines(analysisText)
+    .map(normalizeActionText)
+    .filter(Boolean);
+  const paragraphs = toParagraphs(analysisText)
     .map(normalizeActionText)
     .filter(Boolean);
 
@@ -156,6 +193,7 @@ function extractPriorityActions(analysisText = '', debrief = {}) {
     if (
       low.includes('action prioritaire')
       || low.includes('action concrète')
+      || low.includes('action concrete')
       || low.includes('prochains calls')
       || low.includes('prochain appel')
       || low.includes('script')
@@ -163,6 +201,21 @@ function extractPriorityActions(analysisText = '', debrief = {}) {
       || low.includes('automatiser')
     ) {
       addCandidate(line);
+    }
+  });
+
+  paragraphs.forEach(block => {
+    const low = block.toLowerCase();
+    if (
+      low.includes('action prioritaire')
+      || low.includes('action concrète')
+      || low.includes('action concrete')
+      || low.includes('prochains calls')
+      || low.includes('script de correction')
+      || low.includes('action à mener')
+      || low.includes('action a mener')
+    ) {
+      addCandidate(block);
     }
   });
 
@@ -471,9 +524,12 @@ function buildDebriefPdfHtml(payload) {
           box-shadow: 0 16px 34px rgba(70, 52, 40, .12);
           padding: 24px;
           min-height: 1120px;
-          display: grid;
-          grid-template-rows: auto auto auto 1fr;
+          display: flex;
+          flex-direction: column;
           gap: 14px;
+        }
+        .actions-section {
+          margin-top: auto;
         }
         .kicker {
           margin: 0;
@@ -667,6 +723,8 @@ function buildDebriefPdfHtml(payload) {
           font-size: 13px;
           color: #42362c;
           line-height: 1.5;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
         }
         .analysis-block {
           border: 1px solid var(--line);
@@ -861,7 +919,7 @@ function buildDebriefPdfHtml(payload) {
             </article>
           </section>
 
-          <section class="card">
+          <section class="card actions-section">
             <h2 style="margin:0 0 8px;font-size:16px;">2 actions prioritaires</h2>
             <div class="actions-grid">
               <article class="action-card">
