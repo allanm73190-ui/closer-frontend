@@ -166,6 +166,20 @@ function dedupeStrings(values = []) {
   });
 }
 
+function normalizeToken(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function isLikelyNarrativeFieldKey(rawKey = '') {
+  const key = normalizeToken(rawKey);
+  if (!key) return false;
+  return /note|notes|detail|details|precision|justification|comment|verbatim|douleur|temporalite|timeline|free.?text|champ.?libre|texte|pain|contexte|context|focus|objection|improvement|amelioration|strength|weakness|action|recommand|insight/.test(key);
+}
+
 function isLowSignalValue(value = '') {
   const raw = String(value || '')
     .normalize('NFD')
@@ -242,6 +256,7 @@ function extractSectionEvidence(sectionData = {}, maxItems = 3) {
   const fallback = [];
   for (const [key, value] of entries) {
     if (/_note$/i.test(key)) continue;
+    if (!isLikelyNarrativeFieldKey(key)) continue;
     const formatted = formatFieldValue(value).trim();
     if (!formatted || isLowSignalValue(formatted)) continue;
     if (formatted.length < 5) continue;
@@ -355,6 +370,113 @@ function splitLabeledLine(line = '') {
   return { label: '', text: cleaned };
 }
 
+function parseAiStructuredContent(text = '') {
+  const source = String(text || '');
+  if (!source.trim()) {
+    return { summary: [], strong: [], weak: [], recommendations: [], priority: '' };
+  }
+
+  const lines = source
+    .split('\n')
+    .map(line => normalizeAiLine(cleanMarkdownLine(line)))
+    .filter(Boolean);
+
+  const summary = [];
+  const strong = [];
+  const weak = [];
+  const recommendations = [];
+  const priorityCandidates = [];
+  let section = 'summary';
+
+  const push = (bucket, value) => {
+    const clean = normalizeAiLine(value);
+    if (!clean) return;
+    bucket.push(clean);
+  };
+
+  for (const rawLine of lines) {
+    const line = normalizeAiLine(rawLine);
+    if (!line) continue;
+    const bulletLine = line.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+    if (!bulletLine) continue;
+
+    const parsed = splitLabeledLine(bulletLine);
+    const labelNorm = normalizeToken(parsed.label || bulletLine);
+    const text = parsed.text || '';
+
+    const isPriority = /action prioritaire|priorite immediate|priorite principale|priorite du call|next best action/.test(labelNorm);
+    const isStrong = /point(s)? fort|forces?|atout|ce qui marche|reussite|reussi|solide/.test(labelNorm);
+    const isWeak = /point(s)? faible|faiblesse|axe(s)? d.?amelioration|vigilance|risque|a corriger|a travailler|frein/.test(labelNorm);
+    const isRec = /recommandation|actions?|plan d.?action|prochaine etape|next step|next action/.test(labelNorm);
+    const isSummaryHeading = /synthese|resume|diagnostic|lecture globale|analyse globale/.test(labelNorm);
+
+    if (isPriority) {
+      section = 'recommendations';
+      if (text) {
+        push(priorityCandidates, text);
+      }
+      continue;
+    }
+    if (isStrong) {
+      section = 'strong';
+      if (text) {
+        push(strong, text);
+      }
+      continue;
+    }
+    if (isWeak) {
+      section = 'weak';
+      if (text) {
+        push(weak, text);
+      }
+      continue;
+    }
+    if (isRec) {
+      section = 'recommendations';
+      if (text) {
+        push(recommendations, text);
+      }
+      continue;
+    }
+    if (isSummaryHeading) {
+      section = 'summary';
+      if (text) {
+        push(summary, text);
+      }
+      continue;
+    }
+
+    if (!parsed.label && /^(synthese|resume|diagnostic|points?\s+forts?|points?\s+faibles?|recommandations?|actions?)$/i.test(line)) {
+      if (/fort/i.test(line)) section = 'strong';
+      else if (/faible|amelioration|risque|vigilance/i.test(line)) section = 'weak';
+      else if (/recommand|action/i.test(line)) section = 'recommendations';
+      else section = 'summary';
+      continue;
+    }
+
+    if (section === 'strong') push(strong, bulletLine);
+    else if (section === 'weak') push(weak, bulletLine);
+    else if (section === 'recommendations') push(recommendations, bulletLine);
+    else push(summary, bulletLine);
+  }
+
+  const dedupedSummary = dedupeStrings(summary).filter(item => !/^(point(s)?\s+fort|point(s)?\s+faible|recommandation|action prioritaire)\b/i.test(item));
+  const dedupedStrong = dedupeStrings(strong);
+  const dedupedWeak = dedupeStrings(weak);
+  const dedupedRecommendations = dedupeStrings([
+    ...priorityCandidates,
+    ...recommendations,
+  ]);
+
+  return {
+    summary: dedupedSummary,
+    strong: dedupedStrong,
+    weak: dedupedWeak,
+    recommendations: dedupedRecommendations,
+    priority: dedupeStrings(priorityCandidates)[0] || '',
+  };
+}
+
 function pickAiLine(lines = [], patterns = []) {
   const source = Array.isArray(lines) ? lines : [];
   const tests = Array.isArray(patterns) ? patterns : [];
@@ -366,8 +488,15 @@ function pickAiLine(lines = [], patterns = []) {
   return '';
 }
 
-function buildAiInsights({ analysisLines = [], actionPriority = '', topSections = [], prioritySections = [] }) {
+function buildAiInsights({
+  analysisLines = [],
+  actionPriority = '',
+  topSections = [],
+  prioritySections = [],
+  structuredAi = null,
+}) {
   const cleanLines = dedupeStrings((analysisLines || []).map(normalizeAiLine).filter(Boolean));
+  const structured = structuredAi || { strong: [], weak: [], recommendations: [] };
   const strongFallback = topSections[0]
     ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
     : 'Levier principal non identifié.';
@@ -375,12 +504,17 @@ function buildAiInsights({ analysisLines = [], actionPriority = '', topSections 
     ? `Point faible principal: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
     : 'Point faible principal non identifié.';
 
-  const pointFort = pickAiLine(cleanLines, [/point fort|strength|atout|réussi|reussi|solide|maitri|maîtris/i]) || strongFallback;
-  const pointFaible = pickAiLine(cleanLines, [/point faible|weak|risque|bloqu|frein|manque|amélior|amelior/i]) || weakFallback;
+  const pointFort = structured.strong?.[0]
+    || pickAiLine(cleanLines, [/point fort|strength|atout|réussi|reussi|solide|maitri|maîtris/i])
+    || strongFallback;
+  const pointFaible = structured.weak?.[0]
+    || pickAiLine(cleanLines, [/point faible|weak|risque|bloqu|frein|manque|amélior|amelior/i])
+    || weakFallback;
 
   const recommendationCandidates = cleanLines.filter(line => {
     if (!line) return false;
     if (line === pointFort || line === pointFaible) return false;
+    if (/^(point(s)?\s+fort|point(s)?\s+faible)\b/i.test(line)) return false;
     return /action|priorit|recommand|prochain|corrig|travaill|objectif|next/i.test(line);
   });
 
@@ -394,7 +528,11 @@ function buildAiInsights({ analysisLines = [], actionPriority = '', topSections 
       : 'Capitaliser sur les points forts observés lors du call.',
   ];
 
-  const recommendations = dedupeStrings([...recommendationCandidates, ...fallbackRecs])
+  const recommendations = dedupeStrings([
+    ...(structured.recommendations || []),
+    ...recommendationCandidates,
+    ...fallbackRecs,
+  ])
     .slice(0, 3)
     .map((item, idx) => ({
       priority: idx === 0 ? 'Haute' : idx === 1 ? 'Moyenne' : 'Basse',
@@ -412,7 +550,8 @@ function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs
   const scores = computeSectionScores(safeDebrief.sections || {});
   const topSections = getTopSections(scores);
   const prioritySections = getPrioritySections(scores);
-  const actionPriority = extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
+  const structuredAi = parseAiStructuredContent(analysis);
+  const actionPriority = structuredAi.priority || extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
   const keyBullets = extractKeyBullets(analysis);
   const analysisLines = extractAnalysisLines(analysis);
   const dominantObjection = getDominantObjection(safeDebrief);
@@ -444,11 +583,18 @@ function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs
     actionPriority,
     sectionInsights,
   });
-  const analysisDigest = dedupeStrings(
+  const fallbackDigest = dedupeStrings(
     [...keyBullets, ...analysisLines]
       .map(normalizeAiLine)
       .filter(Boolean)
-  ).slice(0, 4);
+      .filter(line => !/^(point(s)?\s+fort|point(s)?\s+faible|recommandation|action prioritaire)\b/i.test(line))
+  );
+  const analysisDigest = dedupeStrings([
+    ...(structuredAi.summary || []),
+    ...(structuredAi.strong?.[0] ? [`Point fort: ${structuredAi.strong[0]}`] : []),
+    ...(structuredAi.weak?.[0] ? [`Point faible: ${structuredAi.weak[0]}`] : []),
+    ...fallbackDigest,
+  ]).slice(0, 6);
   const decisionSummary = buildDecisionSummary({
     debrief: safeDebrief,
     percentage,
@@ -461,6 +607,7 @@ function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs
     actionPriority,
     topSections,
     prioritySections,
+    structuredAi,
   });
 
   return {
