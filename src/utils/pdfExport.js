@@ -490,15 +490,6 @@ function buildDebriefPdfHtml(payload) {
     `).join('')
     : '<p class="hint">Aucun commentaire équipe sur ce debrief.</p>';
 
-  const commentsPanelHtml = latestComments.length > 0
-    ? `
-      <section class="panel" style="margin-top:12px;">
-        <h2>Commentaires équipe récents</h2>
-        ${commentsHtml}
-      </section>
-    `
-    : '';
-
   const annexHtml = sectionInsights.map(section => {
     const evidence = section.evidence.length > 0
       ? `<ul class="mini-list">${section.evidence.map(item => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(truncateText(item.value, 150))}</li>`).join('')}</ul>`
@@ -550,13 +541,26 @@ function buildDebriefPdfHtml(payload) {
           font-size: 12px;
           color: var(--muted);
         }
-        .sheet {
+        .pdf-stack {
           width: min(1080px, calc(100vw - 28px));
           margin: 18px auto 32px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .pdf-page {
           background: var(--paper);
           border-radius: 22px;
           box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
           padding: 26px;
+        }
+        .page-label {
+          margin: 0 0 10px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .1em;
+          font-weight: 700;
+          color: #8f7d6e;
         }
         .hero {
           display: grid;
@@ -739,28 +743,6 @@ function buildDebriefPdfHtml(payload) {
           margin-top: 12px;
           background: #fcf8f4;
         }
-        details.panel--soft {
-          padding: 0;
-          overflow: hidden;
-        }
-        details.panel--soft > summary {
-          list-style: none;
-          cursor: pointer;
-          padding: 12px;
-          font-weight: 700;
-          font-size: 14px;
-          color: #4f4035;
-          border-bottom: 1px solid transparent;
-          user-select: none;
-        }
-        details.panel--soft > summary::-webkit-details-marker { display: none; }
-        details.panel--soft[open] > summary {
-          border-bottom-color: var(--line);
-          background: #fff;
-        }
-        .panel--soft__body {
-          padding: 12px;
-        }
         .annex-grid {
           margin-top: 8px;
           display: grid;
@@ -808,86 +790,123 @@ function buildDebriefPdfHtml(payload) {
           font-size: 11px;
         }
         @media (max-width: 860px) {
-          .sheet { padding: 16px; border-radius: 14px; }
+          .pdf-page { padding: 16px; border-radius: 14px; }
           .hero { grid-template-columns: 1fr; }
           .split { grid-template-columns: 1fr; }
           .annex-grid { grid-template-columns: 1fr; }
         }
+        @media print {
+          body { background: #fff; }
+          .topbar { display: none; }
+          .pdf-stack {
+            width: 100%;
+            margin: 0;
+            gap: 0;
+          }
+          .pdf-page {
+            box-shadow: none;
+            border-radius: 0;
+            padding: 14mm;
+            page-break-after: always;
+            break-after: page;
+          }
+          .pdf-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+        }
       </style>
     </head>
     <body>
-      <div class="topbar">Prévisualisation PDF optimisée: lecture stratégique d'abord, détail ensuite.</div>
-      <main class="sheet">
-        <section class="hero">
-          <div class="hero-main">
-            <p class="kicker">Export debrief priorisé</p>
-            <h1>${escapeHtml(debrief.prospect_name || 'Prospect non renseigné')}</h1>
-            <p class="hero-meta">
-              ${escapeHtml(fmtDate(debrief.call_date))} · ${escapeHtml(debrief.closer_name || debrief.user_name || 'Closer non renseigné')}
-            </p>
-            <div class="chips">
-              <span class="chip">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
-              <span class="chip ${riskToneClass}">${escapeHtml(risk.label)}</span>
-              <span class="chip">Objection: ${escapeHtml(dominantObjection)}</span>
+      <div class="topbar">Prévisualisation PDF: 1 page principale (clés), 1 page secondaire (détails).</div>
+      <main class="pdf-stack">
+        <section class="pdf-page">
+          <p class="page-label">Page principale · Éléments clés</p>
+          <section class="hero">
+            <div class="hero-main">
+              <p class="kicker">Export debrief priorisé</p>
+              <h1>${escapeHtml(debrief.prospect_name || 'Prospect non renseigné')}</h1>
+              <p class="hero-meta">
+                ${escapeHtml(fmtDate(debrief.call_date))} · ${escapeHtml(debrief.closer_name || debrief.user_name || 'Closer non renseigné')}
+              </p>
+              <div class="chips">
+                <span class="chip">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
+                <span class="chip ${riskToneClass}">${escapeHtml(risk.label)}</span>
+                <span class="chip">Objection: ${escapeHtml(dominantObjection)}</span>
+              </div>
             </div>
-          </div>
-          <aside class="hero-score">
-            <p>Score global</p>
-            <strong>${score20}</strong>
-            <small>/20 · ${percentage}% · ${escapeHtml(scoreReading)}</small>
-          </aside>
+            <aside class="hero-score">
+              <p>Score global</p>
+              <strong>${score20}</strong>
+              <small>/20 · ${percentage}% · ${escapeHtml(scoreReading)}</small>
+            </aside>
+          </section>
+
+          <section class="decision">
+            <h2>Résumé décisionnel</h2>
+            <p>${escapeHtml(decisionSummary)}</p>
+          </section>
+
+          <section class="split">
+            <article class="panel">
+              <h2>Essentiel (4 points max)</h2>
+              ${highlightsHtml}
+            </article>
+            <article class="panel">
+              <h2>Plan immédiat</h2>
+              <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#604f42;">${escapeHtml(actionPriority)}</p>
+              <ul class="list">
+                <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
+                <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
+              </ul>
+              ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 190))}</p>` : ''}
+            </article>
+          </section>
+
+          <section class="split" style="margin-top:12px;">
+            <article class="panel">
+              <h2>Synthèse IA en bref</h2>
+              ${analysisHtml}
+            </article>
+            <article class="panel">
+              <h2>Repères rapides</h2>
+              <ul class="list">
+                <li>Statut: ${debrief.is_closed ? 'Closé' : 'Non closé'}</li>
+                <li>Score: ${score20}/20</li>
+                <li>Risque: ${escapeHtml(risk.label)}</li>
+              </ul>
+            </article>
+          </section>
         </section>
 
-        <section class="decision">
-          <h2>Résumé décisionnel</h2>
-          <p>${escapeHtml(decisionSummary)}</p>
-        </section>
+        <section class="pdf-page">
+          <p class="page-label">Page secondaire · Détails complets</p>
+          <section class="panel" style="margin-top:0;">
+            <h2>Performance détaillée par section</h2>
+            <div class="score-rows">${scoreRows}</div>
+          </section>
 
-        <section class="split">
-          <article class="panel">
-            <h2>Essentiel (4 points max)</h2>
-            ${highlightsHtml}
-          </article>
-          <article class="panel">
-            <h2>Plan immédiat</h2>
-            <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#604f42;">${escapeHtml(actionPriority)}</p>
-            <ul class="list">
-              <li>Levier principal: ${topSections[0] ? `${escapeHtml(cleanSectionLabel(topSections[0].label))} (${topSections[0].score}/5)` : 'Non renseigné'}</li>
-              <li>Risque principal: ${prioritySections[0] ? `${escapeHtml(cleanSectionLabel(prioritySections[0].label))} (${prioritySections[0].score}/5)` : 'Non renseigné'}</li>
-            </ul>
-            ${debrief.notes ? `<p class="hint" style="margin-top:8px;"><strong>Note closer:</strong> ${renderText(truncateText(debrief.notes, 190))}</p>` : ''}
-          </article>
-        </section>
+          <section class="split" style="margin-top:12px;">
+            <article class="panel">
+              <h2>Verbatims décisifs (champs libres)</h2>
+              ${signalsHtml}
+            </article>
+            <article class="panel">
+              <h2>Commentaires équipe</h2>
+              ${commentsHtml}
+            </article>
+          </section>
 
-        <section class="panel" style="margin-top:12px;">
-          <h2>Performance par section</h2>
-          <div class="score-rows">${scoreRows}</div>
-        </section>
-
-        <section class="split" style="margin-top:12px;">
-          <article class="panel">
-            <h2>Synthèse IA (utile)</h2>
-            ${analysisHtml}
-          </article>
-          <article class="panel">
-            <h2>Verbatims décisifs (champs libres)</h2>
-            ${signalsHtml}
-          </article>
-        </section>
-
-        ${commentsPanelHtml}
-
-        <details class="panel panel--soft">
-          <summary>Annexe détaillée (optionnelle)</summary>
-          <div class="panel--soft__body">
+          <section class="panel panel--soft">
+            <h2>Annexe détaillée</h2>
             <div class="annex-grid">${annexHtml}</div>
-          </div>
-        </details>
+          </section>
 
-        <footer class="footer">
-          <span>CloserDebrief · Export debrief</span>
-          <span>${escapeHtml(title)}</span>
-        </footer>
+          <footer class="footer">
+            <span>CloserDebrief · Export debrief</span>
+            <span>${escapeHtml(title)}</span>
+          </footer>
+        </section>
       </main>
     </body>
   </html>`;
@@ -1108,7 +1127,29 @@ export async function downloadDebriefPdf(payload) {
   drawSummaryCard(margin + (cardW + 4) * 2, cardTop, cardW, 24, 'Action', [truncateText(actionPriority, 92)], [243, 250, 246]);
   y += 28;
 
-  sectionTitle('Score par section');
+  sectionTitle('Synthèse IA en bref');
+  if (analysisDigest.length > 0) {
+    analysisDigest.slice(0, 3).forEach(item => writeBullet(item, { size: 9.8 }));
+  } else {
+    writeBullet('Aucune synthèse IA disponible.');
+  }
+  if (debrief.notes) {
+    writeText(`Note closer: ${truncateText(debrief.notes, 170)}`, {
+      size: 9.2,
+      color: [112, 94, 80],
+    });
+  }
+
+  doc.addPage();
+  y = margin;
+
+  sectionTitle('Détails complets');
+  writeText(`Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'} · Objection dominante: ${dominantObjection}`, {
+    size: 9.9,
+    color: [112, 94, 80],
+  });
+
+  sectionTitle('Performance par section');
   const priorityKeySet = new Set(prioritySections.map(section => section.key));
   const topKeySet = new Set(topSections.map(section => section.key));
   for (const section of sectionInsights) {
@@ -1128,49 +1169,40 @@ export async function downloadDebriefPdf(payload) {
     const needsFocus = (priorityKeySet.has(section.key) || topKeySet.has(section.key)) && section.focus;
     if (needsFocus) {
       const prefix = priorityKeySet.has(section.key) ? 'Axe critique: ' : 'Levier: ';
-      writeText(truncateText(`${prefix}${section.focus}`, 115), {
+      writeText(truncateText(`${prefix}${section.focus}`, 110), {
         size: 8.7,
         color: [119, 99, 84],
         lineHeight: 3.8,
       });
     } else {
-      y += 1.2;
+      y += 1.1;
     }
   }
 
-  sectionTitle('Signaux terrain essentiels');
+  sectionTitle('Verbatims décisifs');
   if (signals.length > 0) {
-    signals.slice(0, 4).forEach(signal => {
-      writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 135)}`, {
-        size: 9.6,
-      });
+    signals.slice(0, 6).forEach(signal => {
+      writeBullet(`${signal.section} · ${signal.label}: ${truncateText(signal.value, 125)}`, { size: 9.4 });
     });
   } else {
     writeBullet('Aucun signal terrain libre saisi sur ce debrief.');
   }
 
-  sectionTitle('Synthèse IA utile');
-  if (analysisDigest.length > 0) {
-    analysisDigest.slice(0, 4).forEach(item => writeBullet(item, { size: 9.8 }));
-  } else {
-    writeBullet('Aucune synthèse IA disponible.');
-  }
-
   if (latestComments.length > 0) {
     sectionTitle('Commentaires équipe');
-    latestComments.slice(0, 3).forEach(comment => {
+    latestComments.slice(0, 2).forEach(comment => {
       writeText(`${comment.author_name || 'Équipe'} · ${fmtDate(comment.created_at)}`, {
         bold: true,
-        size: 9.3,
+        size: 9.2,
         color: [93, 76, 64],
-        lineHeight: 4.1,
+        lineHeight: 4.0,
       });
-      writeText(truncateText(comment.content || '', 210), {
-        size: 9.4,
+      writeText(truncateText(comment.content || '', 180), {
+        size: 9.2,
         color: [108, 91, 78],
-        lineHeight: 4.1,
+        lineHeight: 4.0,
       });
-      y += 1;
+      y += 0.8;
     });
   }
 
@@ -1178,29 +1210,10 @@ export async function downloadDebriefPdf(payload) {
     section.strength || section.weakness || section.improvement || (section.evidence && section.evidence.length > 0)
   );
   if (annexSections.length > 0) {
-    doc.addPage();
-    y = margin;
-    sectionTitle('Annexe détaillée (optionnelle)');
-    annexSections.forEach(section => {
-      ensureSpace(28);
-      doc.setDrawColor(234, 216, 203);
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(margin, y, contentW, 26, 2, 2, 'FD');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(80, 64, 53);
-      doc.text(`${section.label} · ${section.score}/5`, margin + 2.8, y + 4.8);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9.1);
-      doc.setTextColor(112, 95, 81);
-      doc.text(doc.splitTextToSize(`Point fort: ${section.strength || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 9);
-      doc.text(doc.splitTextToSize(`Point faible: ${section.weakness || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 13.5);
-      doc.text(doc.splitTextToSize(`Action ciblée: ${section.improvement || 'Non renseigné'}`, contentW - 5.6), margin + 2.8, y + 18);
-      const evidenceText = section.evidence.length > 0
-        ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 80)}`).join(' | ')
-        : 'Aucun détail libre saisi.';
-      doc.text(doc.splitTextToSize(`Signaux: ${evidenceText}`, contentW - 5.6), margin + 2.8, y + 22.5);
-      y += 29;
+    sectionTitle('Annexe compacte');
+    annexSections.slice(0, 5).forEach(section => {
+      const summaryLine = `${section.label} (${section.score}/5) · + ${truncateText(section.strength || 'n/a', 34)} · - ${truncateText(section.weakness || 'n/a', 34)} · → ${truncateText(section.improvement || 'n/a', 34)}`;
+      writeBullet(summaryLine, { size: 8.9, color: [106, 89, 75] });
     });
   }
 
