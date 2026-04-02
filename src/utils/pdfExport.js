@@ -769,15 +769,18 @@ function buildExportContext({ debrief, comments = [], analysis = '', analysis_co
   );
   const analysisDigest = dedupeStrings([
     ...(coachingExport.summaryLines || []),
-    ...(structuredAi.summary || []),
-    ...(coachingExport.forces?.[0] ? [`Forces décisives: ${coachingExport.forces[0]}`] : []),
-    ...(coachingExport.failles?.[0] ? [`Failles structurelles: ${coachingExport.failles[0]}`] : []),
-    ...(coachingExport.risque?.[0] ? [`Risque caché: ${coachingExport.risque[0]}`] : []),
-    ...(coachingExport.competence?.[0] ? [`Compétence à automatiser: ${coachingExport.competence[0]}`] : []),
+    ...(structuredAi.summary || []).slice(0, 3),
+    ...(coachingExport.forces || []).slice(0, 2).map(item => `Forces décisives: ${item}`),
+    ...(coachingExport.failles || []).slice(0, 2).map(item => `Failles structurelles: ${item}`),
+    ...(coachingExport.risque || []).slice(0, 1).map(item => `Risque caché: ${item}`),
+    ...(coachingExport.pattern || []).slice(0, 1).map(item => `Pattern du closer: ${item}`),
+    ...(coachingExport.competence || []).slice(0, 1).map(item => `Compétence à automatiser: ${item}`),
+    ...(coachingExport.script || []).slice(0, 1).map(item => `Script de correction: ${item}`),
+    ...(coachingExport.action10 || []).slice(0, 1).map(item => `Action concrète (10 prochains calls): ${item}`),
     ...(structuredAi.strong?.[0] ? [`Point fort: ${structuredAi.strong[0]}`] : []),
     ...(structuredAi.weak?.[0] ? [`Point faible: ${structuredAi.weak[0]}`] : []),
     ...fallbackDigest,
-  ]).slice(0, 7);
+  ]).slice(0, 10);
   const decisionSummary = buildDecisionSummary({
     debrief: safeDebrief,
     percentage,
@@ -894,7 +897,7 @@ function buildLoadingHtml(title) {
         <div class="dot"></div>
         <div>
           <p class="title">Préparation du PDF</p>
-          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles en annexe.</p>
+          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles.</p>
         </div>
       </div>
     </body>
@@ -914,7 +917,6 @@ function buildDebriefPdfHtml(payload) {
     aiConfidence,
     risk,
     sectionInsights,
-    signals,
     analysisDigest,
     scoreReading,
     aiStrongPoint,
@@ -972,10 +974,6 @@ function buildDebriefPdfHtml(payload) {
       </article>
     `;
   }).join('');
-
-  const keySignalsHtml = signals.length > 0
-    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)} : ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun extrait libre saisi dans le debrief.</p>';
 
   const shortLink = debrief.call_link ? truncateText(debrief.call_link, 72) : 'Non renseigné';
 
@@ -1367,29 +1365,6 @@ function buildDebriefPdfHtml(payload) {
           color: #6f5d4f;
           line-height: 1.45;
         }
-        .annex-box {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-        }
-        .annex-box h3 {
-          margin: 0 0 8px;
-          font-size: 14px;
-          color: #433329;
-        }
-        .annex-box p {
-          margin: 6px 0 0;
-          font-size: 12px;
-          line-height: 1.45;
-          color: #6f5e50;
-        }
-        .annex-grid {
-          margin-top: 10px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
         .footer {
           margin-top: 16px;
           border-top: 1px solid var(--line);
@@ -1406,7 +1381,6 @@ function buildDebriefPdfHtml(payload) {
           .kpi-grid { grid-template-columns: 1fr 1fr; }
           .cockpit-grid { grid-template-columns: 1fr; }
           .execution-grid { grid-template-columns: 1fr; }
-          .annex-grid { grid-template-columns: 1fr; }
         }
         @media print {
           body { background: #fff; }
@@ -1519,24 +1493,6 @@ function buildDebriefPdfHtml(payload) {
 
         <section class="pdf-page">
           <p class="page-label">Page secondaire · Détails complets</p>
-          <section class="panel" style="margin-top:10px;">
-            <h2>Annexe compacte</h2>
-            <div class="annex-grid">
-              <article class="annex-box">
-                <h3>Résumé opérationnel</h3>
-                <p><strong>Action prioritaire :</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
-                <p><strong>Score global :</strong> ${score20}/20 (${percentage}%)</p>
-                <p><strong>Note closer :</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
-                <p><strong>Taux closing :</strong> ${closingRate}% · <strong>Confiance IA :</strong> ${aiConfidence}%</p>
-              </article>
-              <article class="annex-box">
-                <h3>Extraits saisis (champs libres)</h3>
-                ${keySignalsHtml}
-              </article>
-            </div>
-            <p class="hint" style="margin-top:10px;">Risque actuel : ${escapeHtml(risk.label)} · Objection dominante : ${escapeHtml(dominantObjection || 'Aucune')}</p>
-          </section>
-
           <section class="panel" style="margin-top:10px;">
             <h2>Performance détaillée par section</h2>
             <div class="detail-grid">${sectionDetailsHtml}</div>
