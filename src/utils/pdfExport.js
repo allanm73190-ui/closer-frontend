@@ -708,20 +708,21 @@ function buildDebriefPdfHtml(payload) {
           color: var(--muted);
         }
         .pdf-stack {
-          width: min(1080px, calc(100vw - 28px));
-          margin: 18px auto 32px;
+          width: min(860px, calc(100vw - 40px));
+          margin: 24px auto 40px;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 22px;
         }
         .pdf-page {
           background: var(--paper);
           border-radius: 22px;
           box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
-          padding: 26px;
+          padding: 34px 34px 30px;
+          min-height: 1188px;
         }
         .page-label {
-          margin: 0 0 10px;
+          margin: 0 0 14px;
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: .1em;
@@ -731,13 +732,13 @@ function buildDebriefPdfHtml(payload) {
         .hero-cockpit {
           display: grid;
           grid-template-columns: 1fr minmax(220px, 260px);
-          gap: 14px;
+          gap: 18px;
           align-items: stretch;
-          margin-bottom: 12px;
+          margin-bottom: 20px;
         }
         .hero-main {
           border-radius: 18px;
-          padding: 18px;
+          padding: 22px;
           background: linear-gradient(110deg, var(--hero-dark) 0%, #2f3d53 45%, var(--hero-coral) 100%);
         }
         .kicker {
@@ -750,14 +751,14 @@ function buildDebriefPdfHtml(payload) {
         }
         .hero-main h1 {
           margin: 0;
-          font-size: 31px;
-          line-height: 1.14;
+          font-size: 34px;
+          line-height: 1.12;
           color: #fff;
         }
         .hero-meta {
-          margin: 8px 0 0;
+          margin: 10px 0 0;
           color: #f7f1eb;
-          font-size: 15px;
+          font-size: 14px;
         }
         .hero-link {
           color: #fff;
@@ -768,10 +769,10 @@ function buildDebriefPdfHtml(payload) {
           border-bottom-color: #fff;
         }
         .hero-tags {
-          margin-top: 12px;
+          margin-top: 14px;
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 10px;
         }
         .tag {
           border: 1px solid rgba(255,255,255,.24);
@@ -786,7 +787,7 @@ function buildDebriefPdfHtml(payload) {
           border: 1px solid #f2ddd2;
           border-radius: 18px;
           background: #fff6f2;
-          padding: 16px;
+          padding: 20px;
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -844,19 +845,19 @@ function buildDebriefPdfHtml(payload) {
           color: #7e6b5d;
         }
         .cockpit-grid {
-          margin-top: 12px;
+          margin-top: 18px;
           display: grid;
-          gap: 10px;
+          gap: 14px;
           grid-template-columns: 1fr 1fr;
         }
         .cockpit-card {
           border: 1px solid var(--line);
           border-radius: 16px;
           background: #fff;
-          padding: 12px;
+          padding: 16px;
         }
         .cockpit-card h2 {
-          margin: 0 0 8px;
+          margin: 0 0 12px;
           font-size: 18px;
           color: #3f3128;
         }
@@ -865,7 +866,7 @@ function buildDebriefPdfHtml(payload) {
           font-size: 12px;
           color: #7d6a5d;
         }
-        .bar-row + .bar-row { margin-top: 9px; }
+        .bar-row + .bar-row { margin-top: 12px; }
         .bar-row__label {
           display: flex;
           justify-content: space-between;
@@ -904,19 +905,19 @@ function buildDebriefPdfHtml(payload) {
           line-height: 1.45;
         }
         .split {
-          margin-top: 12px;
+          margin-top: 18px;
           display: grid;
-          gap: 10px;
+          gap: 14px;
           grid-template-columns: 1fr 1fr;
         }
         .panel {
           border: 1px solid var(--line);
           border-radius: 12px;
-          padding: 12px;
+          padding: 16px;
           background: #fff;
         }
         .panel h2 {
-          margin: 0 0 8px;
+          margin: 0 0 10px;
           font-size: 16px;
           color: #433329;
         }
@@ -943,9 +944,9 @@ function buildDebriefPdfHtml(payload) {
           margin: 0;
           padding-left: 18px;
           font-size: 13px;
-          line-height: 1.45;
+          line-height: 1.55;
         }
-        .list li + li { margin-top: 5px; }
+        .list li + li { margin-top: 7px; }
         .list--signals li strong {
           color: #5a4a3a;
         }
@@ -994,12 +995,12 @@ function buildDebriefPdfHtml(payload) {
         }
         .detail-grid {
           display: grid;
-          gap: 10px;
+          gap: 14px;
         }
         .detail-row {
           border: 1px solid #f1e2d7;
           border-radius: 12px;
-          padding: 10px;
+          padding: 14px;
           background: #fffdfa;
         }
         .detail-row__head {
@@ -1007,7 +1008,7 @@ function buildDebriefPdfHtml(payload) {
           justify-content: space-between;
           gap: 8px;
           align-items: baseline;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
         }
         .detail-row__head h3 {
           margin: 0;
@@ -1029,21 +1030,21 @@ function buildDebriefPdfHtml(payload) {
           border-radius: inherit;
         }
         .detail-row p {
-          margin: 5px 0 0;
+          margin: 7px 0 0;
           font-size: 12px;
           color: #6f5d4f;
-          line-height: 1.45;
+          line-height: 1.55;
         }
         .annex-grid {
-          margin-top: 8px;
+          margin-top: 12px;
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
+          gap: 12px;
         }
         .annex-card {
           border: 1px solid var(--line);
           border-radius: 10px;
-          padding: 10px;
+          padding: 12px;
           background: #fff;
         }
         .annex-card__head {
@@ -1063,9 +1064,9 @@ function buildDebriefPdfHtml(payload) {
           color: #6f5e50;
         }
         .footer {
-          margin-top: 12px;
+          margin-top: 16px;
           border-top: 1px solid var(--line);
-          padding-top: 10px;
+          padding-top: 12px;
           display: flex;
           justify-content: space-between;
           gap: 10px;
@@ -1073,7 +1074,7 @@ function buildDebriefPdfHtml(payload) {
           font-size: 11px;
         }
         @media (max-width: 860px) {
-          .pdf-page { padding: 16px; border-radius: 14px; }
+          .pdf-page { padding: 20px; border-radius: 14px; min-height: auto; }
           .hero-cockpit { grid-template-columns: 1fr; }
           .kpi-grid { grid-template-columns: 1fr; }
           .cockpit-grid { grid-template-columns: 1fr; }
@@ -1217,14 +1218,16 @@ export async function downloadDebriefPdf(payload) {
   const ctx = buildExportContext(payload || {});
   const { title } = ctx;
   const html = buildDebriefPdfHtml(payload || {});
+  const CAPTURE_WIDTH = 1200;
+  const CAPTURE_HEIGHT = Math.round(CAPTURE_WIDTH * Math.sqrt(2));
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
   iframe.style.left = '-10000px';
   iframe.style.top = '0';
-  iframe.style.width = '1280px';
-  iframe.style.height = '1810px';
+  iframe.style.width = `${CAPTURE_WIDTH}px`;
+  iframe.style.height = `${CAPTURE_HEIGHT}px`;
   iframe.style.opacity = '0';
   iframe.style.pointerEvents = 'none';
   document.body.appendChild(iframe);
@@ -1271,26 +1274,31 @@ export async function downloadDebriefPdf(payload) {
 
     for (let i = 0; i < targetPages.length; i += 1) {
       const pageEl = targetPages[i];
+      const pageRect = pageEl.getBoundingClientRect();
       const canvas = await html2canvas(pageEl, {
-        scale: 2,
+        scale: 2.25,
         useCORS: true,
         backgroundColor: '#fffdfa',
         logging: false,
-        windowWidth: 1280,
-        windowHeight: 1810,
+        windowWidth: CAPTURE_WIDTH,
+        windowHeight: CAPTURE_HEIGHT,
+        width: Math.ceil(pageRect.width),
+        height: Math.ceil(pageRect.height),
         scrollX: 0,
         scrollY: 0,
       });
 
-      const img = canvas.toDataURL('image/jpeg', 0.95);
+      const img = canvas.toDataURL('image/png');
       const props = pdf.getImageProperties(img);
-      const ratio = Math.min(pageW / props.width, pageH / props.height);
+      const printableW = pageW - 10;
+      const printableH = pageH - 10;
+      const ratio = Math.min(printableW / props.width, printableH / props.height);
       const renderW = props.width * ratio;
       const renderH = props.height * ratio;
       const x = (pageW - renderW) / 2;
       const y = (pageH - renderH) / 2;
       if (i > 0) pdf.addPage();
-      pdf.addImage(img, 'JPEG', x, y, renderW, renderH, undefined, 'FAST');
+      pdf.addImage(img, 'PNG', x, y, renderW, renderH, undefined, 'FAST');
     }
 
     pdf.save(title);

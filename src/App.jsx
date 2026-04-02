@@ -70,6 +70,7 @@ export default function App() {
   const [from,    setFrom]    = useState(null);
   const [debriefs, setDebriefs] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
+  const [debriefsLoaded, setDebriefsLoaded] = useState(false);
   const [gam,     setGam]     = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [pendingDebriefLink, setPendingDebriefLink] = useState(null);
@@ -127,7 +128,10 @@ export default function App() {
     Promise.all([apiFetch('/debriefs'), apiFetch('/gamification/me')])
       .then(([d, g]) => { setDebriefs(d); setGam(g); })
       .catch(err => toast(err.message, 'error'))
-      .finally(() => setDataLoading(false));
+      .finally(() => {
+        setDataLoading(false);
+        setDebriefsLoaded(true);
+      });
   }, [user]);
 
   useEffect(() => {
@@ -176,7 +180,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!user || !pendingDebriefLink || dataLoading) return;
+    if (!user || !pendingDebriefLink || dataLoading || !debriefsLoaded) return;
     const targetId = String(pendingDebriefLink.debriefId || '');
     const target = debriefs.find(item => String(item.id) === targetId);
     if (!target) {
@@ -188,7 +192,7 @@ export default function App() {
     navigate(pendingDebriefLink.page || 'Detail', target.id, 'History');
     setPendingDebriefLink(null);
     window.history.replaceState({}, '', window.location.pathname);
-  }, [user, pendingDebriefLink, dataLoading, debriefs, toast]);
+  }, [user, pendingDebriefLink, dataLoading, debriefsLoaded, debriefs, toast]);
 
   const saveAppSettings = async (nextSettings, options = {}) => {
     const { silent = false } = options;
@@ -229,6 +233,7 @@ export default function App() {
     clearToken();
     setUser(null);
     setDebriefs([]);
+    setDebriefsLoaded(false);
     setGam(null);
     setPage('Dashboard');
     setAuthView('login');
