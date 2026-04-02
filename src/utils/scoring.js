@@ -27,10 +27,14 @@ export function computeScore(sections) {
   add(o.exemples_transformation, ['oui','moyen'], 1);
   add(o.duree_justifiee, ['oui','partiel'], 1);
   const c = sections.closing || {};
+  const objections = Array.isArray(c.objections) ? c.objections : [];
+  const hasNoObjection = objections.includes('aucune');
   add(c.annonce_prix, 'directe', 1);
   add(c.silence_prix, 'oui', 1);
-  add(c.douleur_reancree, 'oui', 1);
-  add(c.objection_isolee, 'oui', 1);
+  if (!hasNoObjection) {
+    add(c.douleur_reancree, 'oui', 1);
+    add(c.objection_isolee, 'oui', 1);
+  }
   add(c.resultat_closing, ['close','retrograde','relance'], 1);
   const percentage = maxRaw > 0 ? Math.round((pts / maxRaw) * 100) : 0;
   const score20 = maxRaw > 0 ? Math.round(((pts / maxRaw) * 20) * 10) / 10 : 0;
@@ -69,15 +73,18 @@ export function computeSectionScores(sections) {
   if (['oui','moyen'].includes(o.exemples_transformation)) oP++;
   if (['oui','partiel'].includes(o.duree_justifiee)) oP++;
   const c = s.closing || {};
+  const objections = Array.isArray(c.objections) ? c.objections : [];
+  const hasNoObjection = objections.includes('aucune');
+  const closingMax = hasNoObjection ? 3 : 5;
   let cP = 0;
   if (c.annonce_prix === 'directe') cP++;
   if (c.silence_prix === 'oui') cP++;
-  if (c.douleur_reancree === 'oui') cP++;
-  if (c.objection_isolee === 'oui') cP++;
+  if (!hasNoObjection && c.douleur_reancree === 'oui') cP++;
+  if (!hasNoObjection && c.objection_isolee === 'oui') cP++;
   if (['close','retrograde','relance'].includes(c.resultat_closing)) cP++;
   return {
     decouverte: pct(dP,7), reformulation: pct(rP,5),
-    projection: pct(pP,3), presentation_offre: pct(oP,3), closing: pct(cP,5),
+    projection: pct(pP,3), presentation_offre: pct(oP,3), closing: pct(cP,closingMax),
   };
 }
 

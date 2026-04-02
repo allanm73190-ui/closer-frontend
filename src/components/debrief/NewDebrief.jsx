@@ -213,6 +213,12 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       },
     }));
   };
+  const hasNoObjectionInForm = Array.isArray(secs?.closing?.objections) && secs.closing.objections.includes('aucune');
+  const shouldHideQuestion = (sectionKey, questionId) => (
+    sectionKey === 'closing'
+    && hasNoObjectionInForm
+    && (questionId === 'douleur_reancree' || questionId === 'objection_isolee')
+  );
 
   const submit = async e => {
     e.preventDefault();
@@ -222,7 +228,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
     }
     setLoading(true);
     try {
-      const mergedSections = isEditing
+      let mergedSections = isEditing
         ? { ...(existingDebrief.sections || {}), ...secs }
         : secs;
       const mergedMeta = {
@@ -230,6 +236,14 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         offer_template_key: selectedTemplateKey,
         prospect_type: form.prospect_type || '',
       };
+      const mergedClosing = { ...(mergedSections.closing || {}) };
+      if (Array.isArray(mergedClosing.objections) && mergedClosing.objections.includes('aucune')) {
+        delete mergedClosing.douleur_reancree;
+        delete mergedClosing.objection_isolee;
+        delete mergedClosing.douleur_reancree_note;
+        delete mergedClosing.objection_isolee_note;
+      }
+      mergedSections = { ...mergedSections, closing: mergedClosing };
       mergedSections.__meta = mergedMeta;
       const mergedSectionNotes = isEditing
         ? { ...(existingDebrief.section_notes || {}), ...notes }
@@ -293,7 +307,36 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           label={question.label}
           options={options}
           value={Array.isArray(value) ? value : []}
-          onChange={v=>setAnswer(sectionKey, question.id, v)}
+          onChange={nextValue => {
+            const raw = Array.isArray(nextValue) ? nextValue : [];
+            if (sectionKey === 'closing' && question.id === 'objections') {
+              setSecs(prev => {
+                const prevSection = prev[sectionKey] || {};
+                const prevValues = Array.isArray(prevSection[question.id]) ? prevSection[question.id] : [];
+                const prevHadNone = prevValues.includes('aucune');
+                const nextHasNone = raw.includes('aucune');
+                const nextOthers = raw.filter(item => item !== 'aucune');
+                let normalized = raw;
+
+                if (nextHasNone && nextOthers.length > 0) {
+                  normalized = prevHadNone ? nextOthers : ['aucune'];
+                } else if (!nextHasNone) {
+                  normalized = nextOthers;
+                }
+
+                const nextSection = { ...prevSection, [question.id]: normalized };
+                if (normalized.includes('aucune')) {
+                  delete nextSection.douleur_reancree;
+                  delete nextSection.objection_isolee;
+                  delete nextSection.douleur_reancree_note;
+                  delete nextSection.objection_isolee_note;
+                }
+                return { ...prev, [sectionKey]: nextSection };
+              });
+              return;
+            }
+            setAnswer(sectionKey, question.id, raw);
+          }}
         />
       );
     }
@@ -487,8 +530,10 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0 }}>Évaluation des critères</h2>
             {configSections.map((section, idx) => (
               <CatCard key={section.key || idx} number={String(idx + 1)} title={section.title || `Section ${idx + 1}`}>
-                {section.questions.length > 0
-                  ? section.questions.map(question => renderQuestion(section, question))
+                {(section.questions || []).filter(question => !shouldHideQuestion(section.storeKey, question.id)).length > 0
+                  ? (section.questions || [])
+                      .filter(question => !shouldHideQuestion(section.storeKey, question.id))
+                      .map(question => renderQuestion(section, question))
                   : <p style={{ fontSize:13, color:DS.textMuted, margin:'0 0 12px' }}>Aucune question configurée.</p>
                 }
                 <SectionNotes
