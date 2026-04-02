@@ -562,26 +562,23 @@ function buildDebriefPdfHtml(payload) {
 
   const analysisHtml = analysisDigest.length > 0
     ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(normalizeAiLine(item))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucune synthèse IA disponible.</p>';
+    : '<p class="hint">Synthèse IA non disponible.</p>';
 
-  const recommendationsHtml = recommendations.length > 0
-    ? recommendations.map(rec => `
-      <li class="rec-item">
-        <span class="rec-priority rec-priority--${slugify(rec.priority || 'moyenne')}">${escapeHtml(rec.priority || 'Moyenne')}</span>
-        <span>${escapeHtml(normalizeAiLine(rec.text || ''))}</span>
-      </li>
-    `).join('')
-    : `
-      <li class="rec-item">
-        <span class="rec-priority rec-priority--moyenne">Moyenne</span>
-        <span>Aucune recommandation IA disponible.</span>
-      </li>
-    `;
+  const recommendationsHtml = (recommendations.length > 0 ? recommendations : [
+    { priority: 'Haute', text: actionPriority || 'Définir une action prioritaire claire.' },
+    { priority: 'Moyenne', text: 'Consolider les sections les plus faibles.' },
+    { priority: 'Basse', text: 'Renforcer le levier principal déjà présent.' },
+  ]).slice(0, 3).map(rec => `
+    <li class="rec-item">
+      <span class="rec-priority rec-priority--${slugify(rec.priority || 'moyenne')}">${escapeHtml(rec.priority || 'Moyenne')}</span>
+      <span>${escapeHtml(normalizeAiLine(rec.text || ''))}</span>
+    </li>
+  `).join('');
 
   const sectionBarsHtml = sectionInsights.map(section => `
     <div class="bar-row">
       <div class="bar-row__label">
-        <span>${escapeHtml(section.label)}</span>
+        <span>${escapeHtml(cleanSectionLabel(section.label))}</span>
         <strong>${section.score}/5</strong>
       </div>
       <div class="bar-row__track">
@@ -590,40 +587,30 @@ function buildDebriefPdfHtml(payload) {
     </div>
   `).join('');
 
-  const detailRowsHtml = sectionInsights.map(section => {
-    const evidence = section.evidence.length > 0
-      ? section.evidence.map(item => `${item.label}: ${truncateText(item.value, 110)}`).join(' · ')
-      : 'Aucun signal libre explicite.';
+  const sectionDetailsHtml = sectionInsights.map(section => {
+    const firstEvidence = section.evidence?.[0]?.value ? truncateText(section.evidence[0].value, 110) : 'Aucun signal clé saisi.';
     return `
-      <article class="detail-row">
-        <div class="detail-row__head">
-          <h3>${escapeHtml(section.label)}</h3>
+      <article class="section-card">
+        <div class="section-card__head">
+          <h3>${escapeHtml(cleanSectionLabel(section.label))}</h3>
           <span style="color:${barColor(section.score)}">${section.score}/5</span>
         </div>
-        <div class="detail-row__track">
-          <div class="detail-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
+        <div class="section-card__track">
+          <div class="section-card__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
         </div>
-        <p><strong>Focus:</strong> ${escapeHtml(section.focus || 'Non renseigné')}</p>
-        <p><strong>Signaux:</strong> ${escapeHtml(evidence)}</p>
+        <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
+        <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
+        <p><strong>Action:</strong> ${escapeHtml(section.improvement || section.focus || 'Non renseigné')}</p>
+        <p><strong>Signal clé:</strong> ${escapeHtml(firstEvidence)}</p>
       </article>
     `;
   }).join('');
 
-  const annexHtml = sectionInsights.map(section => `
-    <article class="annex-card">
-      <div class="annex-card__head">
-        <h3>${escapeHtml(section.label)}</h3>
-        <span style="color:${barColor(section.score)}">${section.score}/5</span>
-      </div>
-      <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
-      <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
-      <p><strong>Action ciblée:</strong> ${escapeHtml(section.improvement || 'Non renseigné')}</p>
-    </article>
-  `).join('');
+  const keySignalsHtml = signals.length > 0
+    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucun signal terrain renseigné.</p>';
 
-  const keySignal = signals[0]
-    ? `${signals[0].section} · ${signals[0].label}: ${truncateText(signals[0].value, 95)}`
-    : 'Aucun signal prioritaire détecté.';
+  const shortLink = debrief.call_link ? truncateText(debrief.call_link, 72) : 'Non renseigné';
 
   const radarSvg = (() => {
     const axes = sectionInsights.length > 0
@@ -664,7 +651,7 @@ function buildDebriefPdfHtml(payload) {
       return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
     }).join(' ');
     return `
-      <svg viewBox="0 0 264 264" width="100%" height="250" role="img" aria-label="Radar compétences">
+      <svg viewBox="0 0 264 264" width="100%" height="230" role="img" aria-label="Radar compétences">
         <polygon points="${ring(5)}" fill="none" stroke="#E8D9CD" stroke-width="2"/>
         <polygon points="${ring(3.5)}" fill="none" stroke="#E8D9CD" stroke-width="1.4"/>
         <polygon points="${ring(2)}" fill="none" stroke="#E8D9CD" stroke-width="1.1"/>
@@ -708,21 +695,21 @@ function buildDebriefPdfHtml(payload) {
           color: var(--muted);
         }
         .pdf-stack {
-          width: min(860px, calc(100vw - 40px));
-          margin: 24px auto 40px;
+          width: min(900px, calc(100vw - 36px));
+          margin: 20px auto 38px;
           display: flex;
           flex-direction: column;
-          gap: 22px;
+          gap: 20px;
         }
         .pdf-page {
           background: var(--paper);
           border-radius: 22px;
           box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
-          padding: 34px 34px 30px;
-          min-height: 1188px;
+          padding: 30px;
+          min-height: 1120px;
         }
         .page-label {
-          margin: 0 0 14px;
+          margin: 0 0 12px;
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: .1em;
@@ -731,14 +718,14 @@ function buildDebriefPdfHtml(payload) {
         }
         .hero-cockpit {
           display: grid;
-          grid-template-columns: 1fr minmax(220px, 260px);
-          gap: 18px;
+          grid-template-columns: 1fr 210px;
+          gap: 14px;
           align-items: stretch;
-          margin-bottom: 20px;
+          margin-bottom: 14px;
         }
         .hero-main {
           border-radius: 18px;
-          padding: 22px;
+          padding: 18px;
           background: linear-gradient(110deg, var(--hero-dark) 0%, #2f3d53 45%, var(--hero-coral) 100%);
         }
         .kicker {
@@ -751,14 +738,14 @@ function buildDebriefPdfHtml(payload) {
         }
         .hero-main h1 {
           margin: 0;
-          font-size: 34px;
+          font-size: 30px;
           line-height: 1.12;
           color: #fff;
         }
         .hero-meta {
-          margin: 10px 0 0;
+          margin: 8px 0 0;
           color: #f7f1eb;
-          font-size: 14px;
+          font-size: 13px;
         }
         .hero-link {
           color: #fff;
@@ -769,10 +756,10 @@ function buildDebriefPdfHtml(payload) {
           border-bottom-color: #fff;
         }
         .hero-tags {
-          margin-top: 14px;
+          margin-top: 10px;
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
+          gap: 8px;
         }
         .tag {
           border: 1px solid rgba(255,255,255,.24);
@@ -787,7 +774,7 @@ function buildDebriefPdfHtml(payload) {
           border: 1px solid #f2ddd2;
           border-radius: 18px;
           background: #fff6f2;
-          padding: 20px;
+          padding: 14px;
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -800,7 +787,7 @@ function buildDebriefPdfHtml(payload) {
         .hero-score strong {
           display: block;
           margin-top: 6px;
-          font-size: 56px;
+          font-size: 48px;
           line-height: 1;
           color: #d4604e;
         }
@@ -812,14 +799,14 @@ function buildDebriefPdfHtml(payload) {
         .kpi-grid {
           margin-top: 12px;
           display: grid;
-          gap: 10px;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
         .kpi-card {
           border: 1px solid var(--line);
           border-radius: 14px;
           background: #fff;
-          padding: 12px 14px;
+          padding: 10px 12px;
         }
         .kpi-title {
           margin: 0;
@@ -830,8 +817,8 @@ function buildDebriefPdfHtml(payload) {
           font-weight: 700;
         }
         .kpi-value {
-          margin: 10px 0 0;
-          font-size: 34px;
+          margin: 8px 0 0;
+          font-size: 28px;
           line-height: 1;
           font-weight: 800;
           color: #364359;
@@ -845,20 +832,20 @@ function buildDebriefPdfHtml(payload) {
           color: #7e6b5d;
         }
         .cockpit-grid {
-          margin-top: 18px;
+          margin-top: 14px;
           display: grid;
-          gap: 14px;
+          gap: 10px;
           grid-template-columns: 1fr 1fr;
         }
         .cockpit-card {
           border: 1px solid var(--line);
           border-radius: 16px;
           background: #fff;
-          padding: 16px;
+          padding: 13px;
         }
         .cockpit-card h2 {
-          margin: 0 0 12px;
-          font-size: 18px;
+          margin: 0 0 8px;
+          font-size: 16px;
           color: #3f3128;
         }
         .radar-note {
@@ -866,7 +853,7 @@ function buildDebriefPdfHtml(payload) {
           font-size: 12px;
           color: #7d6a5d;
         }
-        .bar-row + .bar-row { margin-top: 12px; }
+        .bar-row + .bar-row { margin-top: 10px; }
         .bar-row__label {
           display: flex;
           justify-content: space-between;
@@ -905,19 +892,19 @@ function buildDebriefPdfHtml(payload) {
           line-height: 1.45;
         }
         .split {
-          margin-top: 18px;
+          margin-top: 14px;
           display: grid;
-          gap: 14px;
+          gap: 10px;
           grid-template-columns: 1fr 1fr;
         }
         .panel {
           border: 1px solid var(--line);
           border-radius: 12px;
-          padding: 16px;
+          padding: 13px;
           background: #fff;
         }
         .panel h2 {
-          margin: 0 0 10px;
+          margin: 0 0 8px;
           font-size: 16px;
           color: #433329;
         }
@@ -944,9 +931,9 @@ function buildDebriefPdfHtml(payload) {
           margin: 0;
           padding-left: 18px;
           font-size: 13px;
-          line-height: 1.55;
+          line-height: 1.5;
         }
-        .list li + li { margin-top: 7px; }
+        .list li + li { margin-top: 5px; }
         .list--signals li strong {
           color: #5a4a3a;
         }
@@ -995,73 +982,68 @@ function buildDebriefPdfHtml(payload) {
         }
         .detail-grid {
           display: grid;
-          gap: 14px;
+          gap: 10px;
         }
-        .detail-row {
+        .section-card {
           border: 1px solid #f1e2d7;
           border-radius: 12px;
-          padding: 14px;
+          padding: 12px;
           background: #fffdfa;
         }
-        .detail-row__head {
+        .section-card__head {
           display: flex;
           justify-content: space-between;
           gap: 8px;
           align-items: baseline;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
-        .detail-row__head h3 {
+        .section-card__head h3 {
           margin: 0;
           font-size: 14px;
         }
-        .detail-row__head span {
+        .section-card__head span {
           font-size: 13px;
           font-weight: 700;
         }
-        .detail-row__track {
+        .section-card__track {
           height: 10px;
           border-radius: 999px;
           background: #efe2d8;
           overflow: hidden;
-          margin-bottom: 7px;
+          margin-bottom: 8px;
         }
-        .detail-row__fill {
+        .section-card__fill {
           height: 100%;
           border-radius: inherit;
         }
-        .detail-row p {
-          margin: 7px 0 0;
+        .section-card p {
+          margin: 6px 0 0;
           font-size: 12px;
           color: #6f5d4f;
-          line-height: 1.55;
+          line-height: 1.45;
         }
-        .annex-grid {
-          margin-top: 12px;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-        }
-        .annex-card {
+        .annex-box {
           border: 1px solid var(--line);
-          border-radius: 10px;
+          border-radius: 12px;
           padding: 12px;
           background: #fff;
         }
-        .annex-card__head {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          align-items: baseline;
+        .annex-box h3 {
+          margin: 0 0 8px;
+          font-size: 14px;
+          color: #433329;
         }
-        .annex-card h3 {
-          margin: 0 0 6px;
-          font-size: 13px;
-        }
-        .annex-card p {
-          margin: 0 0 5px;
+        .annex-box p {
+          margin: 6px 0 0;
           font-size: 12px;
           line-height: 1.45;
           color: #6f5e50;
+        }
+        .annex-grid {
+          margin-top: 10px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
         }
         .footer {
           margin-top: 16px;
@@ -1076,7 +1058,7 @@ function buildDebriefPdfHtml(payload) {
         @media (max-width: 860px) {
           .pdf-page { padding: 20px; border-radius: 14px; min-height: auto; }
           .hero-cockpit { grid-template-columns: 1fr; }
-          .kpi-grid { grid-template-columns: 1fr; }
+          .kpi-grid { grid-template-columns: 1fr 1fr; }
           .cockpit-grid { grid-template-columns: 1fr; }
           .split { grid-template-columns: 1fr; }
           .annex-grid { grid-template-columns: 1fr; }
@@ -1120,12 +1102,11 @@ function buildDebriefPdfHtml(payload) {
               <p class="hero-meta">
                 Lien de l'appel:
                 ${debrief.call_link
-                  ? `<a class="hero-link" href="${escapeHtml(debrief.call_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(truncateText(debrief.call_link, 60))}</a>`
+                  ? `<a class="hero-link" href="${escapeHtml(debrief.call_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortLink)}</a>`
                   : 'Non renseigné'}
               </p>
               <div class="hero-tags">
-                <span class="tag">Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
-                <span class="tag">Objection: ${escapeHtml(dominantObjection)}</span>
+                <span class="tag">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
                 <span class="tag">${escapeHtml(scoreReading)}</span>
               </div>
             </div>
@@ -1136,27 +1117,46 @@ function buildDebriefPdfHtml(payload) {
             </aside>
           </section>
 
+          <section class="kpi-grid">
+            <article class="kpi-card">
+              <p class="kpi-title">Taux closing</p>
+              <p class="kpi-value">${closingRate}%</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-title">Risque</p>
+              <p class="kpi-value">${escapeHtml(risk.label.replace('Risque ', ''))}</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-title">Confiance IA</p>
+              <p class="kpi-value">${aiConfidence}%</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-title">Objection</p>
+              <p class="kpi-sub" style="margin-top:8px;font-size:13px;">${escapeHtml(dominantObjection || 'Aucune')}</p>
+            </article>
+          </section>
+
           <section class="cockpit-grid">
             <article class="cockpit-card">
               <h2>Radar compétences</h2>
               ${radarSvg}
-              <p class="radar-note">Pleine: ce debrief · Axes: découverte à closing</p>
+              <p class="radar-note">Axes: découverte → closing</p>
             </article>
             <article class="cockpit-card">
               <h2>Barres par section</h2>
               ${sectionBarsHtml}
               <div class="signal-card">
                 <h3>Signal prioritaire</h3>
-                <p>${escapeHtml(keySignal)}</p>
+                <p>${escapeHtml(signals[0] ? `${signals[0].section} · ${signals[0].label}: ${truncateText(signals[0].value, 95)}` : 'Aucun signal prioritaire détecté.')}</p>
               </div>
             </article>
           </section>
 
-          <section class="split" style="margin-top:12px;">
+          <section class="split">
             <article class="panel">
               <h2>Synthèse IA</h2>
               ${analysisHtml}
-              <div class="decision" style="margin-top:10px;">
+              <div class="decision">
                 <p><strong>Point fort:</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
                 <p style="margin-top:6px;"><strong>Point faible:</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
               </div>
@@ -1172,13 +1172,25 @@ function buildDebriefPdfHtml(payload) {
           <p class="page-label">Page secondaire · Détails complets</p>
           <section class="panel">
             <h2>Performance détaillée par section</h2>
-            <div class="detail-grid">${detailRowsHtml}</div>
+            <div class="detail-grid">${sectionDetailsHtml}</div>
           </section>
 
-          <section class="panel">
+          <section class="annex-grid">
+            <article class="annex-box">
+              <h3>Annexe compacte</h3>
+              <p><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
+              <p><strong>Score global:</strong> ${score20}/20 (${percentage}%)</p>
+              <p><strong>Note closer:</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
+            </article>
+            <article class="annex-box">
+              <h3>Signaux terrain</h3>
+              ${keySignalsHtml}
+            </article>
+          </section>
+
+          <section class="panel" style="margin-top:10px;">
             <h2>Annexe compacte</h2>
-            <p class="hint" style="margin-bottom:8px;">Taux closing: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${escapeHtml(risk.label)} · Action prioritaire: ${escapeHtml(actionPriority)}</p>
-            <div class="annex-grid">${annexHtml}</div>
+            <p class="hint">Taux closing: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${escapeHtml(risk.label)}</p>
           </section>
 
           <footer class="footer">
