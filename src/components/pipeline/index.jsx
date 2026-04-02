@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../config/api';
 import { fmtDate, computeSectionScores } from '../../utils/scoring';
 import { SECTIONS } from '../../config/ai';
@@ -487,6 +487,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const [alertFocus, setAlertFocus] = useState('all');
   const [pipelineConfig, setPipelineConfig] = useState(DEFAULT_PIPELINE_CONFIG);
   const mob = useIsMobile();
+  const isAdmin = user.role === 'admin';
 
   useEffect(() => {
     let mounted = true;
@@ -503,12 +504,21 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     return () => { mounted = false; };
   }, [user?.id, toast]);
 
+  const loadDeals = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/deals');
+      setDeals(data || []);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    apiFetch('/deals')
-      .then(setDeals)
-      .catch(err => toast(err.message, 'error'))
-      .finally(() => setLoading(false));
-  }, []);
+    loadDeals();
+  }, [loadDeals]);
 
   const statuses = useMemo(() => {
     const list = pipelineConfig?.statuses?.length ? pipelineConfig.statuses : DEFAULT_PIPELINE_STATUSES;
@@ -534,8 +544,30 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const handleDelete = (id) => setDeals(prev => prev.filter(item => item.id !== id));
 
   const isManager = user.role === 'head_of_sales' || user.role === 'admin';
-  const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
-  const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
+  const profileFilters = useMemo(() => {
+    const map = new Map();
+    for (const deal of deals) {
+      const rawUserId = String(deal?.user_id || '').trim();
+      const rawName = String(deal?.user_name || '').trim() || 'Profil inconnu';
+      const key = rawUserId || `name:${rawName.toLowerCase()}`;
+      if (map.has(key)) {
+        map.get(key).count += 1;
+      } else {
+        map.set(key, { key, user_id: rawUserId || null, user_name: rawName, count: 1 });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.user_name.localeCompare(b.user_name, 'fr', { sensitivity:'base' }));
+  }, [deals]);
+  const closerFilteredDeals = filter === 'all'
+    ? deals
+    : deals.filter(deal => {
+      const rawUserId = String(deal?.user_id || '').trim();
+      if (filter.startsWith('name:')) {
+        const rawName = String(deal?.user_name || '').trim().toLowerCase();
+        return !rawUserId && `name:${rawName}` === filter;
+      }
+      return rawUserId === filter;
+    });
 
   const closedKeys = statuses.filter(status => status.closed).map(status => status.key);
   const wonKeys = statuses.filter(status => status.won).map(status => status.key);
@@ -598,6 +630,47 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     navigate?.('NewDebrief', null, 'Pipeline', { leadContext });
   };
 
+  const purgeProfile = async (profile) => {
+    if (!isAdmin || !profile) return;
+    const ok = confirm(`Supprimer définitivement tous les leads du profil "${profile.user_name}" ?`);
+    if (!ok) return;
+    try {
+      const response = await apiFetch('/deals/purge-profile', {
+        method:'POST',
+        body:{
+          profile_key: profile.key,
+          user_id: profile.user_id || undefined,
+          user_name: profile.user_name || undefined,
+        },
+      });
+      await loadDeals();
+      if (filter === profile.key) setFilter('all');
+      toast(`${response.deleted || 0} lead(s) supprimé(s) pour ${profile.user_name}`);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const purgeLegacyIClosed = async () => {
+    if (!isAdmin) return;
+    const ok = confirm('Supprimer toutes les traces iClosed / Zapier / tests du pipeline ?');
+    if (!ok) return;
+    try {
+      const response = await apiFetch('/deals/purge-profile', {
+        method:'POST',
+        body:{
+          profile_key:'legacy_iclosed_cleanup',
+          legacy_source:'iclosed',
+        },
+      });
+      await loadDeals();
+      setFilter('all');
+      toast(`Nettoyage terminé: ${response.deleted || 0} lead(s) supprimé(s)`);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
   if (loading) return <Spinner full />;
 
   return (
@@ -617,6 +690,11 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
                 onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
               >
                 ⚙️ Paramètres
+              </Btn>
+            )}
+            {isAdmin && (
+              <Btn variant="danger" onClick={purgeLegacyIClosed}>
+                🧹 Nettoyer iClosed
               </Btn>
             )}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
@@ -701,7 +779,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
       </Card>
 
-      {isManager && closers.length > 1 && (
+      {isManager && profileFilters.length > 1 && (
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}
@@ -709,14 +787,35 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
           >
             Tous les closers
           </button>
-          {closers.map(closer => (
-            <button
-              key={closer.id}
-              onClick={()=>setFilter(closer.id)}
-              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#e87d6a' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === closer.id ? '#e87d6a' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
-            >
-              👤 {closer.name}
-            </button>
+          {profileFilters.map(profile => (
+            <div key={profile.key} style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+              <button
+                onClick={()=>setFilter(profile.key)}
+                style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === profile.key ? '#e87d6a' : 'var(--border)'}`, background:filter === profile.key ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === profile.key ? '#e87d6a' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+              >
+                👤 {profile.user_name} · {profile.count}
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => purgeProfile(profile)}
+                  title={`Supprimer le profil ${profile.user_name}`}
+                  style={{
+                    border:'1px solid rgba(220,38,38,.35)',
+                    background:'rgba(254,226,226,.72)',
+                    color:'#b91c1c',
+                    borderRadius:999,
+                    padding:'5px 9px',
+                    cursor:'pointer',
+                    fontFamily:'inherit',
+                    fontSize:12,
+                    fontWeight:700,
+                  }}
+                >
+                  🗑
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
