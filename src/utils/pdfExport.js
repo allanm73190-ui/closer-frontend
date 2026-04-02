@@ -339,6 +339,22 @@ function normalizeAiLine(line = '') {
     .trim();
 }
 
+function splitLabeledLine(line = '') {
+  const cleaned = normalizeAiLine(line);
+  if (!cleaned) return { label: '', text: '' };
+  const separators = [':', ' — ', ' – ', ' - '];
+  for (const sep of separators) {
+    const idx = cleaned.indexOf(sep);
+    if (idx <= 1) continue;
+    const label = cleaned.slice(0, idx).trim();
+    const text = cleaned.slice(idx + sep.length).trim();
+    if (!label || !text) continue;
+    if (label.length > 44) continue;
+    return { label, text };
+  }
+  return { label: '', text: cleaned };
+}
+
 function pickAiLine(lines = [], patterns = []) {
   const source = Array.isArray(lines) ? lines : [];
   const tests = Array.isArray(patterns) ? patterns : [];
@@ -561,7 +577,13 @@ function buildDebriefPdfHtml(payload) {
   } = ctx;
 
   const analysisHtml = analysisDigest.length > 0
-    ? `<ul class="list">${analysisDigest.map(item => `<li>${escapeHtml(normalizeAiLine(item))}</li>`).join('')}</ul>`
+    ? `<ul class="list list--ai">${analysisDigest.map(item => {
+        const parsed = splitLabeledLine(item);
+        if (parsed.label) {
+          return `<li class="ai-line"><strong>${escapeHtml(parsed.label)}</strong> : ${escapeHtml(parsed.text)}</li>`;
+        }
+        return `<li class="ai-line">${escapeHtml(parsed.text)}</li>`;
+      }).join('')}</ul>`
     : '<p class="hint">Synthèse IA non disponible.</p>';
 
   const recommendationsHtml = (recommendations.length > 0 ? recommendations : [
@@ -607,8 +629,8 @@ function buildDebriefPdfHtml(payload) {
   }).join('');
 
   const keySignalsHtml = signals.length > 0
-    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)}: ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun signal terrain renseigné.</p>';
+    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)} : ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
+    : '<p class="hint">Aucun extrait libre saisi dans le debrief.</p>';
 
   const shortLink = debrief.call_link ? truncateText(debrief.call_link, 72) : 'Non renseigné';
 
@@ -891,12 +913,6 @@ function buildDebriefPdfHtml(payload) {
           color: #6a584b;
           line-height: 1.45;
         }
-        .split {
-          margin-top: 14px;
-          display: grid;
-          gap: 10px;
-          grid-template-columns: 1fr 1fr;
-        }
         .panel {
           border: 1px solid var(--line);
           border-radius: 12px;
@@ -936,6 +952,25 @@ function buildDebriefPdfHtml(payload) {
         .list li + li { margin-top: 5px; }
         .list--signals li strong {
           color: #5a4a3a;
+        }
+        .list--ai {
+          margin-top: 2px;
+          padding-left: 16px;
+        }
+        .ai-line {
+          line-height: 1.55;
+        }
+        .ai-summary {
+          margin-top: 12px;
+        }
+        .ai-summary p {
+          margin: 8px 0 0;
+          font-size: 13px;
+          line-height: 1.5;
+          color: #5f4e41;
+        }
+        .recommendations {
+          margin-top: 10px;
         }
         .rec-list {
           margin: 0;
@@ -1060,7 +1095,6 @@ function buildDebriefPdfHtml(payload) {
           .hero-cockpit { grid-template-columns: 1fr; }
           .kpi-grid { grid-template-columns: 1fr 1fr; }
           .cockpit-grid { grid-template-columns: 1fr; }
-          .split { grid-template-columns: 1fr; }
           .annex-grid { grid-template-columns: 1fr; }
         }
         @media print {
@@ -1152,19 +1186,18 @@ function buildDebriefPdfHtml(payload) {
             </article>
           </section>
 
-          <section class="split">
-            <article class="panel">
-              <h2>Synthèse IA</h2>
-              ${analysisHtml}
-              <div class="decision">
-                <p><strong>Point fort:</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
-                <p style="margin-top:6px;"><strong>Point faible:</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
-              </div>
-            </article>
-            <article class="panel">
-              <h2>3 recommandations priorisées</h2>
-              <ul class="rec-list">${recommendationsHtml}</ul>
-            </article>
+          <section class="panel" style="margin-top:14px;">
+            <h2>Synthèse IA</h2>
+            ${analysisHtml}
+            <div class="decision ai-summary">
+              <p><strong>Point fort :</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
+              <p><strong>Point faible :</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
+            </div>
+          </section>
+
+          <section class="panel recommendations">
+            <h2>3 recommandations priorisées</h2>
+            <ul class="rec-list">${recommendationsHtml}</ul>
           </section>
         </section>
 
@@ -1175,22 +1208,22 @@ function buildDebriefPdfHtml(payload) {
             <div class="detail-grid">${sectionDetailsHtml}</div>
           </section>
 
-          <section class="annex-grid">
-            <article class="annex-box">
-              <h3>Annexe compacte</h3>
-              <p><strong>Action prioritaire:</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
-              <p><strong>Score global:</strong> ${score20}/20 (${percentage}%)</p>
-              <p><strong>Note closer:</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
-            </article>
-            <article class="annex-box">
-              <h3>Signaux terrain</h3>
-              ${keySignalsHtml}
-            </article>
-          </section>
-
           <section class="panel" style="margin-top:10px;">
             <h2>Annexe compacte</h2>
-            <p class="hint">Taux closing: ${closingRate}% · Confiance IA: ${aiConfidence}% · Risque: ${escapeHtml(risk.label)}</p>
+            <div class="annex-grid">
+              <article class="annex-box">
+                <h3>Résumé opérationnel</h3>
+                <p><strong>Action prioritaire :</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
+                <p><strong>Score global :</strong> ${score20}/20 (${percentage}%)</p>
+                <p><strong>Note closer :</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
+                <p><strong>Taux closing :</strong> ${closingRate}% · <strong>Confiance IA :</strong> ${aiConfidence}%</p>
+              </article>
+              <article class="annex-box">
+                <h3>Extraits saisis (champs libres)</h3>
+                ${keySignalsHtml}
+              </article>
+            </div>
+            <p class="hint" style="margin-top:10px;">Risque actuel : ${escapeHtml(risk.label)} · Objection dominante : ${escapeHtml(dominantObjection || 'Aucune')}</p>
           </section>
 
           <footer class="footer">
