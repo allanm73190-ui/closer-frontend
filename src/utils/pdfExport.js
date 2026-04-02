@@ -1,16 +1,7 @@
-import { SECTIONS } from '../config/ai';
 import { jsPDF } from 'jspdf';
 import { computeSectionScores, fmtDate, toScore20FromPercentage } from './scoring';
 
-const OBJECTION_LABELS = {
-  budget: 'Budget',
-  reflechir: 'Besoin de reflechir',
-  conjoint: 'Validation du conjoint',
-  methode: 'Doute sur la methode',
-  aucune: 'Aucune',
-};
-
-const SECTION_DETAILS_ORDER = [
+const SECTION_ORDER = [
   { key: 'decouverte', label: 'Découverte' },
   { key: 'reformulation', label: 'Reformulation' },
   { key: 'projection', label: 'Projection' },
@@ -37,607 +28,354 @@ function slugify(value = '') {
     .slice(0, 60);
 }
 
-function renderText(value = '') {
-  return escapeHtml(value).replace(/\n/g, '<br/>');
+function toLines(text = '', max = 10) {
+  return String(text || '')
+    .split('\n')
+    .map(line => line.replace(/\*\*/g, '').replace(/^[-*]\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, max);
 }
 
-function barColor(score) {
+function toBarColor(score) {
   if (score >= 4) return '#059669';
   if (score >= 3) return '#d97706';
   if (score >= 2) return '#e87d6a';
   return '#ef4444';
 }
 
-function getSectionNote(sectionNotes, key) {
+function buildContext(payload) {
+  const debrief = payload?.debrief || {};
+  const title = `debrief-${slugify(debrief.prospect_name || 'prospect')}-${debrief.call_date || 'export'}.pdf`;
+  const percentage = Math.round(Number(debrief.percentage || 0));
+  const score20 = toScore20FromPercentage(percentage);
+  const scores = computeSectionScores(debrief.sections || {});
+  const analysisText = String(payload?.analysis || '').trim();
+  const analysisLines = toLines(analysisText, 12);
+  return {
+    title,
+    debrief,
+    percentage,
+    score20,
+    scores,
+    analysisText,
+    analysisLines,
+  };
+}
+
+export function getSectionNote(sectionNotes, key) {
   if (!sectionNotes) return null;
   return sectionNotes[key] || (key === 'presentation_offre' ? sectionNotes.offre : null) || null;
 }
 
-function getSectionData(sections, key) {
-  if (!sections) return {};
-  return sections[key] || (key === 'presentation_offre' ? sections.offre : null) || {};
+function buildSectionRows(scores = {}) {
+  return SECTION_ORDER.map(section => {
+    const score = Number(scores[section.key] || 0);
+    const width = Math.max(0, Math.min(100, (score / 5) * 100));
+    return `
+      <div class="bar-row">
+        <div class="bar-head">
+          <span>${escapeHtml(section.label)}</span>
+          <strong>${score.toFixed(1)}/5</strong>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${width}%;background:${toBarColor(score)};"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function formatFieldLabel(rawKey = '') {
-  return String(rawKey || '')
-    .replace(/_note$/i, '')
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase());
-}
+function buildSectionNotes(debrief = {}) {
+  const notes = debrief.section_notes || {};
+  const cards = SECTION_ORDER.map(section => {
+    const note = getSectionNote(notes, section.key);
+    const strength = String(note?.strength || note?.strengths || '').trim();
+    const weakness = String(note?.weakness || note?.weaknesses || '').trim();
+    const improvement = String(note?.improvement || note?.improvements || '').trim();
+    if (!strength && !weakness && !improvement) return '';
+    return `
+      <article class="note-card">
+        <h3>${escapeHtml(section.label)}</h3>
+        ${strength ? `<p><strong>Point fort:</strong> ${escapeHtml(strength)}</p>` : ''}
+        ${weakness ? `<p><strong>Point faible:</strong> ${escapeHtml(weakness)}</p>` : ''}
+        ${improvement ? `<p><strong>Amélioration:</strong> ${escapeHtml(improvement)}</p>` : ''}
+      </article>
+    `;
+  }).filter(Boolean);
 
-function formatFieldValue(value) {
-  if (value === null || value === undefined) return '';
-  if (Array.isArray(value)) return value.map(item => String(item)).join(', ');
-  if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '';
-    }
+  if (cards.length === 0) {
+    return '<p class="hint">Base vierge: aucune note section renseignée.</p>';
   }
-  return String(value);
+  return `<div class="note-grid">${cards.join('')}</div>`;
 }
 
-function readSectionNote(noteObj, keys = []) {
-  if (!noteObj || typeof noteObj !== 'object') return '';
-  for (const key of keys) {
-    const value = noteObj[key];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-  return '';
-}
-
-function cleanMarkdownLine(line = '') {
-  return String(line || '')
-    .replace(/^#{1,6}\s+/, '')
-    .replace(/^[-*]\s+/, '')
-    .replace(/^\d+[.)]\s+/, '')
-    .replace(/\*\*/g, '')
-    .trim();
-}
-
-function extractAnalysisLines(text) {
-  if (!text) return [];
-  return String(text)
-    .split('\n')
-    .map(line => cleanMarkdownLine(line))
-    .filter(Boolean);
-}
-
-function extractActionPriority(text) {
-  if (!text) return '';
-  const strongMatch = text.match(/\*\*ACTION PRIORITAIRE\s*:\s*([^*]+)\*\*/i);
-  if (strongMatch?.[1]) return strongMatch[1].trim();
-  const plainMatch = text.match(/ACTION PRIORITAIRE\s*:\s*(.+)/i);
-  return plainMatch?.[1]?.trim() || '';
-}
-
-function extractKeyBullets(text) {
-  if (!text) return [];
-  const lines = text.split('\n').map(line => line.trim());
-  const bullets = lines
-    .filter(line => /^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line))
-    .map(line => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim())
-    .filter(Boolean);
-  if (bullets.length > 0) return bullets.slice(0, 6);
-  return lines.filter(Boolean).slice(0, 4);
-}
-
-function getDominantObjection(debrief) {
-  const objections = debrief?.sections?.closing?.objections || [];
-  const objection = objections.find(item => item && item !== 'aucune');
-  if (!objection) return debrief?.is_closed ? 'Aucune objection bloquante' : 'Aucune objection renseignee';
-  return OBJECTION_LABELS[objection] || objection.replace(/_/g, ' ');
-}
-
-function getTopSections(scores) {
-  return [...SECTIONS]
-    .map(section => ({ ...section, score: scores[section.key] || 0 }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2);
-}
-
-function getPrioritySections(scores) {
-  return [...SECTIONS]
-    .map(section => ({ ...section, score: scores[section.key] || 0 }))
-    .sort((a, b) => a.score - b.score)
-    .slice(0, 2);
-}
-
-function cleanSectionLabel(label = '') {
-  return String(label || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
-}
-
-function truncateText(value = '', max = 120) {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  if (text.length <= max) return text;
-  return `${text.slice(0, Math.max(0, max - 1)).trim()}…`;
-}
-
-function dedupeStrings(values = []) {
-  const seen = new Set();
-  return values.filter(value => {
-    const key = String(value || '').trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function normalizeToken(value = '') {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
-
-function isLikelyNarrativeFieldKey(rawKey = '') {
-  const key = normalizeToken(rawKey);
-  if (!key) return false;
-  return /note|notes|detail|details|precision|justification|comment|verbatim|douleur|temporalite|timeline|free.?text|champ.?libre|texte|pain|contexte|context|focus|objection|improvement|amelioration|strength|weakness|action|recommand|insight/.test(key);
-}
-
-function isLowSignalValue(value = '') {
-  const raw = String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-  if (!raw) return true;
-  return (
-    raw === 'oui' ||
-    raw === 'non' ||
-    raw === 'partiellement' ||
-    raw === 'aucune' ||
-    raw === 'aucun' ||
-    raw === 'moyen' ||
-    raw === 'faible' ||
-    raw === 'forte' ||
-    raw === 'fort' ||
-    raw === 'complete' ||
-    raw === 'partielle' ||
-    raw === 'directe' ||
-    raw === 'hesitante' ||
-    raw === 'trop rapide' ||
-    raw === 'close' ||
-    raw === 'perdu' ||
-    raw === 'relance' ||
-    raw === 'porte ouverte'
-  );
-}
-
-function getRiskMeta(percentage = 0, isClosed = false) {
-  if (percentage >= 80 && isClosed) return { label: 'Risque faible', tone: 'good' };
-  if (percentage >= 62) return { label: 'Risque modéré', tone: 'warn' };
-  return { label: 'Risque élevé', tone: 'danger' };
-}
-
-function getScoreReading(percentage = 0) {
-  if (percentage >= 85) return 'Très solide';
-  if (percentage >= 72) return 'Solide';
-  if (percentage >= 58) return 'À stabiliser';
-  return 'Prioritaire à corriger';
-}
-
-function toRgb(color = '#e87d6a') {
-  const map = {
-    '#059669': [5, 150, 105],
-    '#d97706': [217, 119, 6],
-    '#e87d6a': [232, 125, 106],
-    '#ef4444': [239, 68, 68],
-  };
-  return map[color] || [232, 125, 106];
-}
-
-function formatEvidenceLabel(rawKey = '') {
-  const base = String(rawKey || '').replace(/_note$/i, '');
-  if (/^q\d+$/i.test(base) || /^question[_-]?\d+$/i.test(base)) return 'Signal prospect';
-  return formatFieldLabel(base);
-}
-
-function extractSectionEvidence(sectionData = {}, maxItems = 3) {
-  const entries = Object.entries(sectionData || {});
-  const explicit = [];
-
-  for (const [key, value] of entries) {
-    if (!/_note$/i.test(key)) continue;
-    if (typeof value !== 'string' || !value.trim()) continue;
-    explicit.push({
-      label: formatEvidenceLabel(key),
-      value: value.trim(),
-    });
-  }
-
-  if (explicit.length > 0) return explicit.slice(0, maxItems);
-
-  const fallback = [];
-  for (const [key, value] of entries) {
-    if (/_note$/i.test(key)) continue;
-    if (!isLikelyNarrativeFieldKey(key)) continue;
-    const formatted = formatFieldValue(value).trim();
-    if (!formatted || isLowSignalValue(formatted)) continue;
-    if (formatted.length < 5) continue;
-    fallback.push({
-      label: formatEvidenceLabel(key),
-      value: formatted,
-    });
-  }
-  return fallback.slice(0, maxItems);
-}
-
-function buildSectionInsights(debrief, scores) {
-  return SECTION_DETAILS_ORDER.map(({ key, label }) => {
-    const score = scores[key] || 0;
-    const sectionLabel = cleanSectionLabel(label);
-    const note = getSectionNote(debrief?.section_notes, key);
-    const strength = readSectionNote(note, ['strength', 'strengths']);
-    const weakness = readSectionNote(note, ['weakness', 'weaknesses']);
-    const improvement = readSectionNote(note, ['improvement', 'improvements']);
-    const focus = improvement || weakness || strength || '';
-    const evidence = extractSectionEvidence(getSectionData(debrief?.sections, key), 2);
-
-    return {
-      key,
-      label: sectionLabel,
-      score,
-      strength,
-      weakness,
-      improvement,
-      focus,
-      evidence,
-    };
-  });
-}
-
-function buildExecutiveHighlights({ keyBullets, topSections, prioritySections, dominantObjection, actionPriority, sectionInsights }) {
-  const evidenceLine = sectionInsights
-    .flatMap(section => (section.evidence || []).map(item => `${section.label}: ${truncateText(item.value, 88)}`))
-    .find(Boolean);
-
-  const highlights = [
-    ...keyBullets.slice(0, 2),
-    topSections[0]
-      ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
-      : '',
-    prioritySections[0]
-      ? `Point de vigilance: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
-      : '',
-    dominantObjection.toLowerCase().includes('aucune')
-      ? ''
-      : `Objection dominante: ${dominantObjection}.`,
-    evidenceLine ? `Verbatim clé: "${evidenceLine}"` : '',
-    `Action à exécuter: ${actionPriority}`,
-  ];
-
-  return dedupeStrings(highlights).slice(0, 6);
-}
-
-function computeClosingRate(allDebriefs = [], fallbackDebrief = {}) {
-  const pool = Array.isArray(allDebriefs) && allDebriefs.length > 0 ? allDebriefs : [fallbackDebrief];
-  const total = pool.length;
-  if (total <= 0) return 0;
-  const closed = pool.filter(item => !!item?.is_closed).length;
-  return Math.round((closed / total) * 100);
-}
-
-function computeAiConfidence({ percentage = 0, hasAnalysis = false, signalCount = 0 }) {
-  const base = 52 + Math.round(percentage * 0.35);
-  const analysisBoost = hasAnalysis ? 8 : 0;
-  const signalBoost = Math.min(8, signalCount * 2);
-  return Math.max(40, Math.min(97, base + analysisBoost + signalBoost));
-}
-
-function buildNextCallGoal({ prioritySections = [], actionPriority = '' }) {
-  const weakest = Array.isArray(prioritySections) && prioritySections.length > 0 ? prioritySections[0] : null;
-  if (!weakest) return actionPriority || 'Stabiliser le closing avant le prochain appel.';
-  const target = Math.min(5, Number(weakest.score || 0) + 1.0);
-  return `${cleanSectionLabel(weakest.label)} à ${target.toFixed(1)}/5 au prochain appel`;
-}
-
-function buildDecisionSummary({ debrief, percentage, scoreReading, dominantObjection, actionPriority }) {
-  const status = debrief?.is_closed ? 'Closé' : 'Non closé';
-  const objectionText = String(dominantObjection || '').toLowerCase().includes('aucune')
-    ? 'sans objection bloquante explicite'
-    : `frein principal: ${String(dominantObjection || '').toLowerCase()}`;
-  return `Verdict ${status} · ${percentage}% (${scoreReading}) · ${objectionText}. Priorité suivante: ${actionPriority}`;
-}
-
-function normalizeAiLine(line = '') {
-  return String(line || '')
-    .replace(/\*\*/g, '')
-    .replace(/__/g, '')
-    .replace(/`/g, '')
-    .replace(/^[-•]\s*/, '')
-    .trim();
-}
-
-function splitLabeledLine(line = '') {
-  const cleaned = normalizeAiLine(line);
-  if (!cleaned) return { label: '', text: '' };
-  const separators = [':', ' — ', ' – ', ' - '];
-  for (const sep of separators) {
-    const idx = cleaned.indexOf(sep);
-    if (idx <= 1) continue;
-    const label = cleaned.slice(0, idx).trim();
-    const text = cleaned.slice(idx + sep.length).trim();
-    if (!label || !text) continue;
-    if (label.length > 44) continue;
-    return { label, text };
-  }
-  return { label: '', text: cleaned };
-}
-
-function parseAiStructuredContent(text = '') {
-  const source = String(text || '');
-  if (!source.trim()) {
-    return { summary: [], strong: [], weak: [], recommendations: [], priority: '' };
-  }
-
-  const lines = source
-    .split('\n')
-    .map(line => normalizeAiLine(cleanMarkdownLine(line)))
-    .filter(Boolean);
-
-  const summary = [];
-  const strong = [];
-  const weak = [];
-  const recommendations = [];
-  const priorityCandidates = [];
-  let section = 'summary';
-
-  const push = (bucket, value) => {
-    const clean = normalizeAiLine(value);
-    if (!clean) return;
-    bucket.push(clean);
-  };
-
-  for (const rawLine of lines) {
-    const line = normalizeAiLine(rawLine);
-    if (!line) continue;
-    const bulletLine = line.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
-    if (!bulletLine) continue;
-
-    const parsed = splitLabeledLine(bulletLine);
-    const labelNorm = normalizeToken(parsed.label || bulletLine);
-    const text = parsed.text || '';
-
-    const isPriority = /action prioritaire|priorite immediate|priorite principale|priorite du call|next best action/.test(labelNorm);
-    const isStrong = /point(s)? fort|forces?|atout|ce qui marche|reussite|reussi|solide/.test(labelNorm);
-    const isWeak = /point(s)? faible|faiblesse|axe(s)? d.?amelioration|vigilance|risque|a corriger|a travailler|frein/.test(labelNorm);
-    const isRec = /recommandation|actions?|plan d.?action|prochaine etape|next step|next action/.test(labelNorm);
-    const isSummaryHeading = /synthese|resume|diagnostic|lecture globale|analyse globale/.test(labelNorm);
-
-    if (isPriority) {
-      section = 'recommendations';
-      if (text) {
-        push(priorityCandidates, text);
-      }
-      continue;
-    }
-    if (isStrong) {
-      section = 'strong';
-      if (text) {
-        push(strong, text);
-      }
-      continue;
-    }
-    if (isWeak) {
-      section = 'weak';
-      if (text) {
-        push(weak, text);
-      }
-      continue;
-    }
-    if (isRec) {
-      section = 'recommendations';
-      if (text) {
-        push(recommendations, text);
-      }
-      continue;
-    }
-    if (isSummaryHeading) {
-      section = 'summary';
-      if (text) {
-        push(summary, text);
-      }
-      continue;
-    }
-
-    if (!parsed.label && /^(synthese|resume|diagnostic|points?\s+forts?|points?\s+faibles?|recommandations?|actions?)$/i.test(line)) {
-      if (/fort/i.test(line)) section = 'strong';
-      else if (/faible|amelioration|risque|vigilance/i.test(line)) section = 'weak';
-      else if (/recommand|action/i.test(line)) section = 'recommendations';
-      else section = 'summary';
-      continue;
-    }
-
-    if (section === 'strong') push(strong, bulletLine);
-    else if (section === 'weak') push(weak, bulletLine);
-    else if (section === 'recommendations') push(recommendations, bulletLine);
-    else push(summary, bulletLine);
-  }
-
-  const dedupedSummary = dedupeStrings(summary).filter(item => !/^(point(s)?\s+fort|point(s)?\s+faible|recommandation|action prioritaire)\b/i.test(item));
-  const dedupedStrong = dedupeStrings(strong);
-  const dedupedWeak = dedupeStrings(weak);
-  const dedupedRecommendations = dedupeStrings([
-    ...priorityCandidates,
-    ...recommendations,
-  ]);
-
-  return {
-    summary: dedupedSummary,
-    strong: dedupedStrong,
-    weak: dedupedWeak,
-    recommendations: dedupedRecommendations,
-    priority: dedupeStrings(priorityCandidates)[0] || '',
-  };
-}
-
-function pickAiLine(lines = [], patterns = []) {
-  const source = Array.isArray(lines) ? lines : [];
-  const tests = Array.isArray(patterns) ? patterns : [];
-  for (const line of source) {
-    const normalized = normalizeAiLine(line);
-    if (!normalized) continue;
-    if (tests.some(pattern => pattern.test(normalized))) return normalized;
-  }
-  return '';
-}
-
-function buildAiInsights({
-  analysisLines = [],
-  actionPriority = '',
-  topSections = [],
-  prioritySections = [],
-  structuredAi = null,
-}) {
-  const cleanLines = dedupeStrings((analysisLines || []).map(normalizeAiLine).filter(Boolean));
-  const structured = structuredAi || { strong: [], weak: [], recommendations: [] };
-  const strongFallback = topSections[0]
-    ? `Levier principal: ${cleanSectionLabel(topSections[0].label)} (${topSections[0].score}/5).`
-    : 'Levier principal non identifié.';
-  const weakFallback = prioritySections[0]
-    ? `Point faible principal: ${cleanSectionLabel(prioritySections[0].label)} (${prioritySections[0].score}/5).`
-    : 'Point faible principal non identifié.';
-
-  const pointFort = structured.strong?.[0]
-    || pickAiLine(cleanLines, [/point fort|strength|atout|réussi|reussi|solide|maitri|maîtris/i])
-    || strongFallback;
-  const pointFaible = structured.weak?.[0]
-    || pickAiLine(cleanLines, [/point faible|weak|risque|bloqu|frein|manque|amélior|amelior/i])
-    || weakFallback;
-
-  const recommendationCandidates = cleanLines.filter(line => {
-    if (!line) return false;
-    if (line === pointFort || line === pointFaible) return false;
-    if (/^(point(s)?\s+fort|point(s)?\s+faible)\b/i.test(line)) return false;
-    return /action|priorit|recommand|prochain|corrig|travaill|objectif|next/i.test(line);
-  });
-
-  const fallbackRecs = [
-    actionPriority || 'Formaliser une action prioritaire mesurable avant le prochain appel.',
-    prioritySections[0]
-      ? `Travailler la section ${cleanSectionLabel(prioritySections[0].label)} avec répétition ciblée.`
-      : 'Stabiliser la phase de closing avec un script d’isolation.',
-    topSections[0]
-      ? `Conserver le levier ${cleanSectionLabel(topSections[0].label)} dans le prochain call.`
-      : 'Capitaliser sur les points forts observés lors du call.',
-  ];
-
-  const recommendations = dedupeStrings([
-    ...(structured.recommendations || []),
-    ...recommendationCandidates,
-    ...fallbackRecs,
-  ])
-    .slice(0, 3)
-    .map((item, idx) => ({
-      priority: idx === 0 ? 'Haute' : idx === 1 ? 'Moyenne' : 'Basse',
-      text: item,
-    }));
-
-  return { pointFort, pointFaible, recommendations };
-}
-
-function buildExportContext({ debrief, comments = [], analysis = '', allDebriefs = [] }) {
-  const safeDebrief = debrief || {};
-  const title = `debrief-${slugify(safeDebrief.prospect_name || 'prospect')}-${safeDebrief.call_date || 'export'}.pdf`;
-  const percentage = Math.round(safeDebrief.percentage || 0);
-  const score20 = toScore20FromPercentage(percentage);
-  const scores = computeSectionScores(safeDebrief.sections || {});
-  const topSections = getTopSections(scores);
-  const prioritySections = getPrioritySections(scores);
-  const structuredAi = parseAiStructuredContent(analysis);
-  const actionPriority = structuredAi.priority || extractActionPriority(analysis) || "Formaliser une action mesurable avant le prochain appel.";
-  const keyBullets = extractKeyBullets(analysis);
-  const analysisLines = extractAnalysisLines(analysis);
-  const dominantObjection = getDominantObjection(safeDebrief);
-  const risk = getRiskMeta(percentage, !!safeDebrief.is_closed);
-  const sectionInsights = buildSectionInsights(safeDebrief, scores);
-  const signals = sectionInsights
-    .flatMap(section =>
-      (section.evidence || []).map(item => ({
-        section: section.label,
-        label: item.label,
-        value: item.value,
-      }))
-    )
-    .slice(0, 8);
-  const signalCount = signals.length;
-  const closingRate = computeClosingRate(allDebriefs, safeDebrief);
-  const debriefCount = Array.isArray(allDebriefs) && allDebriefs.length > 0 ? allDebriefs.length : 1;
-  const aiConfidence = computeAiConfidence({
-    percentage,
-    hasAnalysis: !!String(analysis || '').trim(),
-    signalCount,
-  });
-  const nextCallGoal = buildNextCallGoal({ prioritySections, actionPriority });
-  const executiveHighlights = buildExecutiveHighlights({
-    keyBullets,
-    topSections,
-    prioritySections,
-    dominantObjection,
-    actionPriority,
-    sectionInsights,
-  });
-  const fallbackDigest = dedupeStrings(
-    [...keyBullets, ...analysisLines]
-      .map(normalizeAiLine)
-      .filter(Boolean)
-      .filter(line => !/^(point(s)?\s+fort|point(s)?\s+faible|recommandation|action prioritaire)\b/i.test(line))
-  );
-  const analysisDigest = dedupeStrings([
-    ...(structuredAi.summary || []),
-    ...(structuredAi.strong?.[0] ? [`Point fort: ${structuredAi.strong[0]}`] : []),
-    ...(structuredAi.weak?.[0] ? [`Point faible: ${structuredAi.weak[0]}`] : []),
-    ...fallbackDigest,
-  ]).slice(0, 6);
-  const decisionSummary = buildDecisionSummary({
-    debrief: safeDebrief,
-    percentage,
-    scoreReading: getScoreReading(percentage),
-    dominantObjection,
-    actionPriority,
-  });
-  const { pointFort, pointFaible, recommendations } = buildAiInsights({
-    analysisLines,
-    actionPriority,
-    topSections,
-    prioritySections,
-    structuredAi,
-  });
-
-  return {
+function buildDebriefPdfHtml(payload) {
+  const ctx = buildContext(payload);
+  const {
     title,
-    debrief: safeDebrief,
+    debrief,
     percentage,
     score20,
     scores,
-    topSections,
-    prioritySections,
-    actionPriority,
-    keyBullets,
+    analysisText,
     analysisLines,
-    latestComments: [...comments].slice(-4).reverse(),
-    dominantObjection,
-    debriefCount,
-    closingRate,
-    aiConfidence,
-    nextCallGoal,
-    risk,
-    sectionInsights,
-    signals,
-    executiveHighlights: executiveHighlights.slice(0, 4),
-    analysisDigest,
-    decisionSummary,
-    aiStrongPoint: pointFort,
-    aiWeakPoint: pointFaible,
-    recommendations,
-    scoreReading: getScoreReading(percentage),
-  };
+  } = ctx;
+
+  const shortLink = String(debrief.call_link || '').trim();
+  const sectionRows = buildSectionRows(scores);
+  const sectionNotesHtml = buildSectionNotes(debrief);
+  const analysisHtml = analysisLines.length > 0
+    ? `<ul class="list">${analysisLines.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '<p class="hint">Base vierge: aucune synthèse IA fournie.</p>';
+
+  return `<!doctype html>
+  <html lang="fr">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${escapeHtml(title)}</title>
+      <style>
+        :root {
+          --paper: #fffdfa;
+          --line: #e9dccf;
+          --text: #3c2f25;
+          --muted: #7e6d5e;
+          --bg: #f2f5fb;
+          --accent: #e87d6a;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+          font-family: Inter, system-ui, sans-serif;
+          background: linear-gradient(160deg, #eef2fb 0%, #f7eee8 100%);
+          color: var(--text);
+        }
+        .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          padding: 10px 14px;
+          border-bottom: 1px solid var(--line);
+          background: rgba(255,255,255,.9);
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .stack {
+          width: min(920px, calc(100vw - 32px));
+          margin: 18px auto 30px;
+          display: grid;
+          gap: 18px;
+        }
+        .page {
+          background: var(--paper);
+          border: 1px solid #efe4da;
+          border-radius: 20px;
+          box-shadow: 0 14px 30px rgba(70, 52, 40, .1);
+          padding: 26px;
+          min-height: 1120px;
+        }
+        .kicker {
+          margin: 0 0 10px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .09em;
+          font-weight: 700;
+          color: var(--muted);
+        }
+        .hero {
+          border: 1px solid #f1e3d7;
+          border-radius: 14px;
+          padding: 14px;
+          background: linear-gradient(110deg, #253043 0%, #2f3d53 45%, var(--accent) 100%);
+          color: #fff;
+        }
+        .hero h1 {
+          margin: 0;
+          font-size: 28px;
+          line-height: 1.1;
+          letter-spacing: -.02em;
+        }
+        .hero p {
+          margin: 8px 0 0;
+          font-size: 13px;
+          color: #f6eee9;
+        }
+        .hero a {
+          color: #fff;
+          text-decoration: none;
+          border-bottom: 1px solid rgba(255,255,255,.6);
+        }
+        .meta-grid {
+          margin-top: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .meta-box {
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .meta-box p {
+          margin: 0;
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .meta-box strong {
+          display: block;
+          margin-top: 5px;
+          font-size: 26px;
+          color: #d4604e;
+        }
+        .panel {
+          margin-top: 12px;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+        }
+        .panel h2 {
+          margin: 0 0 8px;
+          font-size: 16px;
+          color: #433329;
+        }
+        .hint {
+          margin: 0;
+          font-size: 12px;
+          color: var(--muted);
+          line-height: 1.45;
+        }
+        .list {
+          margin: 0;
+          padding-left: 18px;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .list li + li { margin-top: 5px; }
+        .bar-row + .bar-row { margin-top: 9px; }
+        .bar-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 4px;
+          font-size: 13px;
+        }
+        .bar-track {
+          height: 10px;
+          border-radius: 999px;
+          background: #efe2d8;
+          overflow: hidden;
+        }
+        .bar-fill {
+          height: 100%;
+          border-radius: inherit;
+        }
+        .note-grid {
+          display: grid;
+          gap: 10px;
+        }
+        .note-card {
+          border: 1px solid #f1e4d9;
+          border-radius: 10px;
+          background: #fffdfa;
+          padding: 10px;
+        }
+        .note-card h3 {
+          margin: 0 0 6px;
+          font-size: 14px;
+        }
+        .note-card p {
+          margin: 5px 0 0;
+          font-size: 12px;
+          line-height: 1.45;
+          color: #665648;
+        }
+        @media (max-width: 860px) {
+          .page { min-height: auto; padding: 18px; border-radius: 14px; }
+          .meta-grid { grid-template-columns: 1fr; }
+        }
+        @media print {
+          body { background: #fff; }
+          .topbar { display: none; }
+          .stack { width: 100%; margin: 0; gap: 0; }
+          .page {
+            box-shadow: none;
+            border-radius: 0;
+            border: none;
+            page-break-after: always;
+            break-after: page;
+            padding: 14mm;
+          }
+          .page:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="topbar">Base vierge export debrief · version minimale</div>
+      <main class="stack">
+        <section class="page">
+          <p class="kicker">Page 1 · Informations brutes</p>
+          <section class="hero">
+            <h1>${escapeHtml(debrief.prospect_name || 'Lead non renseigné')}</h1>
+            <p>Date: ${escapeHtml(fmtDate(debrief.call_date))} · Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}</p>
+            <p>Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')}</p>
+            <p>Lien appel: ${
+              shortLink
+                ? `<a href="${escapeHtml(shortLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortLink)}</a>`
+                : 'Non renseigné'
+            }</p>
+          </section>
+
+          <section class="meta-grid">
+            <article class="meta-box">
+              <p>Score global</p>
+              <strong>${score20}</strong>
+              <p>/20 · ${percentage}%</p>
+            </article>
+            <article class="meta-box">
+              <p>Statut export</p>
+              <strong style="font-size:18px;color:#3f3228;">Base vierge</strong>
+              <p>Prêt pour redesign complet</p>
+            </article>
+          </section>
+
+          <section class="panel">
+            <h2>Synthèse IA (brute)</h2>
+            ${analysisHtml}
+          </section>
+
+          <section class="panel">
+            <h2>Notes de l'appel</h2>
+            ${
+              analysisText
+                ? '<p class="hint">La synthèse IA ci-dessus est affichée sans reformulation.</p>'
+                : `<p class="hint">${escapeHtml(debrief.notes || 'Aucune note closer renseignée.')}</p>`
+            }
+          </section>
+        </section>
+
+        <section class="page">
+          <p class="kicker">Page 2 · Scores et notes section</p>
+          <section class="panel">
+            <h2>Scores par section</h2>
+            ${sectionRows}
+          </section>
+          <section class="panel">
+            <h2>Notes par section</h2>
+            ${sectionNotesHtml}
+          </section>
+        </section>
+      </main>
+    </body>
+  </html>`;
+}
+
+export function buildDebriefPdfPreviewHtml(payload) {
+  return buildDebriefPdfHtml(payload);
 }
 
 function buildLoadingHtml(title) {
@@ -695,696 +433,11 @@ function buildLoadingHtml(title) {
         <div class="dot"></div>
         <div>
           <p class="title">Préparation du PDF</p>
-          <p class="text">On met en avant l'essentiel d'abord, puis les détails utiles en annexe.</p>
+          <p class="text">Génération de la base vierge en cours...</p>
         </div>
       </div>
     </body>
   </html>`;
-}
-
-function buildDebriefPdfHtml(payload) {
-  const ctx = buildExportContext(payload || {});
-  const {
-    title,
-    debrief,
-    percentage,
-    score20,
-    actionPriority,
-    dominantObjection,
-    closingRate,
-    aiConfidence,
-    risk,
-    sectionInsights,
-    signals,
-    analysisDigest,
-    scoreReading,
-    aiStrongPoint,
-    aiWeakPoint,
-    recommendations,
-  } = ctx;
-
-  const analysisHtml = analysisDigest.length > 0
-    ? `<ul class="list list--ai">${analysisDigest.map(item => {
-        const parsed = splitLabeledLine(item);
-        if (parsed.label) {
-          return `<li class="ai-line"><strong>${escapeHtml(parsed.label)}</strong> : ${escapeHtml(parsed.text)}</li>`;
-        }
-        return `<li class="ai-line">${escapeHtml(parsed.text)}</li>`;
-      }).join('')}</ul>`
-    : '<p class="hint">Synthèse IA non disponible.</p>';
-
-  const recommendationsHtml = (recommendations.length > 0 ? recommendations : [
-    { priority: 'Haute', text: actionPriority || 'Définir une action prioritaire claire.' },
-    { priority: 'Moyenne', text: 'Consolider les sections les plus faibles.' },
-    { priority: 'Basse', text: 'Renforcer le levier principal déjà présent.' },
-  ]).slice(0, 3).map(rec => `
-    <li class="rec-item">
-      <span class="rec-priority rec-priority--${slugify(rec.priority || 'moyenne')}">${escapeHtml(rec.priority || 'Moyenne')}</span>
-      <span>${escapeHtml(normalizeAiLine(rec.text || ''))}</span>
-    </li>
-  `).join('');
-
-  const sectionBarsHtml = sectionInsights.map(section => `
-    <div class="bar-row">
-      <div class="bar-row__label">
-        <span>${escapeHtml(cleanSectionLabel(section.label))}</span>
-        <strong>${section.score}/5</strong>
-      </div>
-      <div class="bar-row__track">
-        <div class="bar-row__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
-      </div>
-    </div>
-  `).join('');
-
-  const sectionDetailsHtml = sectionInsights.map(section => {
-    const firstEvidence = section.evidence?.[0]?.value ? truncateText(section.evidence[0].value, 110) : 'Aucun signal clé saisi.';
-    return `
-      <article class="section-card">
-        <div class="section-card__head">
-          <h3>${escapeHtml(cleanSectionLabel(section.label))}</h3>
-          <span style="color:${barColor(section.score)}">${section.score}/5</span>
-        </div>
-        <div class="section-card__track">
-          <div class="section-card__fill" style="width:${(section.score / 5) * 100}%;background:${barColor(section.score)}"></div>
-        </div>
-        <p><strong>Point fort:</strong> ${escapeHtml(section.strength || 'Non renseigné')}</p>
-        <p><strong>Point faible:</strong> ${escapeHtml(section.weakness || 'Non renseigné')}</p>
-        <p><strong>Action:</strong> ${escapeHtml(section.improvement || section.focus || 'Non renseigné')}</p>
-        <p><strong>Signal clé:</strong> ${escapeHtml(firstEvidence)}</p>
-      </article>
-    `;
-  }).join('');
-
-  const keySignalsHtml = signals.length > 0
-    ? `<ul class="list">${signals.slice(0, 4).map(signal => `<li><strong>${escapeHtml(signal.section)}</strong> · ${escapeHtml(signal.label)} : ${escapeHtml(truncateText(signal.value, 120))}</li>`).join('')}</ul>`
-    : '<p class="hint">Aucun extrait libre saisi dans le debrief.</p>';
-
-  const shortLink = debrief.call_link ? truncateText(debrief.call_link, 72) : 'Non renseigné';
-
-  const radarSvg = (() => {
-    const axes = sectionInsights.length > 0
-      ? sectionInsights
-      : SECTION_DETAILS_ORDER.map(section => ({
-        key: section.key,
-        label: cleanSectionLabel(section.label),
-        score: 0,
-      }));
-    const count = axes.length || 5;
-    const cx = 132;
-    const cy = 132;
-    const outer = 92;
-    const point = (index, value) => {
-      const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / count);
-      const ratio = Math.max(0, Math.min(5, Number(value || 0))) / 5;
-      const radius = outer * ratio;
-      return {
-        x: cx + (Math.cos(angle) * radius),
-        y: cy + (Math.sin(angle) * radius),
-      };
-    };
-    const ring = value => axes.map((_, index) => {
-      const p = point(index, value);
-      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-    }).join(' ');
-    const spokes = axes.map((_, index) => {
-      const p = point(index, 5);
-      return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="#E8D9CD" stroke-width="1"/>`;
-    }).join('');
-    const labels = axes.map((axis, index) => {
-      const p = point(index, 5.9);
-      const anchor = p.x < cx - 22 ? 'end' : p.x > cx + 22 ? 'start' : 'middle';
-      return `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="${anchor}" style="font:600 10px Inter,system-ui,sans-serif;fill:#7C695B;">${escapeHtml(cleanSectionLabel(axis.label || axis.key || 'Section'))}</text>`;
-    }).join('');
-    const dataPolygon = axes.map((axis, index) => {
-      const p = point(index, axis.score);
-      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-    }).join(' ');
-    return `
-      <svg viewBox="0 0 264 264" width="100%" height="230" role="img" aria-label="Radar compétences">
-        <polygon points="${ring(5)}" fill="none" stroke="#E8D9CD" stroke-width="2"/>
-        <polygon points="${ring(3.5)}" fill="none" stroke="#E8D9CD" stroke-width="1.4"/>
-        <polygon points="${ring(2)}" fill="none" stroke="#E8D9CD" stroke-width="1.1"/>
-        ${spokes}
-        <polygon points="${dataPolygon}" fill="rgba(232,125,106,0.22)" stroke="#D4604E" stroke-width="3"/>
-        ${labels}
-      </svg>
-    `;
-  })();
-
-  return `<!doctype html>
-  <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>${escapeHtml(title)}</title>
-      <style>
-        :root {
-          --text: #352a22;
-          --muted: #847264;
-          --line: #eadccf;
-          --paper: #fffdfa;
-          --hero-dark: #253043;
-          --hero-coral: #e87d6a;
-        }
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; }
-        body {
-          font-family: Inter, system-ui, sans-serif;
-          background: linear-gradient(150deg, #eff2f9 0%, #f7efe8 100%);
-          color: var(--text);
-        }
-        .topbar {
-          position: sticky;
-          top: 0;
-          z-index: 10;
-          background: rgba(255,255,255,.9);
-          border-bottom: 1px solid var(--line);
-          padding: 10px 16px;
-          font-size: 12px;
-          color: var(--muted);
-        }
-        .pdf-stack {
-          width: min(900px, calc(100vw - 36px));
-          margin: 20px auto 38px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .pdf-page {
-          background: var(--paper);
-          border-radius: 22px;
-          box-shadow: 0 14px 34px rgba(74, 58, 47, .1);
-          padding: 30px;
-          min-height: 1120px;
-        }
-        .page-label {
-          margin: 0 0 12px;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: .1em;
-          font-weight: 700;
-          color: #8d7769;
-        }
-        .hero-cockpit {
-          display: grid;
-          grid-template-columns: 1fr 210px;
-          gap: 14px;
-          align-items: stretch;
-          margin-bottom: 14px;
-        }
-        .hero-main {
-          border-radius: 18px;
-          padding: 18px;
-          background: linear-gradient(110deg, var(--hero-dark) 0%, #2f3d53 45%, var(--hero-coral) 100%);
-        }
-        .kicker {
-          margin: 0 0 8px;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: .1em;
-          font-weight: 700;
-          color: #d6dde8;
-        }
-        .hero-main h1 {
-          margin: 0;
-          font-size: 30px;
-          line-height: 1.12;
-          color: #fff;
-        }
-        .hero-meta {
-          margin: 8px 0 0;
-          color: #f7f1eb;
-          font-size: 13px;
-        }
-        .hero-link {
-          color: #fff;
-          text-decoration: none;
-          border-bottom: 1px solid rgba(255,255,255,.5);
-        }
-        .hero-link:hover {
-          border-bottom-color: #fff;
-        }
-        .hero-tags {
-          margin-top: 10px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .tag {
-          border: 1px solid rgba(255,255,255,.24);
-          background: rgba(255,255,255,.14);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 700;
-          border-radius: 999px;
-          padding: 6px 11px;
-        }
-        .hero-score {
-          border: 1px solid #f2ddd2;
-          border-radius: 18px;
-          background: #fff6f2;
-          padding: 14px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-        .hero-score p {
-          margin: 0;
-          color: #8b6e5c;
-          font-size: 12px;
-        }
-        .hero-score strong {
-          display: block;
-          margin-top: 6px;
-          font-size: 48px;
-          line-height: 1;
-          color: #d4604e;
-        }
-        .hero-score small {
-          font-size: 13px;
-          color: #795f51;
-          margin-top: 6px;
-        }
-        .kpi-grid {
-          margin-top: 12px;
-          display: grid;
-          gap: 8px;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-        .kpi-card {
-          border: 1px solid var(--line);
-          border-radius: 14px;
-          background: #fff;
-          padding: 10px 12px;
-        }
-        .kpi-title {
-          margin: 0;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: .1em;
-          color: #8e796b;
-          font-weight: 700;
-        }
-        .kpi-value {
-          margin: 8px 0 0;
-          font-size: 28px;
-          line-height: 1;
-          font-weight: 800;
-          color: #364359;
-        }
-        .kpi-value--good { color: #2f7a4a; }
-        .kpi-value--warn { color: #d97706; }
-        .kpi-value--danger { color: #dc2626; }
-        .kpi-sub {
-          margin: 8px 0 0;
-          font-size: 12px;
-          color: #7e6b5d;
-        }
-        .cockpit-grid {
-          margin-top: 14px;
-          display: grid;
-          gap: 10px;
-          grid-template-columns: 1fr 1fr;
-        }
-        .cockpit-card {
-          border: 1px solid var(--line);
-          border-radius: 16px;
-          background: #fff;
-          padding: 13px;
-        }
-        .cockpit-card h2 {
-          margin: 0 0 8px;
-          font-size: 16px;
-          color: #3f3128;
-        }
-        .radar-note {
-          margin: 4px 0 0;
-          font-size: 12px;
-          color: #7d6a5d;
-        }
-        .bar-row + .bar-row { margin-top: 10px; }
-        .bar-row__label {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          margin-bottom: 4px;
-          font-size: 13px;
-        }
-        .bar-row__track {
-          height: 10px;
-          border-radius: 999px;
-          background: #efe2d8;
-          overflow: hidden;
-        }
-        .bar-row__fill {
-          height: 100%;
-          border-radius: inherit;
-        }
-        .signal-card {
-          margin-top: 10px;
-          border: 1px solid #f1e2d7;
-          border-radius: 12px;
-          background: #fff8f4;
-          padding: 10px;
-        }
-        .signal-card h3 {
-          margin: 0 0 6px;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: .08em;
-          color: #ab5c49;
-        }
-        .signal-card p {
-          margin: 0;
-          font-size: 13px;
-          color: #6a584b;
-          line-height: 1.45;
-        }
-        .panel {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 13px;
-          background: #fff;
-        }
-        .panel h2 {
-          margin: 0 0 8px;
-          font-size: 16px;
-          color: #433329;
-        }
-        .decision {
-          margin: 8px 0 0;
-          padding: 10px;
-          border: 1px solid #f1e2d7;
-          border-radius: 12px;
-          background: #fffbf8;
-        }
-        .decision p {
-          margin: 0;
-          font-size: 13px;
-          color: #5f4e41;
-          line-height: 1.48;
-        }
-        .hint {
-          margin: 0;
-          color: var(--muted);
-          font-size: 12px;
-          line-height: 1.45;
-        }
-        .list {
-          margin: 0;
-          padding-left: 18px;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-        .list li + li { margin-top: 5px; }
-        .list--signals li strong {
-          color: #5a4a3a;
-        }
-        .list--ai {
-          margin-top: 2px;
-          padding-left: 16px;
-        }
-        .ai-line {
-          line-height: 1.55;
-        }
-        .ai-summary {
-          margin-top: 12px;
-        }
-        .ai-summary p {
-          margin: 8px 0 0;
-          font-size: 13px;
-          line-height: 1.5;
-          color: #5f4e41;
-        }
-        .recommendations {
-          margin-top: 10px;
-        }
-        .rec-list {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-          display: grid;
-          gap: 8px;
-        }
-        .rec-item {
-          display: flex;
-          gap: 8px;
-          align-items: flex-start;
-          font-size: 13px;
-          line-height: 1.45;
-          color: #5f4d40;
-        }
-        .rec-priority {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 68px;
-          padding: 3px 8px;
-          border-radius: 999px;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: .06em;
-          text-transform: uppercase;
-          flex-shrink: 0;
-        }
-        .rec-priority--haute {
-          background: #fee2e2;
-          color: #b91c1c;
-          border: 1px solid #fecaca;
-        }
-        .rec-priority--moyenne {
-          background: #fef3c7;
-          color: #92400e;
-          border: 1px solid #fde68a;
-        }
-        .rec-priority--basse {
-          background: #dcfce7;
-          color: #166534;
-          border: 1px solid #bbf7d0;
-        }
-        .detail-grid {
-          display: grid;
-          gap: 10px;
-        }
-        .section-card {
-          border: 1px solid #f1e2d7;
-          border-radius: 12px;
-          padding: 12px;
-          background: #fffdfa;
-        }
-        .section-card__head {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          align-items: baseline;
-          margin-bottom: 6px;
-        }
-        .section-card__head h3 {
-          margin: 0;
-          font-size: 14px;
-        }
-        .section-card__head span {
-          font-size: 13px;
-          font-weight: 700;
-        }
-        .section-card__track {
-          height: 10px;
-          border-radius: 999px;
-          background: #efe2d8;
-          overflow: hidden;
-          margin-bottom: 8px;
-        }
-        .section-card__fill {
-          height: 100%;
-          border-radius: inherit;
-        }
-        .section-card p {
-          margin: 6px 0 0;
-          font-size: 12px;
-          color: #6f5d4f;
-          line-height: 1.45;
-        }
-        .annex-box {
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-        }
-        .annex-box h3 {
-          margin: 0 0 8px;
-          font-size: 14px;
-          color: #433329;
-        }
-        .annex-box p {
-          margin: 6px 0 0;
-          font-size: 12px;
-          line-height: 1.45;
-          color: #6f5e50;
-        }
-        .annex-grid {
-          margin-top: 10px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-        .footer {
-          margin-top: 16px;
-          border-top: 1px solid var(--line);
-          padding-top: 12px;
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          color: #8f7d6e;
-          font-size: 11px;
-        }
-        @media (max-width: 860px) {
-          .pdf-page { padding: 20px; border-radius: 14px; min-height: auto; }
-          .hero-cockpit { grid-template-columns: 1fr; }
-          .kpi-grid { grid-template-columns: 1fr 1fr; }
-          .cockpit-grid { grid-template-columns: 1fr; }
-          .annex-grid { grid-template-columns: 1fr; }
-        }
-        @media print {
-          body { background: #fff; }
-          .topbar { display: none; }
-          .pdf-stack {
-            width: 100%;
-            margin: 0;
-            gap: 0;
-          }
-          .pdf-page {
-            box-shadow: none;
-            border-radius: 0;
-            padding: 14mm;
-            page-break-after: always;
-            break-after: page;
-          }
-          .pdf-page:last-child {
-            page-break-after: auto;
-            break-after: auto;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="topbar">Prévisualisation PDF · Style Data Cockpit (mockup 4) · 2 pages.</div>
-      <main class="pdf-stack">
-        <section class="pdf-page">
-          <p class="page-label">Page principale · Éléments clés</p>
-          <section class="hero-cockpit">
-            <div class="hero-main">
-              <p class="kicker">PDF Debrief | Data Cockpit</p>
-              <h1>${escapeHtml(debrief.prospect_name || 'Nom prénom lead non renseigné')}</h1>
-              <p class="hero-meta">
-                Date: ${escapeHtml(fmtDate(debrief.call_date))}
-                · Résultat: ${debrief.is_closed ? 'Closé' : 'Non closé'}
-              </p>
-              <p class="hero-meta">Closer: ${escapeHtml(debrief.closer_name || debrief.user_name || 'Non renseigné')}</p>
-              <p class="hero-meta">
-                Lien de l'appel:
-                ${debrief.call_link
-                  ? `<a class="hero-link" href="${escapeHtml(debrief.call_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortLink)}</a>`
-                  : 'Non renseigné'}
-              </p>
-              <div class="hero-tags">
-                <span class="tag">${debrief.is_closed ? 'Closé' : 'Non closé'}</span>
-                <span class="tag">${escapeHtml(scoreReading)}</span>
-              </div>
-            </div>
-            <aside class="hero-score">
-              <p>Score</p>
-              <strong>${score20}</strong>
-              <small>/20 · ${percentage}%</small>
-            </aside>
-          </section>
-
-          <section class="kpi-grid">
-            <article class="kpi-card">
-              <p class="kpi-title">Taux closing</p>
-              <p class="kpi-value">${closingRate}%</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-title">Risque</p>
-              <p class="kpi-value">${escapeHtml(risk.label.replace('Risque ', ''))}</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-title">Confiance IA</p>
-              <p class="kpi-value">${aiConfidence}%</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-title">Objection</p>
-              <p class="kpi-sub" style="margin-top:8px;font-size:13px;">${escapeHtml(dominantObjection || 'Aucune')}</p>
-            </article>
-          </section>
-
-          <section class="cockpit-grid">
-            <article class="cockpit-card">
-              <h2>Radar compétences</h2>
-              ${radarSvg}
-              <p class="radar-note">Axes: découverte → closing</p>
-            </article>
-            <article class="cockpit-card">
-              <h2>Barres par section</h2>
-              ${sectionBarsHtml}
-              <div class="signal-card">
-                <h3>Signal prioritaire</h3>
-                <p>${escapeHtml(signals[0] ? `${signals[0].section} · ${signals[0].label}: ${truncateText(signals[0].value, 95)}` : 'Aucun signal prioritaire détecté.')}</p>
-              </div>
-            </article>
-          </section>
-
-          <section class="panel" style="margin-top:14px;">
-            <h2>Synthèse IA</h2>
-            ${analysisHtml}
-            <div class="decision ai-summary">
-              <p><strong>Point fort :</strong> ${escapeHtml(aiStrongPoint || 'Non renseigné')}</p>
-              <p><strong>Point faible :</strong> ${escapeHtml(aiWeakPoint || 'Non renseigné')}</p>
-            </div>
-          </section>
-
-          <section class="panel recommendations">
-            <h2>3 recommandations priorisées</h2>
-            <ul class="rec-list">${recommendationsHtml}</ul>
-          </section>
-        </section>
-
-        <section class="pdf-page">
-          <p class="page-label">Page secondaire · Détails complets</p>
-          <section class="panel">
-            <h2>Performance détaillée par section</h2>
-            <div class="detail-grid">${sectionDetailsHtml}</div>
-          </section>
-
-          <section class="panel" style="margin-top:10px;">
-            <h2>Annexe compacte</h2>
-            <div class="annex-grid">
-              <article class="annex-box">
-                <h3>Résumé opérationnel</h3>
-                <p><strong>Action prioritaire :</strong> ${escapeHtml(actionPriority || 'Non renseigné')}</p>
-                <p><strong>Score global :</strong> ${score20}/20 (${percentage}%)</p>
-                <p><strong>Note closer :</strong> ${escapeHtml(truncateText(debrief.notes || 'Non renseignée', 180))}</p>
-                <p><strong>Taux closing :</strong> ${closingRate}% · <strong>Confiance IA :</strong> ${aiConfidence}%</p>
-              </article>
-              <article class="annex-box">
-                <h3>Extraits saisis (champs libres)</h3>
-                ${keySignalsHtml}
-              </article>
-            </div>
-            <p class="hint" style="margin-top:10px;">Risque actuel : ${escapeHtml(risk.label)} · Objection dominante : ${escapeHtml(dominantObjection || 'Aucune')}</p>
-          </section>
-
-          <footer class="footer">
-            <span>CloserDebrief · Export debrief</span>
-            <span>${escapeHtml(title)}</span>
-          </footer>
-        </section>
-      </main>
-    </body>
-  </html>`;
-}
-
-export function buildDebriefPdfPreviewHtml(payload) {
-  return buildDebriefPdfHtml(payload);
 }
 
 export function openDebriefPdfWindow(debrief) {
@@ -1407,8 +460,7 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
 }
 
 export async function downloadDebriefPdf(payload) {
-  const ctx = buildExportContext(payload || {});
-  const { title } = ctx;
+  const { title } = buildContext(payload || {});
   const html = buildDebriefPdfHtml(payload || {});
   const CAPTURE_WIDTH = 1200;
   const CAPTURE_HEIGHT = Math.round(CAPTURE_WIDTH * Math.sqrt(2));
@@ -1455,17 +507,16 @@ export async function downloadDebriefPdf(payload) {
     }
     await new Promise(resolve => window.setTimeout(resolve, 180));
 
-    const pages = Array.from(docRef.querySelectorAll('.pdf-page'));
+    const pages = Array.from(docRef.querySelectorAll('.page'));
     if (pages.length === 0) throw new Error("Aucune page PDF à exporter.");
 
     const { default: html2canvas } = await import('html2canvas');
-    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const targetPages = pages.slice(0, 2);
 
-    for (let i = 0; i < targetPages.length; i += 1) {
-      const pageEl = targetPages[i];
+    for (let i = 0; i < pages.length; i += 1) {
+      const pageEl = pages[i];
       const pageRect = pageEl.getBoundingClientRect();
       const canvas = await html2canvas(pageEl, {
         scale: 2.25,
@@ -1489,6 +540,7 @@ export async function downloadDebriefPdf(payload) {
       const renderH = props.height * ratio;
       const x = (pageW - renderW) / 2;
       const y = (pageH - renderH) / 2;
+
       if (i > 0) pdf.addPage();
       pdf.addImage(img, 'PNG', x, y, renderW, renderH, undefined, 'FAST');
     }
@@ -1498,5 +550,3 @@ export async function downloadDebriefPdf(payload) {
     cleanup();
   }
 }
-
-export { getSectionNote };
