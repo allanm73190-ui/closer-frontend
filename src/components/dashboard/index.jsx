@@ -13,14 +13,14 @@ import { ActionPlanCard } from '../gamification/Objectives';
 
 const OBJECTION_LABELS = {
   budget: 'Budget',
-  reflechir: 'Besoin de r\u00e9fl\u00e9chir',
+  reflechir: 'Besoin de réfléchir',
   conjoint: 'Conjoint / tiers',
-  methode: 'M\u00e9thode / doute',
+  methode: 'Méthode / doute',
 };
 
 const PROSPECT_TYPE_LABELS = {
   froid: 'Prospect froid',
-  'ti\u00e8de': 'Prospect ti\u00e8de',
+  'tiède': 'Prospect tiède',
   chaud: 'Prospect chaud',
   inbound: 'Inbound',
   outbound: 'Outbound',
@@ -72,13 +72,13 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em' }}>Tableau de bord</p>
             <h1 style={{ fontSize: mob ? 22 : 28, fontWeight: 700, color: 'var(--txt)', margin: 0, letterSpacing: '-.02em' }}>Bonjour, {user.name}</h1>
             <p style={{ color: 'var(--txt2)', marginTop: 6, fontSize: 13, maxWidth: 520 }}>
-              Pilotez vos performances, vos priorit\u00e9s de closing et les prochaines actions \u00e0 fort impact.
+              Pilotez vos performances, vos priorités de closing et les prochaines actions à fort impact.
             </p>
           </div>
           <Btn onClick={() => navigate('NewDebrief')} style={{ minWidth: 160 }}>+ Nouveau debrief</Btn>
         </div>
         <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {['Vue globale live', 'Patterns IA', 'Pipeline synchronis\u00e9'].map(tag => (
+          {['Vue globale live', 'Patterns IA', 'Pipeline synchronisé'].map(tag => (
             <span key={tag} style={{
               padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600,
               color: P, background: 'var(--surface-accent)', border: '1px solid var(--nav-active-border)',
@@ -106,9 +106,9 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <div style={{ ...glass({ padding: 14 }) }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 10 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--txt)' }}>D\u00e9tection de patterns</h2>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--txt)' }}>Détection de patterns</h2>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--txt3)' }}>
-              {isHOS ? "Tendances prioritaires de l'\u00e9quipe" : 'Tendances prioritaires sur vos appels non clos\u00e9s'}
+              {isHOS ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
             </p>
           </div>
           <Btn variant="secondary" onClick={() => navigate('History')} style={{ fontSize: 12, padding: '6px 11px' }}>
@@ -120,7 +120,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
           <Spinner size={20} />
         ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
           <p style={{ margin: 0, fontSize: 12, color: 'var(--txt3)' }}>
-            Aucun pattern critique d\u00e9tect\u00e9 pour le moment.
+            Aucun pattern critique détecté pour le moment.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -134,7 +134,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger-txt)' }}>{pattern.count} cas ({pattern.rate}%)</span>
                 </div>
                 <p style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--txt3)' }}>{pattern.message}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--txt)' }}>Action sugg\u00e9r\u00e9e: {pattern.recommendation}</p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--txt)' }}>Action suggérée: {pattern.recommendation}</p>
               </div>
             ))}
           </div>
@@ -144,8 +144,8 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       {/* ── Chart + Latest debriefs ────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)', gap: 12, alignItems: 'start' }}>
         <div style={{ ...glass({ padding: 16 }) }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt)', marginBottom: 8 }}>\u00c9volution du score</h2>
-          <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--txt3)' }}>Vue simplifi\u00e9e sur les derniers appels.</p>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt)', marginBottom: 8 }}>Évolution du score</h2>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--txt3)' }}>Vue simplifiée sur les derniers appels.</p>
           <Chart debriefs={debriefs} compact simple />
         </div>
 
@@ -154,13 +154,13 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt)', margin: 0 }}>Historique des derniers appels</h2>
             {debriefs.length > 0 && (
               <button onClick={() => navigate('History')} style={{ background: 'none', border: 'none', color: P, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>
-                Voir tout \u2192
+                Voir tout →
               </button>
             )}
           </div>
 
           {latestDebriefs.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--txt3)' }}>Aucun appel debrief\u00e9 pour le moment.</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--txt3)' }}>Aucun appel debriefé pour le moment.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {latestDebriefs.map((d, idx) => (
@@ -184,7 +184,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                       {d.prospect_name || 'Prospect'}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--txt3)' }}>
-                      {fmtDate(d.call_date || d.created_at)} \u00b7 {d.closer_name || d.user_name || 'Closer'}
+                      {fmtDate(d.call_date || d.created_at)} · {d.closer_name || d.user_name || 'Closer'}
                     </p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -200,7 +200,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                       background: d.is_closed ? 'var(--positive-bg)' : 'var(--danger-bg)',
                       color: d.is_closed ? 'var(--positive-txt)' : 'var(--danger-txt)',
                     }}>
-                      {d.is_closed ? 'Clos\u00e9' : 'Non clos\u00e9'}
+                      {d.is_closed ? 'Closé' : 'Non closé'}
                     </span>
                   </div>
                 </button>
@@ -261,8 +261,8 @@ function MiniPipeline({ navigate, user }) {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
         {[
-          { label: 'CA Sign\u00e9', value: `${signed.toLocaleString('fr-FR')} \u20ac`, color: '#059669' },
-          { label: 'Pipeline', value: `${pipeline.toLocaleString('fr-FR')} \u20ac`, color: P },
+          { label: 'CA Signé', value: `${signed.toLocaleString('fr-FR')} €`, color: '#059669' },
+          { label: 'Pipeline', value: `${pipeline.toLocaleString('fr-FR')} €`, color: P },
           { label: 'Taux win', value: `${winRate}%`, color: 'var(--accent-violet)' },
           { label: 'Sans date', value: noDate, color: noDate > 0 ? '#D97706' : 'var(--txt3)' },
         ].map(({ label, value, color }) => (
@@ -291,7 +291,7 @@ function MiniPipeline({ navigate, user }) {
                   {cols.slice(0, 3).map(d => (
                     <div key={d.id} style={{ ...glass({ padding: '8px 10px', borderRadius: 10 }) }}>
                       <p style={{ fontWeight: 600, fontSize: 12, color: 'var(--txt)', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.prospect_name}</p>
-                      {d.value > 0 && <p style={{ fontSize: 11, color: '#059669', fontWeight: 700, margin: 0 }}>{d.value.toLocaleString('fr-FR')} \u20ac</p>}
+                      {d.value > 0 && <p style={{ fontSize: 11, color: '#059669', fontWeight: 700, margin: 0 }}>{d.value.toLocaleString('fr-FR')} €</p>}
                     </div>
                   ))}
                 </div>
@@ -308,7 +308,7 @@ function MiniPipeline({ navigate, user }) {
         borderRadius: 10, alignSelf: 'flex-end', cursor: 'pointer', fontFamily: 'inherit',
         backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
       }}>
-        Voir tout le pipeline \u2192
+        Voir tout le pipeline →
       </button>
     </div>
   );
@@ -382,9 +382,9 @@ function History({ debriefs, navigate, user }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
         <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={selectStyle}>
-          <option value="all">R\u00e9sultat: Tous</option>
-          <option value="closed">R\u00e9sultat: Clos\u00e9s</option>
-          <option value="open">R\u00e9sultat: Non clos\u00e9s</option>
+          <option value="all">Résultat: Tous</option>
+          <option value="closed">Résultat: Closés</option>
+          <option value="open">Résultat: Non closés</option>
         </select>
         <select value={scoreFilter} onChange={e => setScoreFilter(e.target.value)} style={selectStyle}>
           {SCORE_FILTERS.map(f => <option key={f.key} value={f.key}>Score: {f.label}</option>)}
@@ -401,12 +401,12 @@ function History({ debriefs, navigate, user }) {
 
       {filtered.length === 0 ? (
         <Empty
-          icon="\uD83D\uDD0D"
-          title="Aucun r\u00e9sultat"
+          icon="🔍"
+          title="Aucun résultat"
           subtitle={q ? `Aucun debrief pour "${q}"` : 'Aucun debrief'}
           action={(q || hasAdvancedFilters) ? (
             <Btn variant="secondary" onClick={() => { setQ(''); setResultFilter('all'); setScoreFilter('all'); setObjectionFilter('all'); setProspectTypeFilter('all'); }}>
-              R\u00e9initialiser les filtres
+              Réinitialiser les filtres
             </Btn>
           ) : null}
         />
