@@ -142,11 +142,10 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
     return [...list, ...unknown];
   }, [stages, deals]);
   const closedKeys = normalizedStages.filter(stage => stage.closed).map(stage => stage.key);
-  const openStages = normalizedStages.filter(stage => !stage.closed);
-  const pipelineCounts = openStages.map(st => ({
+  const pipelineCounts = normalizedStages.map(st => ({
     ...st,
     count: deals.filter(d => d.status === st.key).length,
-  })).filter(s => s.count > 0).slice(0, 4);
+  })).filter(s => s.count > 0);
 
   const gamPct = gam?.level?.next
     ? Math.min(Math.round(((gam.points - gam.level.min) / (gam.level.next - gam.level.min)) * 100), 100)
@@ -337,11 +336,11 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             <button onClick={() => navigate('Pipeline')} style={{ background: 'none', border: 'none', color: P, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Ouvrir</button>
           </div>
           {dealsLoading ? <Spinner size={18} /> : (
-            <div style={{ display: 'flex', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {pipelineCounts.length === 0 ? (
                 <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun lead.</div>
               ) : pipelineCounts.map(st => (
-                <div key={st.key} style={{ flex: 1, textAlign: 'center' }}>
+                <div key={st.key} style={{ flex: '1 1 74px', minWidth: 74, textAlign: 'center' }}>
                   <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 3 }}>{st.label?.split(' ')[0] || st.key}</div>
                   <div style={{
                     height: 32, borderRadius: 7,
