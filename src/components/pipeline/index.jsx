@@ -522,20 +522,26 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   const handleSave = (deal, isEdit) => {
     setDeals(prev => isEdit ? prev.map(item => item.id === deal.id ? deal : item) : [deal, ...prev]);
+    window.dispatchEvent(new CustomEvent('cd:deals-updated'));
   };
 
   const handleMove = async (id, status) => {
     try {
       const updated = await apiFetch(`/deals/${id}`, { method:'PATCH', body:{ status } });
       setDeals(prev => prev.map(item => item.id === id ? updated : item));
+      window.dispatchEvent(new CustomEvent('cd:deals-updated'));
     } catch (e) {
       toast(e.message, 'error');
     }
   };
 
-  const handleDelete = (id) => setDeals(prev => prev.filter(item => item.id !== id));
+  const handleDelete = (id) => {
+    setDeals(prev => prev.filter(item => item.id !== id));
+    window.dispatchEvent(new CustomEvent('cd:deals-updated'));
+  };
 
-  const isHOS = user.role === 'head_of_sales';
+  const role = String(user?.role || '').toLowerCase();
+  const isManager = role === 'head_of_sales' || role === 'admin';
   const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
   const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
 
@@ -613,7 +619,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            {isHOS && (
+            {isManager && (
               <Btn
                 variant="secondary"
                 onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
@@ -703,7 +709,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
       </Card>
 
-      {isHOS && closers.length > 1 && (
+      {isManager && closers.length > 1 && (
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}

@@ -22,6 +22,9 @@ function fieldLabelByKey(key) {
 
 function AccountSettingsSection({ user, toast }) {
   const isCloser = user.role === 'closer';
+  const role = String(user?.role || '').toLowerCase();
+  const roleLabel = role === 'admin' ? 'Admin' : role === 'head_of_sales' ? 'Head of Sales' : 'Closer';
+  const roleColor = role === 'admin' ? '#7C3AED' : role === 'head_of_sales' ? '#D97706' : '#7C3AED';
   const [teamLoading, setTeamLoading] = useState(isCloser);
   const [team, setTeam] = useState(null);
   const [inviteCode, setInviteCode] = useState('');
@@ -100,8 +103,8 @@ function AccountSettingsSection({ user, toast }) {
           <div>
             <p style={{ margin:0, fontSize:16, fontWeight:700, color:'var(--txt,#4A3428)' }}>{user.name}</p>
             <p style={{ margin:'2px 0 0', fontSize:13, color:DS.textMuted }}>{user.email}</p>
-            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:user.role === 'head_of_sales' ? '#D97706' : '#7C3AED' }}>
-              {user.role === 'head_of_sales' ? 'Head of Sales' : 'Closer'}
+            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:roleColor }}>
+              {roleLabel}
             </p>
           </div>
         </div>
@@ -604,16 +607,17 @@ function SettingsPage({
   appSettings,
   onSaveAppSettings,
 }) {
-  const isHOS = user.role === 'head_of_sales';
+  const role = String(user?.role || '').toLowerCase();
+  const isManager = role === 'head_of_sales' || role === 'admin';
   const tabs = useMemo(() => ([
     { key:'account', label:'Compte' },
     { key:'app', label:'Application' },
-    ...(isHOS ? [
+    ...(isManager ? [
       { key:'debrief', label:'Debrief' },
       { key:'templates', label:'Templates' },
       { key:'pipeline', label:'Pipeline' },
     ] : []),
-  ]), [isHOS]);
+  ]), [isManager]);
   const [activeTab, setActiveTab] = useState(() => resolveSettingsTab(tabs, requestedTab));
 
   useEffect(() => {
@@ -670,7 +674,7 @@ function SettingsPage({
         />
       )}
 
-      {activeTab === 'debrief' && isHOS && (
+      {activeTab === 'debrief' && isManager && (
         <Card style={{ padding:16 }}>
           <DebriefConfigEditor
             debriefConfig={debriefConfig}
@@ -682,7 +686,7 @@ function SettingsPage({
         </Card>
       )}
 
-      {activeTab === 'templates' && isHOS && (
+      {activeTab === 'templates' && isManager && (
         <DebriefTemplatesSection
           debriefTemplates={debriefTemplates}
           setDebriefTemplates={setDebriefTemplates}
@@ -690,7 +694,7 @@ function SettingsPage({
         />
       )}
 
-      {activeTab === 'pipeline' && isHOS && (
+      {activeTab === 'pipeline' && isManager && (
         <PipelineSettingsSection toast={toast} />
       )}
     </div>

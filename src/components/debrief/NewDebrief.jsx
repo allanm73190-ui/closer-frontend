@@ -120,7 +120,8 @@ function buildNotesState(configSections, previous = null) {
 
 function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, existingDebrief, fromPage, leadContext, autoAiAfterSave = true }) {
   const mob = useIsMobile();
-  const isHOS = user?.role === 'head_of_sales';
+  const role = String(user?.role || '').toLowerCase();
+  const isManager = role === 'head_of_sales' || role === 'admin';
   const isEditing = !!existingDebrief?.id;
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const templateCatalog = useMemo(
@@ -245,6 +246,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           percentage,
           scores: {},
           criteria_notes: {},
+          linked_deal_id: linkedDealId || null,
         },
       });
       if (!isEditing && linkedDealId) {
@@ -262,10 +264,12 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       }
       if (isEditing) {
         onUpdate?.(r.debrief, r.gamification);
+        window.dispatchEvent(new CustomEvent('cd:deals-updated'));
         toast('Debrief modifié');
         navigate('Detail', r.debrief.id, fromPage || 'History');
       } else {
         onSave(r.debrief, r.gamification);
+        window.dispatchEvent(new CustomEvent('cd:deals-updated'));
         toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
         navigate('Detail', r.debrief.id, null, { autoAI: !!autoAiAfterSave });
       }
@@ -363,7 +367,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             </p>
           </div>
         </div>
-        {isHOS && (
+        {isManager && (
           <Btn
             variant="secondary"
             onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}

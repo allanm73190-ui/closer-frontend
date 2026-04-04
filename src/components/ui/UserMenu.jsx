@@ -7,6 +7,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
   const ref = useRef(null);
   const mob = useIsMobile();
   const isDark = theme === 'dark';
+  const role = String(user?.role || '').toLowerCase();
+  const roleLabel = role === 'admin' ? 'Admin' : role === 'head_of_sales' ? 'Head of Sales' : 'Closer';
 
   useEffect(() => {
     const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -43,7 +45,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
           <>
             <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
-              <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>{user.role === 'head_of_sales' ? 'Head of Sales' : 'Closer'}</p>
+              <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>{roleLabel}</p>
             </div>
             {gam && <span style={{ fontSize: 13 }} title={`${gam.level.name} \u00b7 ${gam.points} pts`}>{gam.level.icon}</span>}
             <span style={{ fontSize: 10, color: 'var(--txt3)' }}>{open ? '\u25b2' : '\u25bc'}</span>

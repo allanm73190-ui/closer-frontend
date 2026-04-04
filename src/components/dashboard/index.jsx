@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { apiFetch } from '../../config/api';
 import { DEFAULT_PIPELINE_STATUSES, normalizePipelineConfig } from '../../config/pipeline';
 import { DS, P, P2, R_FULL, SH_SM, cardSm } from '../../styles/designSystem';
@@ -51,7 +51,8 @@ const Gv = (extra = {}) => ({
 // ─── BENTO DASHBOARD ─────────────────────────────────────────────────────────
 function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
-  const isHOS = user.role === 'head_of_sales';
+  const role = String(user?.role || '').toLowerCase();
+  const isManager = role === 'head_of_sales' || role === 'admin';
   const [patternsData, setPatternsData] = useState(null);
   const [patternsLoading, setPatternsLoading] = useState(true);
   const [deals, setDeals] = useState([]);
@@ -89,9 +90,37 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
     return () => { mounted = false; };
   }, [user?.id]);
 
-  useEffect(() => {
-    apiFetch('/deals').then(setDeals).catch(() => {}).finally(() => setDealsLoading(false));
+  const loadDeals = useCallback(async (silent = false) => {
+    if (!silent) setDealsLoading(true);
+    try {
+      const data = await apiFetch('/deals');
+      setDeals(Array.isArray(data) ? data : []);
+    } catch {
+      if (!silent) setDeals([]);
+    } finally {
+      if (!silent) setDealsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDeals(false);
+  }, [user?.id, loadDeals]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    loadDeals(true);
+  }, [debriefs.length, user?.id, loadDeals]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const onDealsUpdated = () => { loadDeals(true); };
+    window.addEventListener('cd:deals-updated', onDealsUpdated);
+    const timer = setInterval(() => { loadDeals(true); }, 30000);
+    return () => {
+      window.removeEventListener('cd:deals-updated', onDealsUpdated);
+      clearInterval(timer);
+    };
+  }, [user?.id, loadDeals]);
 
   useEffect(() => {
     let mounted = true;
@@ -105,7 +134,15 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
     return () => { mounted = false; };
   }, [user?.id]);
 
-  const openStages = stages.filter(s => !s.closed);
+  const normalizedStages = useMemo(() => {
+    const list = Array.isArray(stages) ? stages : DEFAULT_PIPELINE_STATUSES;
+    const known = new Set(list.map(stage => stage.key));
+    const unknown = [...new Set((deals || []).map(deal => deal.status).filter(status => status && !known.has(status)))]
+      .map(status => ({ key: status, label: status, icon: '🧩', color: '#64748b', bg: '#e2e8f0', closed: false, won: false }));
+    return [...list, ...unknown];
+  }, [stages, deals]);
+  const closedKeys = normalizedStages.filter(stage => stage.closed).map(stage => stage.key);
+  const openStages = normalizedStages.filter(stage => !stage.closed);
   const pipelineCounts = openStages.map(st => ({
     ...st,
     count: deals.filter(d => d.status === st.key).length,
@@ -121,11 +158,11 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ ...G({ padding: '16px 14px' }) }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt)' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{debriefs.length} debriefs · Pipeline: {deals.filter(d => !stages.filter(s => s.closed).map(s => s.key).includes(d.status)).length} leads</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{debriefs.length} debriefs · Pipeline: {deals.filter(d => !closedKeys.includes(d.status)).length} leads</div>
           <Btn onClick={() => navigate('NewDebrief')} style={{ marginTop: 12, width: '100%' }}>+ Nouveau debrief</Btn>
         </div>
         <GamCard gam={gam} />
-        {!isHOS && <ObjectiveBanner userId={user.id} />}
+        {!isManager && <ObjectiveBanner userId={user.id} />}
         <StatsRow debriefs={debriefs} />
         <div style={{ ...G({ padding: 14 }) }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', marginBottom: 8 }}>Évolution</div>
@@ -138,11 +175,11 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
           </div>
           {latestDebriefs.map(d => (
             <div key={d.id} style={{ marginBottom: 6 }}>
-              <DebriefCard debrief={d} onClick={() => navigate('Detail', d.id)} showUser={isHOS} />
+              <DebriefCard debrief={d} onClick={() => navigate('Detail', d.id)} showUser={isManager} />
             </div>
           ))}
         </div>
-        {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
+        {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
       </div>
     );
   }
@@ -155,7 +192,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', letterSpacing: '-.02em' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {deals.filter(d => !stages.filter(s => s.closed).map(s => s.key).includes(d.status)).reduce((s, d) => s + (d.value || 0), 0).toLocaleString('fr-FR')}€</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {deals.filter(d => !closedKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0).toLocaleString('fr-FR')}€</div>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>
@@ -341,7 +378,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       </div>
 
       {/* ── Action plan (below bento) ──────────────────────────────────── */}
-      {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
+      {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
     </div>
   );
 }
@@ -397,7 +434,7 @@ function History({ debriefs, navigate, user }) {
   const [scoreFilter, setScoreFilter] = useState('all');
   const [objectionFilter, setObjectionFilter] = useState('all');
   const [prospectTypeFilter, setProspectTypeFilter] = useState('all');
-  const isHOS = user.role === 'head_of_sales';
+  const isManager = ['head_of_sales', 'admin'].includes(String(user?.role || '').toLowerCase());
   const objectionOptions = [...new Set(debriefs.flatMap(d => (d.sections?.closing?.objections || []).filter(o => o && o !== 'aucune')))];
   const prospectTypeOptions = [...new Set(debriefs.map(d => String(d.sections?.__meta?.prospect_type || '').trim()).filter(Boolean))];
   const matchesScoreFilter = (pct, key) => key === 'low' ? pct < 50 : key === 'mid' ? pct >= 50 && pct < 75 : key === 'high' ? pct >= 75 : true;
@@ -437,7 +474,7 @@ function History({ debriefs, navigate, user }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.map(d => (
             <div key={d.id} style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0 }}><DebriefCard debrief={d} onClick={() => navigate('Detail', d.id, 'History')} showUser={isHOS} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><DebriefCard debrief={d} onClick={() => navigate('Detail', d.id, 'History')} showUser={isManager} /></div>
               <Btn variant="secondary" onClick={() => navigate('EditDebrief', d.id, 'History')} style={{ fontSize: 12, padding: '0 12px' }}>Modifier</Btn>
             </div>
           ))}
