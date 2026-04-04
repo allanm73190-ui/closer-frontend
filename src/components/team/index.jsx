@@ -31,7 +31,7 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
       onClick={onSelect}
       style={{
         border:'none',
-        borderRadius:16,
+        borderRadius:14,
         padding:'16px 18px',
         textAlign:'left',
         cursor:'pointer',
@@ -47,7 +47,7 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
       </p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
         {[{ label:'Score', value:`${stats.avg}%` }, { label:'Closings', value:stats.closed }, { label:'Taux', value:`${stats.closeRate}%` }].map(kpi => (
-          <div key={kpi.label} style={{ background:active ? 'rgba(255,255,255,.16)' : 'rgba(253,232,228,.3)', borderRadius:8, padding:'6px 8px' }}>
+          <div key={kpi.label} style={{ background:active ? 'rgba(255,255,255,.16)' : 'rgba(255,126,95,.06,.3)', borderRadius:8, padding:'6px 8px' }}>
             <p style={{ margin:'0 0 2px', fontSize:10, textTransform:'uppercase', letterSpacing:'.04em', opacity:active ? .82 : .64 }}>
               {kpi.label}
             </p>
@@ -181,7 +181,7 @@ function ManagerCopilotCard({ toast }) {
     : '';
 
   return (
-    <Card style={{ padding:16, border:'1px solid rgba(106,172,206,.22)', background:'linear-gradient(135deg, rgba(218,237,245,.45), rgba(253,232,228,.35))' }}>
+    <Card style={{ padding:16, border:'1px solid rgba(124,58,237,.22)', background:'linear-gradient(135deg, rgba(124,58,237,.04,.45), rgba(255,126,95,.06,.35))' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap', marginBottom:10 }}>
         <div>
           <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#4A3428' }}>🧭 Copilot Manager</h3>
@@ -208,7 +208,7 @@ function ManagerCopilotCard({ toast }) {
                 { label:'Closing', value:`${summary.metrics.current_week?.closeRate ?? 0}%`, color:'#d97706' },
                 { label:'Deals à risque', value:summary.metrics.pipeline_alerts?.atRisk ?? 0, color:'#dc2626' },
               ].map(item => (
-                <div key={item.label} style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'8px 10px' }}>
+                <div key={item.label} style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'8px 10px' }}>
                   <p style={{ margin:'0 0 3px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{item.label}</p>
                   <p style={{ margin:0, fontSize:18, fontWeight:700, color:item.color }}>{item.value}</p>
                 </div>
@@ -217,7 +217,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {Array.isArray(summary.highlights) && summary.highlights.length > 0 && (
-            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Faits marquants</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.highlights.slice(0, 4).map((line, idx) => (
@@ -228,7 +228,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {Array.isArray(summary.recommendations) && summary.recommendations.length > 0 && (
-            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Recommandations concrètes</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.recommendations.slice(0, 4).map((line, idx) => (
@@ -239,7 +239,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {summary.aiSummary && (
-            <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>
                 Synthèse IA {summary.model ? `(${summary.model})` : ''}
               </p>

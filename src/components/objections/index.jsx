@@ -6,16 +6,16 @@ import { fmtDate, copy } from '../../utils/scoring';
 import { Btn, Card, Spinner, Empty } from '../ui';
 
 const OBJECTION_META = {
-  budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(253,232,228,.8)',  border: 'rgba(192,80,64,.3)' },
-  reflechir: { icon: '🤔', color: '#c07830', bg: 'rgba(254,243,224,.8)',  border: 'rgba(192,120,48,.3)' },
+  budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(255,126,95,.06,.8)',  border: 'rgba(192,80,64,.3)' },
+  reflechir: { icon: '🤔', color: '#D97706', bg: 'rgba(254,243,224,.8)',  border: 'rgba(192,120,48,.3)' },
   conjoint:  { icon: '👥', color: '#6366f1', bg: 'rgba(237,233,254,.85)', border: 'rgba(99,102,241,.3)' },
-  methode:   { icon: '❓', color: '#7C3AED', bg: 'rgba(218,237,245,.8)',  border: 'rgba(58,122,154,.3)' },
+  methode:   { icon: '❓', color: '#7C3AED', bg: 'rgba(124,58,237,.04,.8)',  border: 'rgba(58,122,154,.3)' },
 };
 
 function rateColor(rate) {
-  if (rate >= 60) return { color: '#5a9858', bg: 'rgba(218,240,216,.8)', border: 'rgba(90,152,88,.3)' };
-  if (rate >= 35) return { color: '#c07830', bg: 'rgba(254,243,224,.8)', border: 'rgba(192,120,48,.3)' };
-  return { color: '#DC2626', bg: 'rgba(253,232,228,.8)', border: 'rgba(192,80,64,.3)' };
+  if (rate >= 60) return { color: '#059669', bg: 'rgba(218,240,216,.8)', border: 'rgba(90,152,88,.3)' };
+  if (rate >= 35) return { color: '#D97706', bg: 'rgba(254,243,224,.8)', border: 'rgba(192,120,48,.3)' };
+  return { color: '#DC2626', bg: 'rgba(255,126,95,.06,.8)', border: 'rgba(192,80,64,.3)' };
 }
 
 function ObjectionCard({ objection, toast }) {
@@ -110,19 +110,19 @@ function ObjectionCard({ objection, toast }) {
           {/* Best response */}
           {best && (
             <div style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#5a9858', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
                 ✅ Meilleure réponse ({objection.closed} closing{objection.closed > 1 ? 's' : ''})
               </p>
               <div style={{
                 background: 'rgba(218,240,216,.3)', border: '1px solid rgba(90,152,88,.2)', borderRadius: R_MD,
-                padding: '14px 16px', borderLeft: '3px solid #5a9858',
+                padding: '14px 16px', borderLeft: '3px solid #059669',
               }}>
                 <p style={{ fontSize: 14, color: TXT, margin: 0, lineHeight: 1.65, fontStyle: 'italic' }}>
                   "{best.notes || best.section_notes_closing?.improvement || best.section_notes_closing?.strength || 'Réponse non documentée — pensez à remplir les notes dans vos debriefs !'}"
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
                   <span style={{ fontSize: 12, color: TXT3 }}>Par {best.user_name} — {fmtDate(best.call_date)} — {best.prospect_name}</span>
-                  <span style={{ background: 'rgba(218,240,216,.6)', color: '#5a9858', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>{Math.round(best.percentage || 0)}%</span>
+                  <span style={{ background: 'rgba(218,240,216,.6)', color: '#059669', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>{Math.round(best.percentage || 0)}%</span>
                 </div>
               </div>
             </div>
@@ -143,7 +143,7 @@ function ObjectionCard({ objection, toast }) {
                       </p>
                       <p style={{ fontSize: 12, color: TXT3, margin: 0 }}>{d.user_name}</p>
                     </div>
-                    <span style={{ background: 'rgba(218,240,216,.6)', color: '#5a9858', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{Math.round(d.percentage || 0)}%</span>
+                    <span style={{ background: 'rgba(218,240,216,.6)', color: '#059669', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{Math.round(d.percentage || 0)}%</span>
                   </div>
                 ))}
               </div>
@@ -158,10 +158,10 @@ function ObjectionCard({ objection, toast }) {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {objection.validatedResponses.slice(0, 4).map((item, idx) => (
-                  <div key={`${item.text.slice(0, 32)}_${idx}`} style={{ background:'rgba(218,237,245,.22)', border:'1px solid rgba(58,122,154,.22)', borderRadius:R_MD, padding:'12px 12px' }}>
+                  <div key={`${item.text.slice(0, 32)}_${idx}`} style={{ background:'rgba(124,58,237,.04,.22)', border:'1px solid rgba(58,122,154,.22)', borderRadius:R_MD, padding:'12px 12px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
                       <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:item.validated ? 'rgba(218,240,216,.8)' : 'rgba(254,243,224,.9)', color:item.validated ? '#5a9858' : '#c07830' }}>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:item.validated ? 'rgba(218,240,216,.8)' : 'rgba(254,243,224,.9)', color:item.validated ? '#059669' : '#D97706' }}>
                           {item.validated ? 'Validée' : 'À confirmer'}
                         </span>
                         <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#7C3AED' }}>
@@ -196,7 +196,7 @@ function ObjectionCard({ objection, toast }) {
                   🤖 Variante IA
                 </p>
                 <div style={{
-                  background: 'linear-gradient(135deg,rgba(253,232,228,.3),rgba(218,237,245,.2))', border: '1px solid rgba(255,126,95,.15)', borderRadius: R_MD,
+                  background: 'linear-gradient(135deg,rgba(255,126,95,.06,.3),rgba(124,58,237,.04,.2))', border: '1px solid rgba(255,126,95,.15)', borderRadius: R_MD,
                   padding: '14px 16px', borderLeft: `3px solid ${P}`,
                 }}>
                   <p style={{ fontSize: 14, color: TXT, margin: 0, lineHeight: 1.65 }}>{aiResponse}</p>
@@ -293,10 +293,10 @@ export function ObjectionLibrary({ toast }) {
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12 }}>
         {[
-          { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: '💬', bg: 'rgba(253,232,228,.6)', c: P },
-          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(218,237,245,.6)', c: '#7C3AED' },
-          { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: '🎯', bg: 'rgba(218,240,216,.6)', c: '#5a9858' },
-          { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: '🔥', bg: 'rgba(254,243,224,.6)', c: '#c07830' },
+          { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: '💬', bg: 'rgba(255,126,95,.06,.6)', c: P },
+          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(124,58,237,.04,.6)', c: '#7C3AED' },
+          { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: '🎯', bg: 'rgba(218,240,216,.6)', c: '#059669' },
+          { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: '🔥', bg: 'rgba(254,243,224,.6)', c: '#D97706' },
         ].map(({ label, value, icon, bg, c }) => (
           <Card key={label} style={{ padding: mob ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', gap: mob ? 10 : 14, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.74))' }}>
             <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: mob ? 16 : 20, flexShrink: 0 }}>{icon}</div>

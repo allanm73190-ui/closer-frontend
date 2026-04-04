@@ -149,10 +149,10 @@ function CommentsSection({ debriefId, user, toast }) {
 
   return (
     <Card style={{ overflow:'hidden' }}>
-      <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', background:'var(--surface-accent)' }}>
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', background:'var(--surface-accent)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)' }}>
         <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>
           💬 Commentaires
-          {comments.length > 0 && <span style={{ marginLeft:8, background:'var(--card,#fff)', color:'var(--txt,#4A3428)', fontSize:11, fontWeight:600, padding:'2px 7px', borderRadius:10 }}>{comments.length}</span>}
+          {comments.length > 0 && <span style={{ marginLeft:8, background:'var(--glass-bg)', color:'var(--txt,#4A3428)', fontSize:11, fontWeight:600, padding:'2px 7px', borderRadius:10 }}>{comments.length}</span>}
         </h3>
       </div>
       <div style={{ padding:16, display:'flex', flexDirection:'column', gap:12 }}>
@@ -161,7 +161,7 @@ function CommentsSection({ debriefId, user, toast }) {
         ) : comments.map(c => (
           <div key={c.id} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
             <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--gradient-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
-            <div style={{ flex:1, background:'var(--surface-accent)', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid var(--border)' }}>
+            <div style={{ flex:1, background:'var(--surface-accent)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid var(--border)' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
                 <span style={{ fontWeight:600, fontSize:12, color:'var(--txt,#4A3428)' }}>{c.author_name}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -191,8 +191,8 @@ function CommentsSection({ debriefId, user, toast }) {
 
 // ─── PIPELINE PAGE ────────────────────────────────────────────────────────────
 const PIPELINE_STAGES = [
-  { key:'prospect',     label:'Prospects',    color:'#6b7280', bg:'#f1f5f9',  icon:'👤' },
-  { key:'premier_appel',label:'1er appel',    color:'#FF7E5F', bg:'rgba(253,232,228,.6)',  icon:'📞' },
+  { key:'prospect',     label:'Prospects',    color:'var(--txt3)', bg:'#f1f5f9',  icon:'👤' },
+  { key:'premier_appel',label:'1er appel',    color:'#FF7E5F', bg:'rgba(255,126,95,.06,.6)',  icon:'📞' },
   { key:'relance',      label:'Relance',      color:'#d97706', bg:'#fef3c7',  icon:'🔄' },
   { key:'negociation',  label:'Négociation',  color:'#FF7E5F', bg:'rgba(255,248,245,.8)',  icon:'🤝' },
   { key:'signe',        label:'Signés ✓',     color:'#059669', bg:'#d1fae5',  icon:'✅' },

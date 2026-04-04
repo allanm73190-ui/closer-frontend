@@ -34,7 +34,7 @@ const primaryBtn = {
   fontSize:14,
   fontWeight:700,
   cursor:'pointer',
-  boxShadow:'0 14px 30px rgba(212,96,78,.34)',
+  boxShadow:'0 8px 24px rgba(255,126,95,.28)',
   fontFamily:'inherit',
 };
 const linkBtn = {
@@ -53,7 +53,7 @@ function AuthShell({ title, subtitle, children, wide=false }) {
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-120, right:-110, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(255,126,95,.26), rgba(255,126,95,0) 72%)', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', bottom:-120, left:-120, width:330, height:330, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.24), rgba(106,172,206,0) 72%)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:-120, left:-120, width:330, height:330, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.24), rgba(124,58,237,0) 72%)', pointerEvents:'none' }} />
 
       <div
         style={{
@@ -64,14 +64,14 @@ function AuthShell({ title, subtitle, children, wide=false }) {
           gridTemplateColumns:mob ? '1fr' : '1fr 1.08fr',
           background:'var(--card-soft)',
           border:'1px solid var(--border)',
-          borderRadius:28,
+          borderRadius:14,
           overflow:'hidden',
           boxShadow:'var(--sh-card)',
           backdropFilter:'blur(18px)',
         }}
       >
         {!mob && (
-          <aside style={{ position:'relative', background:`linear-gradient(160deg, ${P}, ${P2})`, padding:'44px 38px', color:'white', display:'flex', flexDirection:'column', justifyContent:'space-between', overflow:'hidden' }}>
+          <aside style={{ position:'relative', background:'var(--gradient-primary)', padding:'44px 38px', color:'white', display:'flex', flexDirection:'column', justifyContent:'space-between', overflow:'hidden' }}>
             <div style={{ position:'absolute', inset:0, opacity:.12, background:'radial-gradient(circle at 16% 22%, rgba(255,255,255,.85), transparent 48%)' }} />
             <div style={{ position:'relative' }}>
               <h1 style={{ margin:0, fontSize:34, fontWeight:800, lineHeight:1 }}>CloserDebrief</h1>
@@ -241,7 +241,7 @@ function RegisterPage({ onLogin, goLogin }) {
                 onClick={()=>setF({ ...f, role:item.value })}
                 style={{
                   border:`1.5px solid ${active ? P : 'rgba(200,160,140,.34)'}`,
-                  background:active ? 'rgba(253,232,228,.75)' : 'rgba(255,255,255,.86)',
+                  background:active ? 'rgba(255,126,95,.06,.75)' : 'rgba(255,255,255,.86)',
                   borderRadius:14,
                   padding:'10px 12px',
                   textAlign:'left',

@@ -22,7 +22,7 @@ function ObjectiveBanner({ userId }) {
     const targetPerformance = Number(obj.target_performance ?? obj.target_score ?? 0);
     return (
       <div style={{ flex:1 }}>
-        <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>{label}</p>
+        <p style={{ fontSize:11, fontWeight:600, color:'var(--txt3)', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>{label}</p>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
           {targetReecoutes > 0 && <ProgBar label="Réécoutes" current={p.reecoutes ?? p.debriefs ?? 0} target={targetReecoutes} color='#FF7E5F'/>}
           {targetPerformance > 0 && <ProgBar label="Performance (%)" current={p.performance ?? p.score ?? 0} target={targetPerformance} color='#d97706'/>}
@@ -204,11 +204,11 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(255,126,95,.1)', alignItems:'flex-start' }}>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(255,126,95,.06,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(255,126,95,.1)', alignItems:'flex-start' }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#FF7E5F', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontWeight:600, fontSize:13, color:'#4A3428', margin:'0 0 2px' }}>{plan.axis}</p>
-                {plan.description && <p style={{ fontSize:12, color:'#6b7280', margin:0 }}>{plan.description}</p>}
+                {plan.description && <p style={{ fontSize:12, color:'var(--txt3)', margin:0 }}>{plan.description}</p>}
                 <p style={{ fontSize:11, color:DS.textMuted, margin:'4px 0 0' }}>
                   Ajouté le {fmtDate(plan.created_at)}
                 </p>
@@ -237,7 +237,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
               {resolved.map(plan => (
                 <div key={plan.id} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, alignItems:'center', opacity:.65 }}>
                   <span style={{ color:'#059669', fontSize:12 }}>✓</span>
-                  <span style={{ fontSize:12, color:'#6b7280', textDecoration:'line-through', flex:1 }}>{plan.axis}</span>
+                  <span style={{ fontSize:12, color:'var(--txt3)', textDecoration:'line-through', flex:1 }}>{plan.axis}</span>
                   <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(plan.resolved_at)}</span>
                 </div>
               ))}

@@ -375,7 +375,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       </div>
 
       {mob && (
-        <Card style={{ background:'var(--gradient-primary)', border:'1px solid rgba(255,255,255,.3)', borderRadius:16, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
+        <Card style={{ background:'var(--gradient-primary)', border:'1px solid rgba(255,255,255,.3)', borderRadius:14, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
           <div>
             <p style={{ fontSize:11, opacity:.8, margin:0, textTransform:'uppercase', letterSpacing:'.05em' }}>Score en direct</p>
             <p style={{ fontSize:28, fontWeight:700, margin:0 }}>{percentage}%</p>
@@ -517,7 +517,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
 
           {!mob && (
             <div style={{ position:'sticky', top:80 }}>
-              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
+              <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'var(--glass-bg)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
                 <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', margin:0 }}>Score en direct</h3>
                 <ScoreGauge percentage={percentage} />
                 <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{total} / {max} points</p>

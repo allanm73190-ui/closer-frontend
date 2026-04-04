@@ -1,6 +1,6 @@
 export const DEFAULT_PIPELINE_STATUSES = [
-  { key:'prospect', label:'Prospects', icon:'👤', color:'#6b7280', bg:'#f1f5f9', closed:false, won:false },
-  { key:'premier_appel', label:'1er appel', icon:'📞', color:'#FF7E5F', bg:'rgba(253,232,228,.6)', closed:false, won:false },
+  { key:'prospect', label:'Prospects', icon:'👤', color:'var(--txt3)', bg:'#f1f5f9', closed:false, won:false },
+  { key:'premier_appel', label:'1er appel', icon:'📞', color:'#FF7E5F', bg:'rgba(255,126,95,.06,.6)', closed:false, won:false },
   { key:'relance', label:'Relance', icon:'🔄', color:'#d97706', bg:'#fef3c7', closed:false, won:false },
   { key:'negociation', label:'Négociation', icon:'🤝', color:'#3b82f6', bg:'#dbeafe', closed:false, won:false },
   { key:'signe', label:'Signés', icon:'✅', color:'#059669', bg:'#d1fae5', closed:true, won:true },
@@ -46,7 +46,7 @@ function normalizeStatuses(statuses) {
         key,
         label: String(status?.label || key).trim() || key,
         icon: String(status?.icon || '•').trim() || '•',
-        color: String(status?.color || '#6b7280'),
+        color: String(status?.color || 'var(--txt3)'),
         bg: String(status?.bg || '#f1f5f9'),
         closed: Boolean(status?.closed),
         won: Boolean(status?.won),

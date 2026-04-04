@@ -195,8 +195,8 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(10,15,25,.42)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?8:20 }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:'var(--card,#fff)', borderRadius:mob?14:18, width:mob?'calc(100vw - 16px)':'min(660px, calc(100vw - 44px))', maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
-        <div style={{ padding:'18px 18px 0', position:'sticky', top:0, background:'var(--card,#fff)', zIndex:2 }}>
+      <div style={{ background:'var(--glass-bg)', borderRadius:mob?14:18, width:mob?'calc(100vw - 16px)':'min(660px, calc(100vw - 44px))', maxHeight:'92vh', overflowY:'auto', boxShadow:'var(--sh-card)', border:'1px solid var(--border)' }}>
+        <div style={{ padding:'18px 18px 0', position:'sticky', top:0, background:'var(--glass-bg)', zIndex:2 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
             <StatusBadge stage={activeStage} />
             <div style={{ display:'flex', gap:8 }}>
@@ -319,7 +319,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
 
           {activeTab === 'debrief' && (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-              <Card style={{ padding:14, border:'1px solid rgba(106,172,206,.3)' }}>
+              <Card style={{ padding:14, border:'1px solid rgba(124,58,237,.3)' }}>
                 <p style={{ margin:'0 0 6px', fontWeight:700, fontSize:14, color:'var(--txt,#4A3428)' }}>
                   {buildProspectName() || 'Contact à compléter'}
                 </p>
@@ -335,7 +335,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
               </Card>
 
               {linkedDebrief && (
-                <Card style={{ padding:12, border:'1px solid rgba(106,172,206,.3)' }}>
+                <Card style={{ padding:12, border:'1px solid rgba(124,58,237,.3)' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', marginBottom:8 }}>
                     <div>
                       <p style={{ margin:0, fontWeight:700, fontSize:14, color:'var(--txt,#4A3428)' }}>{linkedDebrief.prospect_name}</p>
@@ -393,7 +393,7 @@ function DealCard({ deal, stages, onOpen }) {
       onDragEnd={()=>setDragging(false)}
       onClick={()=>onOpen(deal)}
       style={{
-        background:'var(--card,#fff)',
+        background:'var(--glass-bg)',
         borderRadius:10,
         padding:'10px 11px',
         cursor:'pointer',
@@ -442,7 +442,7 @@ function DropColumn({ stage, deals, onOpen, onMove, stages }) {
         </div>
         {totalValue > 0 && <span style={{ fontSize:10, fontWeight:700, color:stage.color }}>{totalValue.toLocaleString('fr-FR')} €</span>}
       </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:68, borderRadius:10, padding:over ? 5 : 0, background:over ? 'rgba(106,172,206,.08)' : 'transparent' }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:7, minHeight:68, borderRadius:10, padding:over ? 5 : 0, background:over ? 'rgba(124,58,237,.08)' : 'transparent' }}>
         {deals.map(deal => (
           <DealCard key={deal.id} deal={deal} stages={stages} onOpen={onOpen} />
         ))}
@@ -459,7 +459,7 @@ function DropColumn({ stage, deals, onOpen, onMove, stages }) {
 function AccordionColumn({ stage, deals, stages, onOpen, onMove }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderRadius:10, background:'var(--card,#fff)', border:'1px solid var(--border)', overflow:'hidden', boxShadow:'var(--sh-sm)' }}>
+    <div style={{ borderRadius:10, background:'var(--glass-bg)', border:'1px solid var(--border)', overflow:'hidden', boxShadow:'var(--sh-sm)' }}>
       <button type="button" onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:stage.bg, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
           <span>{stage.icon}</span>
@@ -602,7 +602,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      <Card style={{ padding:18, border:'1px solid var(--border)', background:'linear-gradient(145deg, rgba(253,232,228,.6), rgba(218,237,245,.6))' }}>
+      <Card style={{ padding:18, border:'1px solid var(--border)', background:'linear-gradient(145deg, rgba(255,126,95,.06,.6), rgba(124,58,237,.04,.6))' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
           <div>
             <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>🎯 Pipeline</h1>
@@ -624,12 +624,12 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
         <div style={{ marginTop:10, display:'flex', flexWrap:'wrap', gap:8 }}>
           {(pipelineConfig.importantFields || []).map(field => (
-            <span key={field} style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
+            <span key={field} style={{ padding:'4px 9px', borderRadius:999, background:'var(--glass-bg)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
               {leadFieldLabel(field)}
             </span>
           ))}
           {(pipelineConfig.importantFields || []).length === 0 && (
-            <span style={{ padding:'4px 9px', borderRadius:999, background:'var(--card,#fff)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
+            <span style={{ padding:'4px 9px', borderRadius:999, background:'var(--glass-bg)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
               Aucun champ prioritaire configuré
             </span>
           )}
@@ -705,7 +705,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}
-            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#FF7E5F' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === 'all' ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#FF7E5F' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(255,126,95,.06,.6)' : 'var(--card,#fff)', color:filter === 'all' ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
           >
             Tous les closers
           </button>
@@ -713,7 +713,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
             <button
               key={closer.id}
               onClick={()=>setFilter(closer.id)}
-              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(255,126,95,.06,.6)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
             >
               👤 {closer.name}
             </button>

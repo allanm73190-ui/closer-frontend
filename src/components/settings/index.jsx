@@ -98,7 +98,7 @@ function AccountSettingsSection({ user, toast }) {
           <div>
             <p style={{ margin:0, fontSize:16, fontWeight:700, color:'var(--txt,#4A3428)' }}>{user.name}</p>
             <p style={{ margin:'2px 0 0', fontSize:13, color:DS.textMuted }}>{user.email}</p>
-            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:user.role === 'head_of_sales' ? '#c07830' : '#7C3AED' }}>
+            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:user.role === 'head_of_sales' ? '#D97706' : '#7C3AED' }}>
               {user.role === 'head_of_sales' ? 'Head of Sales' : 'Closer'}
             </p>
           </div>
@@ -218,7 +218,7 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
             width:'100%',
             border:'1px solid var(--border)',
             borderRadius:12,
-            background:'var(--card,#fff)',
+            background:'var(--glass-bg)',
             padding:'12px 14px',
             display:'flex',
             alignItems:'center',
@@ -620,7 +620,7 @@ function SettingsPage({
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-      <Card style={{ padding:18, background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
+      <Card style={{ padding:18, background:'var(--glass-bg)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
           <div>
             <h1 style={{ margin:0, fontSize:24, color:'var(--txt,#4A3428)' }}>Paramètres</h1>

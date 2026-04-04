@@ -146,7 +146,7 @@ function AccountSettings({ user, onClose, toast }) {
 
   return (
     <Modal title="Paramètres du compte" onClose={onClose}>
-      <div style={{ display:'flex', gap:4, background:'rgba(253,232,228,.2)', padding:4, borderRadius:8, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, background:'rgba(255,126,95,.06,.2)', padding:4, borderRadius:8, marginBottom:20 }}>
         {tabs.map(({ key, label }) => (
           <button
             key={key}
@@ -167,14 +167,14 @@ function AccountSettings({ user, onClose, toast }) {
 
       {tab==='profil' && (
         <div>
-          <div style={{ display:'flex', alignItems:'center', gap:14, padding:16, background:'rgba(253,232,228,.2)', borderRadius:12, marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:14, padding:16, background:'rgba(255,126,95,.06,.2)', borderRadius:12, marginBottom:20 }}>
             <div style={{ width:52, height:52, borderRadius:'50%', background:DS.bgNavItem, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:700, color:'white', flexShrink:0 }}>
               {user.name.charAt(0)}
             </div>
             <div>
               <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:0 }}>{user.name}</p>
               <p style={{ fontSize:13, color:DS.textSecondary, margin:'2px 0 0' }}>{user.email}</p>
-              <span style={{ display:'inline-block', marginTop:4, background:isHOS?'#fef3c7':'rgba(253,232,228,.6)', color:isHOS?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
+              <span style={{ display:'inline-block', marginTop:4, background:isHOS?'#fef3c7':'rgba(255,126,95,.06,.6)', color:isHOS?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
                 {isHOS ? '👑 Head of Sales' : '🎯 Closer'}
               </span>
             </div>
@@ -299,7 +299,7 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, 
               fontWeight:600,
               cursor:'pointer',
               fontFamily:'inherit',
-              background:i===activeIdx ? `linear-gradient(135deg,${DS.primary},${DS.primary2})` : 'rgba(253,232,228,.3)',
+              background:i===activeIdx ? `linear-gradient(135deg,${DS.primary},${DS.primary2})` : 'rgba(255,126,95,.06,.3)',
               color:i===activeIdx ? 'white' : DS.textSecondary,
             }}
           >
@@ -358,7 +358,7 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, 
             padding:'8px 14px',
             borderRadius:DS.radiusFull,
             border:'1px solid rgba(192,80,64,.3)',
-            background:'rgba(253,232,228,.5)',
+            background:'rgba(255,126,95,.06,.5)',
             color:'#DC2626',
             fontSize:12,
             cursor:'pointer',
