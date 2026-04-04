@@ -1114,6 +1114,7 @@ export async function downloadDebriefPdf(payload) {
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
+    let hasWrittenAnyPage = false;
 
     for (let i = 0; i < pages.length; i += 1) {
       const pageEl = pages[i];
@@ -1132,8 +1133,20 @@ export async function downloadDebriefPdf(payload) {
       });
 
       const img = canvas.toDataURL('image/png');
-      if (i > 0) pdf.addPage();
-      pdf.addImage(img, 'PNG', 0, 0, pageW, pageH, undefined, 'FAST');
+      const renderedWidth = pageW;
+      const renderedHeight = (canvas.height * renderedWidth) / canvas.width;
+
+      if (hasWrittenAnyPage) pdf.addPage();
+      pdf.addImage(img, 'PNG', 0, 0, renderedWidth, renderedHeight, undefined, 'FAST');
+      hasWrittenAnyPage = true;
+
+      let heightLeft = renderedHeight - pageH;
+      while (heightLeft > 0.01) {
+        const yOffset = heightLeft - renderedHeight;
+        pdf.addPage();
+        pdf.addImage(img, 'PNG', 0, yOffset, renderedWidth, renderedHeight, undefined, 'FAST');
+        heightLeft -= pageH;
+      }
     }
 
     pdf.save(title);
