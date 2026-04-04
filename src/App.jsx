@@ -25,32 +25,32 @@ import { SettingsPage } from './components/settings';
 import { BenchmarkPage } from './components/features/Benchmark';
 import { KnowledgePage } from './components/features/Knowledge';
 
-const DESKTOP_SIDEBAR_WIDTH = 214;
+const DESKTOP_SIDEBAR_WIDTH = 220;
 
 const PAGE_META = {
-  Dashboard: { title:'Tableau de bord', subtitle:'Performance globale et priorités du jour' },
-  Pipeline: { title:'Pipeline', subtitle:'Suivi dynamique des opportunités en cours' },
-  Objections: { title:'Objections', subtitle:'Bibliothèque active et réponses validées' },
-  Benchmark: { title:'Benchmark interne', subtitle:'Progression personnelle sans classement public' },
-  Knowledge: { title:'Centre de connaissances', subtitle:'Snippets validés et scripts réutilisables' },
-  HOSPage: { title:'Espace équipe', subtitle:'Pilotage des équipes et objectifs HOS' },
-  NewDebrief: { title:'Nouveau debrief', subtitle:'Capture structurée de votre dernier appel' },
-  EditDebrief: { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
-  History: { title:'Historique', subtitle:'Retrouvez et filtrez vos debriefs passés' },
-  Detail: { title:'Détail debrief', subtitle:'Analyse complète, IA et export PDF' },
-  PdfViewer: { title:'Visualisateur PDF', subtitle:'Rendu web fidèle et export 2 pages' },
-  Settings: { title:'Paramètres', subtitle:'Configuration synchronisée de votre espace' },
+  Dashboard:    { title:'Tableau de bord',   subtitle:'Performance globale et priorités du jour' },
+  Pipeline:     { title:'Pipeline',          subtitle:'Suivi dynamique des opportunités en cours' },
+  Objections:   { title:'Objections',        subtitle:'Bibliothèque active et réponses validées' },
+  Benchmark:    { title:'Benchmark interne', subtitle:'Progression personnelle sans classement public' },
+  Knowledge:    { title:'Centre de connaissances', subtitle:'Snippets validés et scripts réutilisables' },
+  HOSPage:      { title:'Espace équipe',     subtitle:'Pilotage des équipes et objectifs HOS' },
+  NewDebrief:   { title:'Nouveau debrief',   subtitle:'Capture structurée de votre dernier appel' },
+  EditDebrief:  { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
+  History:      { title:'Historique',         subtitle:'Retrouvez et filtrez vos debriefs passés' },
+  Detail:       { title:'Détail debrief',    subtitle:'Analyse complète, IA et export PDF' },
+  PdfViewer:    { title:'Visualisateur PDF', subtitle:'Rendu web fidèle et export prêt au téléchargement' },
+  Settings:     { title:'Paramètres',        subtitle:'Configuration synchronisée de votre espace' },
 };
 
-function NavIcon({ name, active=false, size=18, color='currentColor' }) {
+function NavIcon({ name, active = false, size = 18, color = 'currentColor' }) {
   return (
     <span
       className="material-symbols-outlined"
       style={{
-        fontSize:size,
-        lineHeight:1,
+        fontSize: size,
+        lineHeight: 1,
         color,
-        fontVariationSettings:`'FILL' ${active ? 1 : 0}, 'wght' ${active ? 650 : 500}, 'GRAD' 0, 'opsz' 24`,
+        fontVariationSettings: `'FILL' ${active ? 1 : 0}, 'wght' ${active ? 650 : 500}, 'GRAD' 0, 'opsz' 24`,
       }}
     >
       {name}
@@ -63,18 +63,18 @@ export default function App() {
   const { list: toasts, toast } = useToast();
 
   const [authView, setAuthView] = useState('login');
-  const [user,    setUser]    = useState(null);
+  const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [page,    setPage]    = useState('Dashboard');
-  const [selId,   setSelId]   = useState(null);
-  const [from,    setFrom]    = useState(null);
+  const [page, setPage] = useState('Dashboard');
+  const [selId, setSelId] = useState(null);
+  const [from, setFrom] = useState(null);
   const [debriefs, setDebriefs] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [debriefsLoaded, setDebriefsLoaded] = useState(false);
-  const [gam,     setGam]     = useState(null);
+  const [gam, setGam] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [pendingDebriefLink, setPendingDebriefLink] = useState(null);
-  const [burst,   setBurst]   = useState(null);
+  const [burst, setBurst] = useState(null);
   const [autoAI, setAutoAI] = useState(false);
   const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
@@ -125,6 +125,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     setDataLoading(true);
+    setDebriefsLoaded(false);
     Promise.all([apiFetch('/debriefs'), apiFetch('/gamification/me')])
       .then(([d, g]) => { setDebriefs(d); setGam(g); })
       .catch(err => toast(err.message, 'error'))
@@ -143,17 +144,12 @@ export default function App() {
     if (!user) return;
     apiFetch('/app-settings')
       .then(settings => {
-        if (settings?.theme === 'dark' || settings?.theme === 'light') {
-          setTheme(settings.theme);
-        }
-        if (typeof settings?.autoAiAfterDebrief === 'boolean') {
-          setAutoAiAfterDebrief(settings.autoAiAfterDebrief);
-        }
+        if (settings?.theme === 'dark' || settings?.theme === 'light') setTheme(settings.theme);
+        if (typeof settings?.autoAiAfterDebrief === 'boolean') setAutoAiAfterDebrief(settings.autoAiAfterDebrief);
       })
       .catch(() => {});
   }, [user?.id]);
 
-  // Keep debrief config synchronized for all pages
   useEffect(() => {
     if (!user) {
       setDebriefConfig(null);
@@ -163,20 +159,19 @@ export default function App() {
     apiFetch('/debrief-config')
       .then(data => setDebriefConfig(data.sections || null))
       .catch(() => setDebriefConfig(null));
-
     apiFetch('/debrief-templates')
       .then(data => setDebriefTemplates(normalizeDebriefTemplateCatalog(data)))
       .catch(() => setDebriefTemplates(getDefaultTemplateCatalog()));
   }, [user, setDebriefConfig]);
 
-  const navigate = (p, id=null, from=null, opts={}) => {
+  const navigate = (p, id = null, from = null, opts = {}) => {
     setPage(p); setSelId(id);
     if (from) setFrom(from);
-    else if (p !== 'Detail') setFrom(null);
+    else if (p !== 'Detail' && p !== 'PdfViewer') setFrom(null);
     setAutoAI(!!opts.autoAI);
     setLeadContext(opts.leadContext || null);
     if (opts.settingsTab) setSettingsTabRequest(opts.settingsTab);
-    window.scrollTo({ top:0, behavior:'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -199,13 +194,11 @@ export default function App() {
     const payload = {
       theme: nextSettings?.theme === 'dark' ? 'dark' : 'light',
       autoAiAfterDebrief: typeof nextSettings?.autoAiAfterDebrief === 'boolean'
-        ? nextSettings.autoAiAfterDebrief
-        : autoAiAfterDebrief,
+        ? nextSettings.autoAiAfterDebrief : autoAiAfterDebrief,
     };
     try {
-      const saved = await apiFetch('/app-settings', { method:'PUT', body: payload });
-      const nextTheme = saved?.theme === 'dark' ? 'dark' : 'light';
-      setTheme(nextTheme);
+      const saved = await apiFetch('/app-settings', { method: 'PUT', body: payload });
+      setTheme(saved?.theme === 'dark' ? 'dark' : 'light');
       setAutoAiAfterDebrief(typeof saved?.autoAiAfterDebrief === 'boolean' ? saved.autoAiAfterDebrief : payload.autoAiAfterDebrief);
       return saved;
     } catch (e) {
@@ -217,10 +210,7 @@ export default function App() {
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-    apiFetch('/app-settings', {
-      method:'PUT',
-      body:{ theme: nextTheme, autoAiAfterDebrief },
-    }).catch(() => {});
+    apiFetch('/app-settings', { method: 'PUT', body: { theme: nextTheme, autoAiAfterDebrief } }).catch(() => {});
   };
 
   const openSettings = (tab = 'account', origin = page) => {
@@ -231,21 +221,16 @@ export default function App() {
   const onLogin = (u, g) => { setUser(u); if (g) setGam(g); setPage('Dashboard'); toast(`Bienvenue, ${u.name} !`); };
   const onLogout = () => {
     clearToken();
-    setUser(null);
-    setDebriefs([]);
+    setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login');
     setDebriefsLoaded(false);
-    setGam(null);
-    setPage('Dashboard');
-    setAuthView('login');
-    setAutoAiAfterDebrief(true);
+    setAutoAiAfterDebrief(true); setSettingsTabRequest('account');
     setPendingDebriefLink(null);
-    setSettingsTabRequest('account');
     toast('Déconnecté');
   };
 
   const onSave = (debrief, g) => {
     setDebriefs(p => [debrief, ...p]);
-    if (g) { setGam(g); if (g.pointsEarned>0) setBurst({ points:g.pointsEarned, levelUp:g.levelUp, newLevel:g.level.name }); }
+    if (g) { setGam(g); if (g.pointsEarned > 0) setBurst({ points: g.pointsEarned, levelUp: g.levelUp, newLevel: g.level.name }); }
   };
 
   const onUpdateDebrief = (debrief, g) => {
@@ -256,328 +241,372 @@ export default function App() {
   const onDelete = async id => {
     if (!confirm('Supprimer ce debrief ?')) return;
     try {
-      const r = await apiFetch(`/debriefs/${id}`,{ method:'DELETE' });
-      setDebriefs(p => p.filter(d => d.id!==id));
+      const r = await apiFetch(`/debriefs/${id}`, { method: 'DELETE' });
+      setDebriefs(p => p.filter(d => d.id !== id));
       if (r.gamification) setGam(r.gamification);
       toast('Debrief supprimé');
       navigate(from || 'Dashboard');
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
   };
 
-  const selDebrief = debriefs.find(d => d.id===selId);
+  const selDebrief = debriefs.find(d => d.id === selId);
   const role = user?.role || 'closer';
   const isAdmin = role === 'admin';
   const isHOS = role === 'head_of_sales';
   const isManager = isAdmin || isHOS;
   const navItems = [
-    { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
-    { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
-    { key:'Objections', label:'Objections', icon:'forum' },
-    { key:'Benchmark', label:'Benchmark', icon:'query_stats' },
-    { key:'Knowledge', label:'Connaissances', icon:'library_books' },
-    ...(isManager ? [{ key:'HOSPage', label:'Équipe', icon:'groups' }] : []),
-    { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
-    { key:'History',   label:'Historique', icon:'history' },
+    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard' },
+    { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
+    { key: 'Objections', label: 'Objections',  icon: 'forum' },
+    { key: 'Benchmark',  label: 'Benchmark', icon: 'query_stats' },
+    { key: 'Knowledge',  label: 'Connaissances', icon: 'library_books' },
+    ...(isManager ? [{ key: 'HOSPage', label: 'Équipe', icon: 'groups' }] : []),
+    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle' },
+    { key: 'History',    label: 'Historique',  icon: 'history' },
   ];
   const mobileNavItems = [
-    { key:'Dashboard', label:'Dashboard', icon:'dashboard' },
-    { key:'Pipeline',  label:'Pipeline',  icon:'analytics' },
-    { key:'Objections', label:'Objections', icon:'forum' },
-    { key:'NewDebrief', label:'Debrief',  icon:'add_circle' },
-    { key:'History',   label:'Historique', icon:'history' },
+    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard' },
+    { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
+    { key: 'Objections', label: 'Objections', icon: 'forum' },
+    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle' },
+    { key: 'History',    label: 'Historique', icon: 'history' },
   ];
   const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
   const isPdfViewerPage = page === 'PdfViewer';
-  const appSettingsValue = useMemo(() => ({
-    theme,
-    autoAiAfterDebrief,
-  }), [theme, autoAiAfterDebrief]);
-  const sidebarBg = theme === 'dark'
-    ? 'linear-gradient(170deg,#25344d 0%, #1d2a40 58%, #3b2b3a 110%)'
-    : `linear-gradient(165deg, ${P}, ${P2})`;
+  const appSettingsValue = useMemo(() => ({ theme, autoAiAfterDebrief }), [theme, autoAiAfterDebrief]);
   const globalThemeStyle = <style>{GLOBAL_CSS}</style>;
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
-  if (authLoading) {
-    return (
-      <>
-        {globalThemeStyle}
-        <div style={{minHeight:'100vh',background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))',display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Spinner/>
-        </div>
-      </>
-    );
-  }
-  if (resetToken) {
-    return (
-      <>
-        {globalThemeStyle}
-        <ResetPage token={resetToken} onDone={()=>{ setResetToken(null); setAuthView('login'); toast('Mot de passe modifié !'); }}/>
-      </>
-    );
-  }
+  if (authLoading) return (
+    <>
+      {globalThemeStyle}
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))' }}>
+        <Spinner />
+      </div>
+    </>
+  );
+  if (resetToken) return (
+    <>
+      {globalThemeStyle}
+      <ResetPage token={resetToken} onDone={() => { setResetToken(null); setAuthView('login'); toast('Mot de passe modifié !'); }} />
+    </>
+  );
   if (!user) {
-    if (authView==='register') {
-      return (
-        <>
-          {globalThemeStyle}
-          <RegisterPage onLogin={onLogin} goLogin={()=>setAuthView('login')}/>
-        </>
-      );
-    }
-    if (authView==='forgot') {
-      return (
-        <>
-          {globalThemeStyle}
-          <ForgotPage goLogin={()=>setAuthView('login')}/>
-        </>
-      );
-    }
+    if (authView === 'register') return (
+      <>
+        {globalThemeStyle}
+        <RegisterPage onLogin={onLogin} goLogin={() => setAuthView('login')} />
+      </>
+    );
+    if (authView === 'forgot') return (
+      <>
+        {globalThemeStyle}
+        <ForgotPage goLogin={() => setAuthView('login')} />
+      </>
+    );
     return (
       <>
         {globalThemeStyle}
-        <LoginPage onLogin={onLogin} goRegister={()=>setAuthView('register')} goForgot={()=>setAuthView('forgot')}/>
+        <LoginPage onLogin={onLogin} goRegister={() => setAuthView('register')} goForgot={() => setAuthView('forgot')} />
       </>
     );
   }
 
-  // ─── Main app ──────────────────────────────────────────────────────────────
+  // ─── Content renderer ──────────────────────────────────────────────────────
   const Content = () => (
     <>
-      {page==='Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} toast={toast}/>}
-      {page==='NewDebrief' && (
-        <NewDebrief
-          navigate={navigate}
-          onSave={onSave}
-          onUpdate={onUpdateDebrief}
-          toast={toast}
-          user={user}
-          debriefConfig={debriefConfig}
-          debriefTemplates={debriefTemplates}
-          leadContext={leadContext}
-          autoAiAfterSave={autoAiAfterDebrief}
-        />
+      {page === 'Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} toast={toast} />}
+      {page === 'NewDebrief' && (
+        <NewDebrief navigate={navigate} onSave={onSave} onUpdate={onUpdateDebrief} toast={toast} user={user}
+          debriefConfig={debriefConfig} debriefTemplates={debriefTemplates} leadContext={leadContext} autoAiAfterSave={autoAiAfterDebrief} />
       )}
-      {page==='EditDebrief' && (
-        <NewDebrief
-          navigate={navigate}
-          onSave={onSave}
-          onUpdate={onUpdateDebrief}
-          toast={toast}
-          user={user}
-          debriefConfig={debriefConfig}
-          debriefTemplates={debriefTemplates}
-          existingDebrief={selDebrief}
-          fromPage={from || 'History'}
-          autoAiAfterSave={autoAiAfterDebrief}
-        />
+      {page === 'EditDebrief' && (
+        <NewDebrief navigate={navigate} onSave={onSave} onUpdate={onUpdateDebrief} toast={toast} user={user}
+          debriefConfig={debriefConfig} debriefTemplates={debriefTemplates} existingDebrief={selDebrief} fromPage={from || 'History'} autoAiAfterSave={autoAiAfterDebrief} />
       )}
-      {page==='History'   && <History debriefs={debriefs} navigate={navigate} user={user}/>}
-      {page==='Detail'    && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI}/>}
-      {page==='PdfViewer' && <PdfViewer debrief={selDebrief} allDebriefs={debriefs} user={user} toast={toast} navigate={navigate} />}
-      {page==='Pipeline'  && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate}/>}
-      {page==='Objections' && <ObjectionLibrary toast={toast}/>}
-      {page==='Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
-      {page==='Knowledge' && <KnowledgePage navigate={navigate} toast={toast} />}
-      {page==='HOSPage' && isManager && <HOSPage toast={toast} allDebriefs={debriefs}/>}
-      {page==='Settings' && (
-        <SettingsPage
-          user={user}
-          toast={toast}
-          navigate={navigate}
-          fromPage={from || 'Dashboard'}
-          returnId={selId}
-          requestedTab={settingsTabRequest}
-          debriefConfig={debriefConfig}
-          setDebriefConfig={setDebriefConfig}
-          debriefTemplates={debriefTemplates}
-          setDebriefTemplates={setDebriefTemplates}
-          appSettings={appSettingsValue}
-          onSaveAppSettings={saveAppSettings}
-        />
+      {page === 'History' && <History debriefs={debriefs} navigate={navigate} user={user} />}
+      {page === 'Detail' && <Detail debrief={selDebrief} navigate={navigate} onDelete={onDelete} fromPage={from} user={user} toast={toast} allDebriefs={debriefs} autoAI={autoAI} />}
+      {page === 'PdfViewer' && <PdfViewer debrief={selDebrief} allDebriefs={debriefs} user={user} toast={toast} navigate={navigate} />}
+      {page === 'Pipeline' && <PipelinePage user={user} toast={toast} debriefs={debriefs} navigate={navigate} />}
+      {page === 'Objections' && <ObjectionLibrary toast={toast} />}
+      {page === 'Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
+      {page === 'Knowledge' && <KnowledgePage navigate={navigate} toast={toast} />}
+      {page === 'HOSPage' && isManager && <HOSPage toast={toast} allDebriefs={debriefs} />}
+      {page === 'Settings' && (
+        <SettingsPage user={user} toast={toast} navigate={navigate} fromPage={from || 'Dashboard'} returnId={selId}
+          requestedTab={settingsTabRequest} debriefConfig={debriefConfig} setDebriefConfig={setDebriefConfig}
+          debriefTemplates={debriefTemplates} setDebriefTemplates={setDebriefTemplates}
+          appSettings={appSettingsValue} onSaveAppSettings={saveAppSettings} />
       )}
     </>
   );
 
+  // ─── Main layout ───────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))', color:'var(--txt,#5a4a3a)', position:'relative', overflow:'hidden' }}>
-      {globalThemeStyle}
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--txt, #4A3428)', position: 'relative', overflow: 'hidden' }}>
+      <style>{GLOBAL_CSS}</style>
 
-      <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}>
-        <div style={{ position:'absolute', top:-160, right:-120, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.24) 0%, rgba(232,125,106,0) 72%)', animation:'floatY 10s ease-in-out infinite' }}/>
-        <div style={{ position:'absolute', bottom:-180, left:-140, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.22) 0%, rgba(106,172,206,0) 72%)', animation:'floatY 13s ease-in-out infinite' }}/>
+      {/* ── Floating gradient blobs ─────────────────────────────────────────── */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{
+          position: 'absolute', top: -120, right: -80, width: 380, height: 380, borderRadius: '50%',
+          background: 'radial-gradient(circle, var(--float-blob-1) 0%, transparent 72%)',
+          animation: 'floatY 12s ease-in-out infinite',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -140, left: -100, width: 420, height: 420, borderRadius: '50%',
+          background: 'radial-gradient(circle, var(--float-blob-2) 0%, transparent 72%)',
+          animation: 'floatY 16s ease-in-out infinite',
+        }} />
+        <div style={{
+          position: 'absolute', top: '40%', left: '60%', width: 300, height: 300, borderRadius: '50%',
+          background: 'radial-gradient(circle, var(--float-blob-3) 0%, transparent 72%)',
+          animation: 'floatY 20s ease-in-out infinite',
+        }} />
       </div>
 
-      <div style={{ position:'relative', zIndex:1 }}>
-        {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={()=>setBurst(null)}/>}
-        <Toasts list={toasts}/>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {burst && <Burst points={burst.points} levelUp={burst.levelUp} newLevel={burst.newLevel} onDone={() => setBurst(null)} />}
+        <Toasts list={toasts} />
 
         {isPdfViewerPage ? (
-          <main style={{ minHeight:'100vh' }}>
-            {dataLoading ? <Spinner full/> : Content()}
+          <main style={{ minHeight: '100vh' }}>
+            {dataLoading ? <Spinner full /> : Content()}
           </main>
         ) : mob ? (
+          /* ─── MOBILE LAYOUT ─────────────────────────────────────────────── */
           <>
-            <header style={{ position:'sticky', top:0, zIndex:50, background:'var(--sidebar)', borderBottom:'1px solid var(--border)', backdropFilter:'blur(16px)' }}>
-              <div style={{ padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', minHeight:58 }}>
-                <button onClick={()=>navigate('Dashboard')} style={{ display:'flex', alignItems:'center', gap:10, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                  <div style={{ width:34, height:34, borderRadius:11, background:`linear-gradient(135deg,${P},${P2})`, boxShadow:SH_BTN, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'white' }}>✦</div>
-                  <div style={{ textAlign:'left' }}>
-                    <span style={{ display:'block', fontSize:14, fontWeight:800, color:TXT, lineHeight:1.1 }}>CloserDebrief</span>
-                    <span style={{ display:'block', fontSize:10, letterSpacing:'.12em', textTransform:'uppercase', color:TXT3 }}>Sales Intelligence</span>
+            <header style={{
+              position: 'sticky', top: 0, zIndex: 50,
+              background: 'var(--sidebar)',
+              borderBottom: '1px solid var(--sidebar-border)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 54 }}>
+                <button onClick={() => navigate('Dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    background: 'var(--gradient-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, color: 'white',
+                  }}>C</div>
+                  <div style={{ textAlign: 'left' }}>
+                    <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--txt)', lineHeight: 1.1 }}>CloserDebrief</span>
+                    <span style={{ display: 'block', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--txt3)' }}>Sales Intelligence</span>
                   </div>
                 </button>
-                <UserMenu
-                  user={user}
-                  gam={gam}
-                  onLogout={onLogout}
-                  onSettings={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                  toast={toast}
-                  theme={theme}
-                  onToggleTheme={toggleTheme}
-                />
+                <UserMenu user={user} gam={gam} onLogout={onLogout}
+                  onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
+                  toast={toast} theme={theme} onToggleTheme={toggleTheme} />
               </div>
             </header>
 
-            <main style={{ padding:'20px 14px 104px' }}>
-              {dataLoading ? <Spinner full/> : Content()}
+            <main style={{ padding: '18px 14px 104px' }}>
+              {dataLoading ? <Spinner full /> : Content()}
             </main>
 
-            <nav style={{ position:'fixed', left:10, right:10, bottom:'max(10px, env(safe-area-inset-bottom))', background:'var(--sidebar)', border:'1px solid var(--border)', borderRadius:16, boxShadow:'var(--sh-card)', display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 4px', zIndex:45, backdropFilter:'blur(14px)' }}>
+            {/* ── Mobile bottom nav ────────────────────────────────────────── */}
+            <nav style={{
+              position: 'fixed', left: 10, right: 10,
+              bottom: 'max(10px, env(safe-area-inset-bottom))',
+              background: 'var(--sidebar)',
+              border: '1px solid var(--sidebar-border)',
+              borderRadius: 16,
+              boxShadow: 'var(--sh-card)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+              padding: '6px 4px', zIndex: 45,
+              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+            }}>
               {mobileNavItems.map(({ key, label, icon }) => (
-                <button key={key} onClick={()=>navigate(key)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit', flex:1 }}>
-                  <div style={{ minWidth:34, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', background:page===key?`linear-gradient(135deg,${P},${P2})`:'transparent', color:page===key?'white':TXT2, boxShadow:page===key?SH_BTN:'none', transition:'all .2s' }}>
-                    <NavIcon name={icon} active={page===key} size={17} color={page===key ? 'white' : TXT2} />
+                <button key={key} onClick={() => navigate(key)} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'inherit', flex: 1,
+                }}>
+                  <div style={{
+                    minWidth: 32, height: 28, borderRadius: 9,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: page === key ? 'var(--gradient-primary)' : 'transparent',
+                    color: page === key ? 'white' : 'var(--txt2)',
+                    boxShadow: page === key ? SH_BTN : 'none',
+                    transition: 'all .2s',
+                  }}>
+                    <NavIcon name={icon} active={page === key} size={16} color={page === key ? 'white' : 'var(--txt2)'} />
                   </div>
-                  <span style={{ fontSize:10, fontWeight:700, color:page===key?P:TXT3 }}>{label}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: page === key ? P : 'var(--txt3)' }}>{label}</span>
                 </button>
               ))}
             </nav>
           </>
         ) : (
-          <div style={{ display:'flex', minHeight:'100vh' }}>
-            <aside style={{ width:DESKTOP_SIDEBAR_WIDTH, flexShrink:0, position:'fixed', left:0, top:0, bottom:0, display:'flex', flexDirection:'column', background:sidebarBg, borderRight:'1px solid rgba(255,255,255,.24)', boxShadow:'0 20px 40px rgba(85,66,63,.16)', padding:'20px 10px 12px', zIndex:60 }}>
+          /* ─── DESKTOP LAYOUT ────────────────────────────────────────────── */
+          <div style={{ display: 'flex', minHeight: '100vh' }}>
+
+            {/* ── Sidebar ──────────────────────────────────────────────────── */}
+            <aside style={{
+              width: DESKTOP_SIDEBAR_WIDTH, flexShrink: 0,
+              position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 60,
+              display: 'flex', flexDirection: 'column',
+              background: 'var(--sidebar)',
+              borderRight: '1px solid var(--sidebar-border)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              padding: '18px 10px 12px',
+            }}>
+              {/* Logo */}
               <button
-                onClick={()=>navigate('Dashboard')}
-                style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:'6px 8px 14px', borderRadius:R_MD, marginBottom:2, width:'100%', transition:'background .15s' }}
-                onMouseEnter={e=>e.currentTarget.style.background='var(--nav-hover)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+                onClick={() => navigate('Dashboard')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '6px 8px 16px', borderRadius: R_MD, marginBottom: 2, width: '100%',
+                  transition: 'background .15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ width:34, height:34, borderRadius:11, background:'rgba(255,255,255,.22)', border:'1px solid rgba(255,255,255,.28)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <NavIcon name="target" active size={16} color="white" />
-                </div>
-                <div style={{ textAlign:'left' }}>
-                  <div style={{ fontSize:19, fontWeight:800, color:'white', lineHeight:1.02, letterSpacing:'-.03em' }}>CloserDebrief</div>
-                  <div style={{ fontSize:9, color:'rgba(255,255,255,.76)', letterSpacing:'.2em', textTransform:'uppercase', fontWeight:800, marginTop:3 }}>Sales Intelligence</div>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: 'var(--gradient-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  color: 'white', fontSize: 14, fontWeight: 500,
+                }}>C</div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)', lineHeight: 1.05, letterSpacing: '-.02em' }}>CloserDebrief</div>
+                  <div style={{ fontSize: 9, color: 'var(--txt3)', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600, marginTop: 2 }}>Sales Intelligence</div>
                 </div>
               </button>
 
-              <div style={{ display:'flex', flexDirection:'column', gap:5, flex:1 }}>
-                {navItems.map(({ key, label, icon }) => (
-                  <button
-                    key={key}
-                    onClick={()=>navigate(key)}
-                    style={{
-                      display:'flex',
-                      alignItems:'center',
-                      gap:8,
-                      padding:'8px 10px',
-                      borderRadius:12,
-                      border:'none',
-                      fontSize:12,
-                      fontWeight:700,
-                      cursor:'pointer',
-                      transition:'all .18s',
-                      background:page===key?'rgba(255,255,255,.24)':'transparent',
-                      color:'white',
-                      boxShadow:page===key?'0 10px 20px rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.28)':'none',
-                      textAlign:'left',
-                      width:'100%',
-                    }}
-                    onMouseEnter={e=>{ if(page!==key) e.currentTarget.style.background='rgba(255,255,255,.1)'; }}
-                    onMouseLeave={e=>{ if(page!==key) e.currentTarget.style.background='transparent'; }}
-                  >
-                    <span style={{ width:20, height:20, borderRadius:8, display:'inline-flex', alignItems:'center', justifyContent:'center', background:page===key?'rgba(255,255,255,.2)':'rgba(255,255,255,.1)' }}>
-                      <NavIcon name={icon} active={page===key} size={15} color="white" />
-                    </span>
-                    <span>{label}</span>
-                  </button>
-                ))}
+              {/* Nav items */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
+                {navItems.map(({ key, label, icon }) => {
+                  const isActive = page === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => navigate(key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 9,
+                        padding: '8px 10px', borderRadius: 10, border: 'none',
+                        fontSize: 12, fontWeight: isActive ? 600 : 500,
+                        cursor: 'pointer', transition: 'all .18s',
+                        background: isActive ? 'var(--nav-active)' : 'transparent',
+                        border: isActive ? '1px solid var(--nav-active-border)' : '1px solid transparent',
+                        color: isActive ? P : 'var(--txt2)',
+                        textAlign: 'left', width: '100%',
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{
+                        width: 22, height: 22, borderRadius: 7,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        background: isActive ? 'var(--gradient-primary)' : 'rgba(200,160,140,.06)',
+                      }}>
+                        <NavIcon name={icon} active={isActive} size={14} color={isActive ? 'white' : 'var(--txt3)'} />
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div style={{ borderTop:'1px solid rgba(255,255,255,.22)', paddingTop:10, marginTop:6, display:'grid', gap:4 }}>
+              {/* Bottom sidebar */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 6, display: 'grid', gap: 3 }}>
                 <button
-                  onClick={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
+                  onClick={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
                   style={{
-                    display:'flex',
-                    alignItems:'center',
-                    gap:8,
-                    border:'none',
-                    background:page === 'Settings' ? 'rgba(255,255,255,.22)' : 'transparent',
-                    boxShadow:page === 'Settings' ? 'inset 0 0 0 1px rgba(255,255,255,.28)' : 'none',
-                    padding:'8px 10px',
-                    borderRadius:11,
-                    cursor:'pointer',
-                    color:'white',
-                    fontSize:12,
-                    fontWeight:700,
-                    textAlign:'left',
-                    fontFamily:'inherit',
-                    opacity:.95,
+                    display: 'flex', alignItems: 'center', gap: 9, border: 'none',
+                    background: page === 'Settings' ? 'var(--nav-active)' : 'transparent',
+                    padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
+                    color: page === 'Settings' ? P : 'var(--txt2)',
+                    fontSize: 12, fontWeight: page === 'Settings' ? 600 : 500,
+                    textAlign: 'left', fontFamily: 'inherit',
                   }}
                 >
-                  <span style={{ width:20, height:20, borderRadius:8, background:'rgba(255,255,255,.14)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
-                    <NavIcon name="settings" size={14} color="white" />
+                  <span style={{
+                    width: 22, height: 22, borderRadius: 7,
+                    background: page === 'Settings' ? 'var(--gradient-primary)' : 'rgba(200,160,140,.06)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <NavIcon name="settings" size={13} color={page === 'Settings' ? 'white' : 'var(--txt3)'} />
                   </span>
                   Paramètres
                 </button>
-                <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:8, border:'none', background:'transparent', padding:'8px 10px', borderRadius:11, cursor:'pointer', color:'white', fontSize:12, fontWeight:700, textAlign:'left', fontFamily:'inherit', opacity:.95 }}>
-                  <span style={{ width:20, height:20, borderRadius:8, background:'rgba(255,255,255,.14)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
-                    <NavIcon name="logout" size={14} color="white" />
+                <button
+                  onClick={onLogout}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 9, border: 'none',
+                    background: 'transparent', padding: '8px 10px', borderRadius: 10,
+                    cursor: 'pointer', color: 'var(--txt2)', fontSize: 12, fontWeight: 500,
+                    textAlign: 'left', fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{
+                    width: 22, height: 22, borderRadius: 7,
+                    background: 'rgba(200,160,140,.06)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <NavIcon name="logout" size={13} color="var(--txt3)" />
                   </span>
                   Déconnexion
                 </button>
               </div>
             </aside>
 
-            <div style={{ flex:1, minWidth:0, marginLeft:DESKTOP_SIDEBAR_WIDTH, width:`calc(100vw - ${DESKTOP_SIDEBAR_WIDTH}px)` }}>
-              <header style={{ position:'sticky', top:0, zIndex:45, minHeight:72, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:18, background:'var(--card-soft)', backdropFilter:'blur(16px)', borderBottom:'1px solid var(--border)' }}>
-                <div style={{ minWidth:0 }}>
-                  <p style={{ margin:'0 0 2px', fontSize:10, letterSpacing:'.14em', textTransform:'uppercase', color:TXT3, fontWeight:700 }}>
+            {/* ── Main area ────────────────────────────────────────────────── */}
+            <div style={{ flex: 1, minWidth: 0, marginLeft: DESKTOP_SIDEBAR_WIDTH, width: `calc(100vw - ${DESKTOP_SIDEBAR_WIDTH}px)` }}>
+
+              {/* Topbar */}
+              <header style={{
+                position: 'sticky', top: 0, zIndex: 45,
+                minHeight: 64, padding: '12px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
+                background: 'var(--card-soft)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: '0 0 1px', fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--txt3)', fontWeight: 600 }}>
                     CloserDebrief
                   </p>
-                  <h2 style={{ margin:0, fontSize:18, color:TXT, fontWeight:800, lineHeight:1.2 }}>
+                  <h2 style={{ margin: 0, fontSize: 17, color: 'var(--txt)', fontWeight: 700, lineHeight: 1.2 }}>
                     {pageMeta.title}
                   </h2>
-                  <p style={{ margin:'2px 0 0', fontSize:12, color:TXT2 }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--txt2)' }}>
                     {pageMeta.subtitle}
                   </p>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <button style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'var(--card,#fff)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
-                    <NavIcon name="help" size={16} color={TXT2} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    border: '1px solid var(--border)', background: 'var(--glass-bg)',
+                    cursor: 'pointer', color: 'var(--txt2)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                  }}>
+                    <NavIcon name="help" size={15} color="var(--txt3)" />
                   </button>
                   <button
                     onClick={toggleTheme}
-                    style={{ width:34, height:34, borderRadius:12, border:'1px solid var(--border)', background:'var(--card,#fff)', cursor:'pointer', color:TXT2, display:'inline-flex', alignItems:'center', justifyContent:'center' }}
+                    style={{
+                      width: 32, height: 32, borderRadius: 10,
+                      border: '1px solid var(--border)', background: 'var(--glass-bg)',
+                      cursor: 'pointer', color: 'var(--txt2)',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                    }}
                     title="Basculer le thème"
                   >
-                    <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={16} color={TXT2} />
+                    <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={15} color="var(--txt3)" />
                   </button>
-                  <UserMenu
-                    user={user}
-                    gam={gam}
-                    onLogout={onLogout}
-                    onSettings={()=>openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                    toast={toast}
-                    theme={theme}
-                    onToggleTheme={toggleTheme}
-                  />
+                  <UserMenu user={user} gam={gam} onLogout={onLogout}
+                    onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
+                    toast={toast} theme={theme} onToggleTheme={toggleTheme} />
                 </div>
               </header>
 
-              <main style={{ padding:'28px 30px 40px', overflowX:'hidden', animation:'fadeUp .25s ease-out' }}>
-                {dataLoading ? <Spinner full/> : Content()}
+              {/* Page content */}
+              <main style={{ padding: '24px 26px 40px', overflowX: 'hidden', animation: 'fadeUp .25s ease-out' }}>
+                {dataLoading ? <Spinner full /> : Content()}
               </main>
             </div>
           </div>

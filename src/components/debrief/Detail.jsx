@@ -3,7 +3,7 @@ import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentage } from '../../utils/scoring';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
-import { SECTIONS, fetchAIExportSummary } from '../../config/ai';
+import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
@@ -28,13 +28,8 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
   const globalScores = avgSectionScores((allDebriefs || []).filter(item => item.id !== debrief.id));
 
   const buildPdfPayload = async () => {
-    const summaryCacheKey = `cd_ai_export_summary_${debrief.id}`;
     const analysis = (() => {
       try { return localStorage.getItem(`cd_ai_${debrief.id}`) || ''; }
-      catch { return ''; }
-    })();
-    let exportSummary = (() => {
-      try { return localStorage.getItem(summaryCacheKey) || ''; }
       catch { return ''; }
     })();
 
@@ -45,19 +40,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
       comments = [];
     }
 
-    if (analysis) {
-      try {
-        const freshSummary = await fetchAIExportSummary(analysis);
-        if (freshSummary) {
-          exportSummary = freshSummary;
-          try { localStorage.setItem(summaryCacheKey, freshSummary); } catch {}
-        }
-      } catch {
-        // Fallback silencieux: on garde le cache local ou un résumé calculé côté export.
-      }
-    }
-
-    return { debrief, comments, analysis, exportSummary, allDebriefs, user };
+    return { debrief, comments, analysis, allDebriefs, user };
   };
 
   const handleExportPdf = async () => {
@@ -79,24 +62,10 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
     setDownloadingPreview(true);
     try {
       await downloadDebriefPdf(previewPayload);
-      toast('PDF téléchargé (rendu fidèle en 2 pages)');
+      toast('PDF téléchargé');
+      setPreviewOpen(false);
     } catch (e) {
       toast(e.message || "Impossible de télécharger le PDF", 'error');
-    } finally {
-      setDownloadingPreview(false);
-    }
-  };
-
-  const handleCopyShareLink = async () => {
-    setDownloadingPreview(true);
-    try {
-      const shareUrl = new URL(window.location.origin + window.location.pathname);
-      shareUrl.searchParams.set('debrief_id', debrief.id);
-      shareUrl.searchParams.set('pdf_view', '1');
-      await navigator.clipboard.writeText(shareUrl.toString());
-      toast('Lien du visualisateur copié');
-    } catch {
-      toast("Impossible de copier le lien pour l'instant", 'error');
     } finally {
       setDownloadingPreview(false);
     }
@@ -108,7 +77,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
           <div>
-            <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>{debrief.prospect_name}</h1>
+            <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>{debrief.prospect_name}</h1>
             <div style={{ display:'flex', gap:12, fontSize:12, color:DS.textMuted, marginTop:4, flexWrap:'wrap' }}>
               <span>📅 {fmtDate(debrief.call_date)}</span>
               <span>👤 {debrief.closer_name}</span>
@@ -124,14 +93,14 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
           <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
             {exportingPdf ? 'Préparation prévisualisation...' : '📄 Prévisualiser le PDF'}
           </Btn>
-          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,background:'var(--card,#ffffff)',fontSize:12,textDecoration:'none',color:'var(--txt,#5a4a3a)'}}>🔗 Écouter</a>}
+          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,background:'var(--glass-bg)',fontSize:12,textDecoration:'none',color:'var(--txt,#4A3428)'}}>🔗 Écouter</a>}
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
         </div>
       </div>
 
       {mob ? (
         <>
-          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
+          <Card style={{ padding:20, display:'flex', flexDirection:'column', alignItems:'center', gap:12, background:'var(--glass-bg)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <Radar scores={scores} compareScores={globalScores} size={246} />
@@ -142,13 +111,13 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
             )}
           </Card>
           <Card style={{ padding:20 }}>
-            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:16 }}>Score par section</h3>
+            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)', marginBottom:16 }}>Score par section</h3>
             <SectionBars scores={scores} globalScores={globalScores} />
           </Card>
         </>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'minmax(320px, 360px) minmax(0, 1fr)', gap:22, alignItems:'start' }}>
-          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
+          <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'var(--glass-bg)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
             <ScoreGauge percentage={pct}/>
             <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{score20} / 20 points</p>
             <div style={{ width:'100%', borderTop:'1px dashed var(--border)', paddingTop:10 }}>
@@ -167,7 +136,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
           </Card>
 
           <Card style={{ padding:24 }}>
-            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:18 }}>Score par section</h3>
+            <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)', marginBottom:18 }}>Score par section</h3>
             <SectionBars scores={scores} globalScores={globalScores} />
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
               {SECTIONS.map(({ key }) => {
@@ -193,9 +162,9 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
 
       {(debrief.strengths||debrief.improvements||debrief.notes) && (
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(3,1fr)', gap:12 }}>
-          {debrief.strengths    && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--positive-txt)',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
-          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--warning-txt)',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
-          {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--txt,#5a4a3a)',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'var(--txt2,#b09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
+          {debrief.strengths    && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--positive-txt)',marginBottom:8}}>Points forts</h3><p style={{fontSize:13,color:'var(--txt2,#B09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.strengths}</p></Card>}
+          {debrief.improvements && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--warning-txt)',marginBottom:8}}>Axes d'amélioration</h3><p style={{fontSize:13,color:'var(--txt2,#B09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.improvements}</p></Card>}
+          {debrief.notes        && <Card style={{padding:16}}><h3 style={{fontSize:13,fontWeight:600,color:'var(--txt,#4A3428)',marginBottom:8}}>Notes</h3><p style={{fontSize:13,color:'var(--txt2,#B09080)',whiteSpace:'pre-wrap',margin:0}}>{debrief.notes}</p></Card>}
         </div>
       )}
 
@@ -224,7 +193,7 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
               width:'100%',
               maxWidth:mob ? '100%' : 1180,
               height:mob ? '94vh' : '92vh',
-              background:'var(--card,#fff)',
+              background:'var(--glass-bg)',
               borderRadius:14,
               border:'1px solid var(--border)',
               boxShadow:'var(--sh-card)',
@@ -235,15 +204,12 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
           >
             <div style={{ padding:'10px 12px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
               <div>
-                <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Prévisualisation export PDF</p>
-                <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>Rendu fidèle en 2 pages, identique au visualisateur.</p>
+                <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)' }}>Prévisualisation export PDF</p>
+                <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>Vérifie le rendu, puis télécharge.</p>
               </div>
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <div style={{ display:'flex', gap:8 }}>
                 <Btn variant="secondary" onClick={()=>setPreviewOpen(false)} disabled={downloadingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
                   Fermer
-                </Btn>
-                <Btn variant="secondary" onClick={handleCopyShareLink} disabled={downloadingPreview} style={{ fontSize:12, padding:'7px 12px' }}>
-                  🔗 Copier le lien
                 </Btn>
                 <Btn onClick={handleDownloadFromPreview} disabled={downloadingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
                   {downloadingPreview ? 'Téléchargement...' : '⬇️ Télécharger le PDF'}
