@@ -1064,6 +1064,7 @@ export async function downloadDebriefPdf(payload) {
   const html = buildDebriefPdfHtml(payload || {});
   const CAPTURE_WIDTH = 1300;
   const CAPTURE_HEIGHT = Math.round(CAPTURE_WIDTH * Math.sqrt(2));
+  const PAGE_SPLIT_THRESHOLD_MM = 2;
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
@@ -1141,7 +1142,7 @@ export async function downloadDebriefPdf(payload) {
       hasWrittenAnyPage = true;
 
       let heightLeft = renderedHeight - pageH;
-      while (heightLeft > 0.01) {
+      while (heightLeft > PAGE_SPLIT_THRESHOLD_MM) {
         const yOffset = heightLeft - renderedHeight;
         pdf.addPage();
         pdf.addImage(img, 'PNG', 0, yOffset, renderedWidth, renderedHeight, undefined, 'FAST');
