@@ -43,7 +43,7 @@ function Chart({ debriefs, compact = false, simple = false }) {
 
   if (!data.length) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: compact ? 150 : 200, color: 'var(--txt3)', fontSize: 14 }}>
-      Aucune donn\u00e9e \u2014 cr\u00e9ez votre premier debrief !
+      Aucune donnée — créez votre premier debrief !
     </div>
   );
 
@@ -66,13 +66,13 @@ function Chart({ debriefs, compact = false, simple = false }) {
                     ? 'linear-gradient(180deg, #FEB47B, #D97706)'
                     : 'var(--gradient-primary)',
                 boxShadow: '0 4px 10px rgba(74,52,40,.06)',
-              }} title={`${item.prospect || 'Debrief'} \u00b7 ${item.score}%`} />
+              }} title={`${item.prospect || 'Debrief'} · ${item.score}%`} />
               <span style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 500 }}>{item.date}</span>
             </div>
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
-          <span style={{ color: 'var(--txt2)' }}>Moyenne r\u00e9cente: <strong style={{ color: 'var(--txt)' }}>{avg}%</strong></span>
+          <span style={{ color: 'var(--txt2)' }}>Moyenne récente: <strong style={{ color: 'var(--txt)' }}>{avg}%</strong></span>
           <span style={{ color: 'var(--txt2)' }}>Dernier appel: <strong style={{ color: 'var(--txt)' }}>{last}%</strong></span>
         </div>
       </div>
@@ -108,8 +108,8 @@ function Chart({ debriefs, compact = false, simple = false }) {
             {hov === i && (
               <g>
                 <rect x={Math.max(pL, Math.min(xs[i] - 55, W - pR - 110))} y={ys[i] - 52} width={110} height={44} rx="8" fill="rgba(255,255,255,.9)" stroke="rgba(200,160,140,.1)" strokeWidth="1" />
-                <text x={Math.max(pL + 55, Math.min(xs[i], W - pR - 55))} y={ys[i] - 34} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--txt)">{d.prospect || '\u2014'}</text>
-                <text x={Math.max(pL + 55, Math.min(xs[i], W - pR - 55))} y={ys[i] - 18} textAnchor="middle" fontSize="10" fill="var(--txt2)">{d.date} \u00b7 {d.score}%</text>
+                <text x={Math.max(pL + 55, Math.min(xs[i], W - pR - 55))} y={ys[i] - 34} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--txt)">{d.prospect || '—'}</text>
+                <text x={Math.max(pL + 55, Math.min(xs[i], W - pR - 55))} y={ys[i] - 18} textAnchor="middle" fontSize="10" fill="var(--txt2)">{d.date} · {d.score}%</text>
               </g>
             )}
             {(!compact || i % 2 === 0 || i === data.length - 1) && (
