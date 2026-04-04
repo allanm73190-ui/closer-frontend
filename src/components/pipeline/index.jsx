@@ -519,6 +519,11 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       .map(status => ({ key: status, label: status, icon:'🧩', color:'#64748b', bg:'#e2e8f0', closed:false, won:false }));
     return [...list, ...unknown];
   }, [pipelineConfig, deals]);
+  const defaultOpenStatus = statuses.find(status => !status.closed)?.key || 'prospect';
+  const normalizedDeals = useMemo(
+    () => (Array.isArray(deals) ? deals : []).map(deal => ({ ...deal, status: deal?.status || defaultOpenStatus })),
+    [deals, defaultOpenStatus]
+  );
 
   const handleSave = (deal, isEdit) => {
     setDeals(prev => isEdit ? prev.map(item => item.id === deal.id ? deal : item) : [deal, ...prev]);
@@ -542,12 +547,12 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   const role = String(user?.role || '').toLowerCase();
   const isManager = role === 'head_of_sales' || role === 'admin';
-  const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
-  const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
+  const closers = [...new Map(normalizedDeals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
+  const closerFilteredDeals = filter === 'all' ? normalizedDeals : normalizedDeals.filter(deal => deal.user_id === filter);
 
   const closedKeys = statuses.filter(status => status.closed).map(status => status.key);
   const wonKeys = statuses.filter(status => status.won).map(status => status.key);
-  const openDeals = deals.filter(deal => !closedKeys.includes(deal.status));
+  const openDeals = normalizedDeals.filter(deal => !closedKeys.includes(deal.status));
   const overdueDeals = openDeals.filter(deal => {
     const dateValue = deal.contact_date || deal.follow_up_date;
     const dueDate = parseISODate(dateValue);
@@ -596,11 +601,11 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     ? closerFilteredDeals
     : closerFilteredDeals.filter(deal => activeAlert?.ids.has(deal.id));
 
-  const totalValue = deals.filter(deal => wonKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
-  const totalPipe = deals.filter(deal => !closedKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
-  const noDateCount = deals.filter(deal => !(deal.contact_date || deal.follow_up_date)).length;
-  const closed = deals.filter(deal => closedKeys.includes(deal.status));
-  const winRate = closed.length > 0 ? Math.round((deals.filter(deal => wonKeys.includes(deal.status)).length / closed.length) * 100) : 0;
+  const totalValue = normalizedDeals.filter(deal => wonKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
+  const totalPipe = normalizedDeals.filter(deal => !closedKeys.includes(deal.status)).reduce((sum, deal) => sum + (deal.value || 0), 0);
+  const noDateCount = normalizedDeals.filter(deal => !(deal.contact_date || deal.follow_up_date)).length;
+  const closed = normalizedDeals.filter(deal => closedKeys.includes(deal.status));
+  const winRate = closed.length > 0 ? Math.round((normalizedDeals.filter(deal => wonKeys.includes(deal.status)).length / closed.length) * 100) : 0;
 
   const openNewDebriefFromLead = (leadContext) => {
     navigate?.('NewDebrief', null, 'Pipeline', { leadContext });
@@ -615,7 +620,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
           <div>
             <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>🎯 Pipeline</h1>
             <p style={{ color:DS.textMuted, fontSize:13, margin:'4px 0 0' }}>
-              {deals.length} contact{deals.length !== 1 ? 's' : ''} · fiche contact unifiée
+              {normalizedDeals.length} contact{normalizedDeals.length !== 1 ? 's' : ''} · fiche contact unifiée
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
@@ -743,8 +748,8 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       {displayDeals.length === 0 ? (
         <Empty
           icon="🎯"
-          title={deals.length === 0 ? 'Pipeline vide' : 'Aucun deal sur ce filtre'}
-          subtitle={deals.length === 0 ? 'Créez votre premier lead' : 'Ajustez le closer ou le focus d’alerte pour voir plus de résultats.'}
+          title={normalizedDeals.length === 0 ? 'Pipeline vide' : 'Aucun deal sur ce filtre'}
+          subtitle={normalizedDeals.length === 0 ? 'Créez votre premier lead' : 'Ajustez le closer ou le focus d’alerte pour voir plus de résultats.'}
           action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}
         />
       ) : mob ? (

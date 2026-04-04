@@ -141,10 +141,19 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       .map(status => ({ key: status, label: status, icon: '🧩', color: '#64748b', bg: '#e2e8f0', closed: false, won: false }));
     return [...list, ...unknown];
   }, [stages, deals]);
+  const openKey = normalizedStages.find(stage => !stage.closed)?.key || 'prospect';
   const closedKeys = normalizedStages.filter(stage => stage.closed).map(stage => stage.key);
+  const dealsForStats = useMemo(
+    () => (Array.isArray(deals) ? deals : []).map(deal => ({ ...deal, status: deal?.status || openKey })),
+    [deals, openKey]
+  );
+  const pipelineActiveCount = dealsForStats.filter(deal => !closedKeys.includes(deal.status)).length;
+  const pipelineActiveValue = dealsForStats
+    .filter(deal => !closedKeys.includes(deal.status))
+    .reduce((sum, deal) => sum + (deal.value || 0), 0);
   const pipelineCounts = normalizedStages.map(st => ({
     ...st,
-    count: deals.filter(d => d.status === st.key).length,
+    count: dealsForStats.filter(d => d.status === st.key).length,
   })).filter(s => s.count > 0);
 
   const gamPct = gam?.level?.next
@@ -157,7 +166,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ ...G({ padding: '16px 14px' }) }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt)' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{debriefs.length} debriefs · Pipeline: {deals.filter(d => !closedKeys.includes(d.status)).length} leads</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{debriefs.length} debriefs · Pipeline: {pipelineActiveCount} leads</div>
           <Btn onClick={() => navigate('NewDebrief')} style={{ marginTop: 12, width: '100%' }}>+ Nouveau debrief</Btn>
         </div>
         <GamCard gam={gam} />
@@ -191,7 +200,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', letterSpacing: '-.02em' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {deals.filter(d => !closedKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0).toLocaleString('fr-FR')}€</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€</div>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>
@@ -279,7 +288,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
               patternsData.patterns.slice(0, 2).map(p => (
                 <div key={p.id} style={{ marginBottom: 8 }}>
                   <span style={{ fontWeight: 600, color: 'var(--txt)' }}>{p.title}</span>
-                  <span style={{ color: 'var(--txt3)' }}> \u2014 {p.recommendation}</span>
+                  <span style={{ color: 'var(--txt3)' }}> — {p.recommendation}</span>
                 </div>
               ))
             )}
@@ -403,16 +412,18 @@ function MiniPipeline({ navigate, user }) {
   if (loading) return <Spinner />;
   const closedKeys = stages.filter(s => s.closed).map(s => s.key);
   const wonKeys = stages.filter(s => s.won).map(s => s.key);
-  const signed = deals.filter(d => wonKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0);
-  const pipeline = deals.filter(d => !closedKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0);
-  const closed = deals.filter(d => closedKeys.includes(d.status));
-  const winRate = closed.length ? Math.round(deals.filter(d => wonKeys.includes(d.status)).length / closed.length * 100) : 0;
+  const openKey = stages.find(s => !s.closed)?.key || 'prospect';
+  const dealsForStats = (Array.isArray(deals) ? deals : []).map(deal => ({ ...deal, status: deal?.status || openKey }));
+  const signed = dealsForStats.filter(d => wonKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0);
+  const pipeline = dealsForStats.filter(d => !closedKeys.includes(d.status)).reduce((s, d) => s + (d.value || 0), 0);
+  const closed = dealsForStats.filter(d => closedKeys.includes(d.status));
+  const winRate = closed.length ? Math.round(dealsForStats.filter(d => wonKeys.includes(d.status)).length / closed.length * 100) : 0;
 
   return (
     <div style={{ display: 'flex', gap: 6 }}>
       {[
         { label: 'CA Signé', value: `${signed.toLocaleString('fr-FR')}€`, color: '#059669' },
-        { label: 'Pipeline', value: `${pipeline.toLocaleString('fr-FR')}\u20ac`, color: P },
+        { label: 'Pipeline', value: `${pipeline.toLocaleString('fr-FR')}€`, color: P },
         { label: 'Taux win', value: `${winRate}%`, color: 'var(--accent-violet)' },
       ].map(({ label, value, color }) => (
         <div key={label} style={{ flex: 1, ...G({ padding: '10px 12px' }) }}>
