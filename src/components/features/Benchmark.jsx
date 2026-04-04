@@ -87,6 +87,16 @@ function deltaColor(current, previous) {
   return DS.textMuted;
 }
 
+const glassPanel = (extra = {}) => ({
+  ...cardSm(),
+  background:'var(--glass-bg)',
+  border:'1px solid var(--glass-border)',
+  boxShadow:'var(--sh-card)',
+  backdropFilter:'blur(10px)',
+  WebkitBackdropFilter:'blur(10px)',
+  ...extra,
+});
+
 export function BenchmarkPage({ user, debriefs, navigate, toast }) {
   const mob = useIsMobile();
   const isManager = user?.role === 'head_of_sales' || user?.role === 'admin';
@@ -178,18 +188,64 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
     : `${period.calls} derniers appels vs ${period.calls} précédents`;
   const canRender = scopedDebriefs.length > 0;
 
+  const metricCards = [
+    {
+      label:'Debriefs',
+      value:currentMetrics.total,
+      delta:formatDelta(currentMetrics.total, previousMetrics.total),
+      current:currentMetrics.total,
+      previous:previousMetrics.total,
+      icon:'summarize',
+      tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,246,238,.62))',
+      border:'rgba(232,125,106,.18)',
+    },
+    {
+      label:'Score moyen',
+      value:`${Math.round(currentMetrics.avgScore)}%`,
+      delta:formatDelta(currentMetrics.avgScore, previousMetrics.avgScore, '%'),
+      current:currentMetrics.avgScore,
+      previous:previousMetrics.avgScore,
+      icon:'insights',
+      tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(106,172,206,.14))',
+      border:'rgba(106,172,206,.28)',
+    },
+    {
+      label:'Closing rate',
+      value:`${currentMetrics.closeRate}%`,
+      delta:formatDelta(currentMetrics.closeRate, previousMetrics.closeRate, '%'),
+      current:currentMetrics.closeRate,
+      previous:previousMetrics.closeRate,
+      icon:'military_tech',
+      tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(5,150,105,.12))',
+      border:'rgba(5,150,105,.28)',
+    },
+    {
+      label:'Appels avec objections',
+      value:`${currentMetrics.objectionRate}%`,
+      delta:formatDelta(currentMetrics.objectionRate, previousMetrics.objectionRate, '%'),
+      current:currentMetrics.objectionRate,
+      previous:previousMetrics.objectionRate,
+      icon:'forum',
+      tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(124,58,237,.13))',
+      border:'rgba(124,58,237,.28)',
+    },
+  ];
+
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-      <Card style={{ padding:mob ? '16px 14px' : '18px 20px', background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
+    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:18 }}>
+      <div style={{ position:'absolute', top:-30, right:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 68%)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:10, left:-40, width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.14) 0%, rgba(106,172,206,0) 68%)', pointerEvents:'none' }} />
+
+      <Card style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,247,240,.68))' }) }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.08em', fontWeight:700 }}>
+            <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
               Benchmark interne
             </p>
-            <h1 style={{ margin:0, fontSize:mob ? 21 : 24, color:'var(--txt,#5a4a3a)', fontWeight:800 }}>
+            <h1 style={{ margin:0, fontSize:mob ? 22 : 26, color:'var(--txt,#5a4a3a)', fontWeight:800 }}>
               {selectedCloserName}
             </h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#b09080)' }}>
+            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#b09080)', maxWidth:620 }}>
               Comparaison contre l’historique personnel uniquement, sans classement public.
             </p>
           </div>
@@ -211,13 +267,15 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               style={{
                 border:'none',
                 borderRadius:999,
-                padding:'7px 12px',
+                padding:'8px 13px',
                 fontFamily:'inherit',
-                fontSize:12,
+                fontSize:11,
                 fontWeight:700,
                 cursor:'pointer',
-                background:periodKey === option.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
+                background:periodKey === option.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--glass-bg)',
                 color:periodKey === option.key ? 'white' : 'var(--txt2,#b09080)',
+                border:periodKey === option.key ? '1px solid rgba(255,255,255,.24)' : '1px solid var(--border)',
+                boxShadow:periodKey === option.key ? 'var(--sh-btn)' : 'var(--sh-sm)',
               }}
             >
               {option.label}
@@ -227,7 +285,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             <select
               value={selectedCloserId}
               onChange={event => setSelectedCloserId(event.target.value)}
-              style={{ marginLeft:'auto', minWidth:180, background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'8px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+              style={{ marginLeft:'auto', minWidth:180, background:'var(--glass-bg)', border:'1px solid var(--glass-border)', borderRadius:10, padding:'8px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               disabled={closerLoading}
             >
               {closerLoading && <option value="">Chargement...</option>}
@@ -255,40 +313,13 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       ) : (
         <>
           <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4, minmax(0,1fr))', gap:10 }}>
-            {[
-              {
-                label:'Debriefs',
-                value:currentMetrics.total,
-                delta:formatDelta(currentMetrics.total, previousMetrics.total),
-                current:currentMetrics.total,
-                previous:previousMetrics.total,
-                suffix:'',
-              },
-              {
-                label:'Score moyen',
-                value:`${Math.round(currentMetrics.avgScore)}%`,
-                delta:formatDelta(currentMetrics.avgScore, previousMetrics.avgScore, '%'),
-                current:currentMetrics.avgScore,
-                previous:previousMetrics.avgScore,
-              },
-              {
-                label:'Closing rate',
-                value:`${currentMetrics.closeRate}%`,
-                delta:formatDelta(currentMetrics.closeRate, previousMetrics.closeRate, '%'),
-                current:currentMetrics.closeRate,
-                previous:previousMetrics.closeRate,
-              },
-              {
-                label:'Appels avec objections',
-                value:`${currentMetrics.objectionRate}%`,
-                delta:formatDelta(currentMetrics.objectionRate, previousMetrics.objectionRate, '%'),
-                current:currentMetrics.objectionRate,
-                previous:previousMetrics.objectionRate,
-              },
-            ].map(item => (
-              <div key={item.label} style={{ ...cardSm(), padding:'12px 12px', display:'flex', flexDirection:'column', gap:4 }}>
-                <p style={{ margin:0, fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>{item.label}</p>
-                <p style={{ margin:0, fontSize:20, fontWeight:800, color:'var(--txt,#5a4a3a)' }}>{item.value}</p>
+            {metricCards.map(item => (
+              <div key={item.label} style={{ ...glassPanel({ padding:'12px 12px', display:'flex', flexDirection:'column', gap:4, background:item.tint, border:`1px solid ${item.border}` }) }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                  <p style={{ margin:0, fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>{item.label}</p>
+                  <span className="material-symbols-outlined" style={{ fontSize:16, color:'var(--txt3,#c8b8a8)' }}>{item.icon}</span>
+                </div>
+                <p style={{ margin:0, fontSize:22, fontWeight:800, color:'var(--txt,#5a4a3a)' }}>{item.value}</p>
                 <p style={{ margin:0, fontSize:11, fontWeight:700, color:deltaColor(item.current, item.previous) }}>
                   vs période précédente: {item.delta}
                 </p>
@@ -297,9 +328,10 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1.05fr .95fr', gap:12, alignItems:'start' }}>
-            <Card style={{ padding:16 }}>
+            <Card style={{ ...glassPanel({ padding:16 }) }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
-                <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700 }}>
+                <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>timeline</span>
                   Évolution personnelle
                 </h2>
                 <span style={{ fontSize:11, color:DS.textMuted }}>
@@ -309,8 +341,9 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               <Chart debriefs={scopedDebriefs.slice(0, 24)} compact />
             </Card>
 
-            <Card style={{ padding:16 }}>
-              <h2 style={{ margin:'0 0 8px', fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700 }}>
+            <Card style={{ ...glassPanel({ padding:16 }) }}>
+              <h2 style={{ margin:'0 0 8px', fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+                <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>radar</span>
                 Répartition des compétences
               </h2>
               {!currentSections ? (
@@ -334,9 +367,10 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             </Card>
           </div>
 
-          <Card style={{ padding:16 }}>
+          <Card style={{ ...glassPanel({ padding:16, background:'linear-gradient(150deg, rgba(255,255,255,.7), rgba(124,58,237,.08))' }) }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-              <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700 }}>
+              <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+                <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--accent-violet,#7C3AED)' }}>psychology</span>
                 Patterns prioritaires
               </h2>
               <Btn variant="secondary" onClick={()=>navigate('Knowledge')} style={{ fontSize:12, padding:'6px 10px' }}>
@@ -352,7 +386,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             ) : (
               <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(3, minmax(0,1fr))', gap:8 }}>
                 {patterns.slice(0, 3).map(pattern => (
-                  <div key={pattern.id} style={{ ...cardSm(), padding:'10px 11px', background:'var(--surface-accent)' }}>
+                  <div key={pattern.id} style={{ ...glassPanel({ padding:'10px 11px', background:'linear-gradient(150deg, rgba(255,255,255,.74), rgba(255,126,95,.08))', border:'1px solid rgba(255,126,95,.2)' }) }}>
                     <p style={{ margin:'0 0 4px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
                       {pattern.title}
                     </p>

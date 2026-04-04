@@ -88,6 +88,16 @@ function makeKnowledgeItems(objections) {
   });
 }
 
+const glassPanel = (extra = {}) => ({
+  ...cardSm(),
+  background:'var(--glass-bg)',
+  border:'1px solid var(--glass-border)',
+  boxShadow:'var(--sh-card)',
+  backdropFilter:'blur(10px)',
+  WebkitBackdropFilter:'blur(10px)',
+  ...extra,
+});
+
 export function KnowledgePage({ navigate, toast }) {
   const mob = useIsMobile();
   const [loading, setLoading] = useState(true);
@@ -153,11 +163,14 @@ export function KnowledgePage({ navigate, toast }) {
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <Card style={{ padding:mob ? '16px 14px' : '18px 20px', background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
+    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ position:'absolute', top:-50, left:-30, width:190, height:190, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.14) 0%, rgba(124,58,237,0) 70%)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:40, right:-40, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 70%)', pointerEvents:'none' }} />
+
+      <Card style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(124,58,237,.08))' }) }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.08em', fontWeight:700 }}>
+            <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
               Centre de connaissances
             </p>
             <h1 style={{ margin:0, fontSize:mob ? 22 : 25, color:'var(--txt,#5a4a3a)', fontWeight:800 }}>
@@ -189,32 +202,35 @@ export function KnowledgePage({ navigate, toast }) {
         <>
           <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,minmax(0,1fr))', gap:10 }}>
             {[
-              { label:'Snippets totaux', value:items.length, color:'var(--txt,#5a4a3a)' },
-              { label:'Validés', value:validatedCount, color:'var(--positive-txt)' },
-              { label:'Haut impact', value:highImpactCount, color:'var(--warning-txt)' },
-              { label:'Types', value:categories.length, color:'#3a7a9a' },
+              { label:'Snippets totaux', value:items.length, color:'var(--txt,#5a4a3a)', icon:'library_books', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,126,95,.1))', border:'rgba(255,126,95,.2)' },
+              { label:'Validés', value:validatedCount, color:'var(--positive-txt)', icon:'verified', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(5,150,105,.1))', border:'rgba(5,150,105,.2)' },
+              { label:'Haut impact', value:highImpactCount, color:'var(--warning-txt)', icon:'bolt', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(217,119,6,.1))', border:'rgba(217,119,6,.2)' },
+              { label:'Types', value:categories.length, color:'#3a7a9a', icon:'category', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(106,172,206,.14))', border:'rgba(106,172,206,.22)' },
             ].map(kpi => (
-              <div key={kpi.label} style={{ ...cardSm(), padding:'12px 12px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>
-                  {kpi.label}
-                </p>
+              <div key={kpi.label} style={{ ...glassPanel({ padding:'12px 12px', background:kpi.bg, border:`1px solid ${kpi.border}` }) }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                  <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>
+                    {kpi.label}
+                  </p>
+                  <span className="material-symbols-outlined" style={{ fontSize:16, color:'var(--txt3,#c8b8a8)' }}>{kpi.icon}</span>
+                </div>
                 <p style={{ margin:0, fontSize:22, fontWeight:800, color:kpi.color }}>{kpi.value}</p>
               </div>
             ))}
           </div>
 
-          <Card style={{ padding:12 }}>
+          <Card style={{ ...glassPanel({ padding:12 }) }}>
             <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'minmax(260px,1fr) repeat(2,minmax(160px,.45fr))', gap:8 }}>
               <input
                 value={query}
                 onChange={event => setQuery(event.target.value)}
                 placeholder="Rechercher par objection, script ou source..."
-                style={{ width:'100%', border:'1px solid var(--border)', borderRadius:10, background:'var(--input,#f5ede6)', padding:'10px 11px', fontSize:13, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', outline:'none' }}
+                style={{ width:'100%', border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--input-on-card)', padding:'10px 11px', fontSize:13, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', outline:'none', boxShadow:'var(--sh-in)' }}
               />
               <select
                 value={typeFilter}
                 onChange={event => setTypeFilter(event.target.value)}
-                style={{ border:'1px solid var(--border)', borderRadius:10, background:'var(--card,#fff)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+                style={{ border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               >
                 <option value="all">Toutes les objections</option>
                 {categories.map(category => (
@@ -226,7 +242,7 @@ export function KnowledgePage({ navigate, toast }) {
               <select
                 value={qualityFilter}
                 onChange={event => setQualityFilter(event.target.value)}
-                style={{ border:'1px solid var(--border)', borderRadius:10, background:'var(--card,#fff)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+                style={{ border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               >
                 <option value="all">Qualité: toutes</option>
                 <option value="validated">Validées</option>
@@ -257,7 +273,7 @@ export function KnowledgePage({ navigate, toast }) {
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(2, minmax(0,1fr))', gap:10 }}>
               {filtered.map(item => (
-                <Card key={item.id} style={{ padding:'12px 12px', border:'1px solid var(--border)' }}>
+                <Card key={item.id} style={{ ...glassPanel({ padding:'12px 12px', border:`1px solid ${item.objectionColor}30`, background:`linear-gradient(145deg, rgba(255,255,255,.76), ${item.objectionColor}12)` }) }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ minWidth:0 }}>
                       <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:item.objectionColor }}>
@@ -299,7 +315,7 @@ export function KnowledgePage({ navigate, toast }) {
                       }}
                       style={{ fontSize:11, padding:'6px 10px' }}
                     >
-                      Copier
+                      📋 Copier
                     </Btn>
                     {item.debriefId && (
                       <Btn
@@ -307,7 +323,7 @@ export function KnowledgePage({ navigate, toast }) {
                         onClick={() => navigate('Detail', item.debriefId, 'Knowledge')}
                         style={{ fontSize:11, padding:'6px 10px' }}
                       >
-                        Ouvrir la source
+                        🔎 Ouvrir la source
                       </Btn>
                     )}
                   </div>
