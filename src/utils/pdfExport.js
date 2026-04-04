@@ -512,18 +512,23 @@ function buildDebriefPdfHtml(payload) {
           color: var(--muted);
         }
         .stack {
-          width: min(940px, calc(100vw - 30px));
+          width: 100%;
+          max-width: 860px;
           margin: 18px auto 28px;
           display: grid;
           gap: 18px;
+          justify-items: center;
         }
         .page {
+          width: 210mm;
+          min-width: 210mm;
+          max-width: 210mm;
+          min-height: 297mm;
           background: var(--paper);
           border: 1px solid #f0e4d9;
           border-radius: 20px;
           box-shadow: 0 16px 34px rgba(70, 52, 40, .12);
           padding: 24px;
-          min-height: 1120px;
           display: flex;
           flex-direction: column;
           gap: 14px;
@@ -826,7 +831,14 @@ function buildDebriefPdfHtml(payload) {
           line-height: 1.5;
         }
         @media (max-width: 900px) {
-          .page { min-height: auto; padding: 18px; border-radius: 14px; }
+          .page {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            min-height: auto;
+            padding: 18px;
+            border-radius: 14px;
+          }
           .header-grid { grid-template-columns: 1fr; }
           .viz-grid { grid-template-columns: 1fr; }
           .actions-grid { grid-template-columns: 1fr; }
@@ -844,6 +856,10 @@ function buildDebriefPdfHtml(payload) {
             page-break-after: always;
             break-after: page;
             padding: 12mm;
+            width: auto;
+            min-width: 0;
+            max-width: none;
+            min-height: 0;
           }
           .page:last-child {
             page-break-after: auto;
@@ -1046,7 +1062,7 @@ export function renderDebriefPdfWindow(targetWindow, payload) {
 export async function downloadDebriefPdf(payload) {
   const { title } = buildContext(payload || {});
   const html = buildDebriefPdfHtml(payload || {});
-  const CAPTURE_WIDTH = 1200;
+  const CAPTURE_WIDTH = 1300;
   const CAPTURE_HEIGHT = Math.round(CAPTURE_WIDTH * Math.sqrt(2));
 
   const iframe = document.createElement('iframe');
@@ -1116,17 +1132,8 @@ export async function downloadDebriefPdf(payload) {
       });
 
       const img = canvas.toDataURL('image/png');
-      const props = pdf.getImageProperties(img);
-      const printableW = pageW - 10;
-      const printableH = pageH - 10;
-      const ratio = Math.min(printableW / props.width, printableH / props.height);
-      const renderW = props.width * ratio;
-      const renderH = props.height * ratio;
-      const x = (pageW - renderW) / 2;
-      const y = (pageH - renderH) / 2;
-
       if (i > 0) pdf.addPage();
-      pdf.addImage(img, 'PNG', x, y, renderW, renderH, undefined, 'FAST');
+      pdf.addImage(img, 'PNG', 0, 0, pageW, pageH, undefined, 'FAST');
     }
 
     pdf.save(title);
