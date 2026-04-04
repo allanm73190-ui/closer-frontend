@@ -4,6 +4,7 @@ import { apiFetch } from '../../config/api';
 import { fetchAIExportSummary } from '../../config/ai';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf } from '../../utils/pdfExport';
 import { fmtDate, toScore20FromPercentage } from '../../utils/scoring';
+import { useIsMobile } from '../../hooks';
 import { Btn, Spinner } from '../ui';
 
 const RESULT_LABELS = {
@@ -28,6 +29,7 @@ function toReadableResult(debrief = {}) {
 }
 
 function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
+  const mob = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [payload, setPayload] = useState(null);
@@ -125,12 +127,12 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
       <div style={{ position:'absolute', bottom:-80, left:-60, width:260, height:260, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.14) 0%, rgba(124,58,237,0) 72%)', pointerEvents:'none' }} />
 
       <header style={{ position:'sticky', top:0, zIndex:40, background:'var(--card-soft)', borderBottom:'1px solid var(--border)', backdropFilter:'blur(16px)' }}>
-        <div style={{ padding:'12px 16px', display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', alignItems:'center', gap:10 }}>
+        <div style={{ padding:'12px 16px', display:'grid', gridTemplateColumns:mob ? '1fr' : 'minmax(0,1fr) auto', alignItems:'center', gap:10 }}>
           <div style={{ minWidth:0 }}>
-            <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Visualisateur PDF Debrief</p>
-            <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{debrief.prospect_name || 'Lead'} · {fmtDate(debrief.call_date || debrief.created_at)} · {resultLabel}</p>
+            <p style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)' }}>Visualisateur PDF Debrief</p>
+            <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:mob ? 'normal' : 'nowrap' }}>{debrief.prospect_name || 'Lead'} · {fmtDate(debrief.call_date || debrief.created_at)} · {resultLabel}</p>
           </div>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end' }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:mob ? 'flex-start' : 'flex-end' }}>
             <Btn variant="secondary" onClick={()=>navigate('Detail', debrief.id, 'History')} style={{ fontSize:12, padding:'7px 12px' }}>
               ← Debrief
             </Btn>
@@ -144,7 +146,7 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
         </div>
       </header>
 
-      <main style={{ flex:1, padding:12, position:'relative', zIndex:1 }}>
+      <main style={{ flex:1, padding:mob ? 10 : 12, position:'relative', zIndex:1 }}>
         <section style={{
           marginBottom:10,
           border:'1px solid var(--glass-border)',
@@ -155,16 +157,16 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
           WebkitBackdropFilter:'blur(10px)',
           padding:'10px 12px',
           display:'grid',
-          gridTemplateColumns:'minmax(0,1fr) auto',
+          gridTemplateColumns:mob ? '1fr' : 'minmax(0,1fr) auto',
           gap:10,
           alignItems:'center',
         }}>
           <div style={{ minWidth:0 }}>
             <p style={{ margin:'0 0 3px', fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:DS.textMuted, fontWeight:800 }}>Rendu export final</p>
-            <p style={{ margin:0, fontSize:13, color:'var(--txt2,#b09080)' }}>Prévisualisation fidèle du PDF avant téléchargement.</p>
+            <p style={{ margin:0, fontSize:13, color:'var(--txt2,#B09080)' }}>Prévisualisation fidèle du PDF avant téléchargement.</p>
           </div>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', justifyContent:'flex-end' }}>
-            <span style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 8px', background:'var(--chip-bg)', color:'var(--txt,#5a4a3a)', border:'1px solid var(--border)' }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', justifyContent:mob ? 'flex-start' : 'flex-end' }}>
+            <span style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
               Score {score20}/20
             </span>
             <span style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 8px', background:debrief.is_closed ? 'var(--positive-bg)' : 'var(--danger-bg)', color:debrief.is_closed ? 'var(--positive-txt)' : 'var(--danger-txt)', border:'1px solid var(--border)' }}>
@@ -174,7 +176,7 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
         </section>
 
         {loading ? (
-          <div style={{ height:'calc(100vh - 180px)', display:'flex', alignItems:'center', justifyContent:'center', color:DS.textMuted, gap:10, border:'1px solid var(--glass-border)', borderRadius:14, background:'var(--glass-bg)', boxShadow:'var(--sh-card)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
+          <div style={{ height:mob ? 'calc(100vh - 238px)' : 'calc(100vh - 180px)', display:'flex', alignItems:'center', justifyContent:'center', color:DS.textMuted, gap:10, border:'1px solid var(--glass-border)', borderRadius:14, background:'var(--glass-bg)', boxShadow:'var(--sh-card)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
             <Spinner size={22} />
             <span>Chargement du visualisateur...</span>
           </div>
@@ -182,7 +184,7 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
           <iframe
             title="Visualisateur PDF Debrief"
             srcDoc={html}
-            style={{ width:'100%', height:'calc(100vh - 180px)', border:'1px solid var(--glass-border)', borderRadius:14, background:'var(--card,#fff)', boxShadow:'var(--sh-card)' }}
+            style={{ width:'100%', height:mob ? 'calc(100vh - 238px)' : 'calc(100vh - 180px)', border:'1px solid var(--glass-border)', borderRadius:14, background:'var(--card,#fff)', boxShadow:'var(--sh-card)' }}
           />
         )}
       </main>

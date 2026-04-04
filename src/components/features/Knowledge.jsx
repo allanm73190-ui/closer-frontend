@@ -163,7 +163,7 @@ export function KnowledgePage({ navigate, toast }) {
   }
 
   return (
-    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:16 }}>
+    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:16, isolation:'isolate' }}>
       <div style={{ position:'absolute', top:-50, left:-30, width:190, height:190, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.14) 0%, rgba(124,58,237,0) 70%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:40, right:-40, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 70%)', pointerEvents:'none' }} />
 
@@ -173,10 +173,10 @@ export function KnowledgePage({ navigate, toast }) {
             <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
               Centre de connaissances
             </p>
-            <h1 style={{ margin:0, fontSize:mob ? 22 : 25, color:'var(--txt,#5a4a3a)', fontWeight:800 }}>
+            <h1 style={{ margin:0, fontSize:mob ? 22 : 25, color:'var(--txt,#4A3428)', fontWeight:800 }}>
               Scripts réutilisables
             </h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#b09080)' }}>
+            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#B09080)' }}>
               Extraits issus des meilleurs debriefs, triés par impact réel.
             </p>
           </div>
@@ -188,6 +188,17 @@ export function KnowledgePage({ navigate, toast }) {
               Utiliser dans un debrief
             </Btn>
           </div>
+        </div>
+        <div style={{ marginTop:10, display:'flex', gap:7, flexWrap:'wrap' }}>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Total: {items.length}
+          </span>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Validés: {validatedCount}
+          </span>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Haut impact: {highImpactCount}
+          </span>
         </div>
       </Card>
 
@@ -202,12 +213,12 @@ export function KnowledgePage({ navigate, toast }) {
         <>
           <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,minmax(0,1fr))', gap:10 }}>
             {[
-              { label:'Snippets totaux', value:items.length, color:'var(--txt,#5a4a3a)', icon:'library_books', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,126,95,.1))', border:'rgba(255,126,95,.2)' },
+              { label:'Snippets totaux', value:items.length, color:'var(--txt,#4A3428)', icon:'library_books', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,126,95,.1))', border:'rgba(255,126,95,.2)' },
               { label:'Validés', value:validatedCount, color:'var(--positive-txt)', icon:'verified', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(5,150,105,.1))', border:'rgba(5,150,105,.2)' },
               { label:'Haut impact', value:highImpactCount, color:'var(--warning-txt)', icon:'bolt', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(217,119,6,.1))', border:'rgba(217,119,6,.2)' },
               { label:'Types', value:categories.length, color:'#3a7a9a', icon:'category', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(106,172,206,.14))', border:'rgba(106,172,206,.22)' },
             ].map(kpi => (
-              <div key={kpi.label} style={{ ...glassPanel({ padding:'12px 12px', background:kpi.bg, border:`1px solid ${kpi.border}` }) }}>
+              <div key={kpi.label} style={{ ...glassPanel({ padding:'12px 12px', background:kpi.bg, border:`1px solid ${kpi.border}`, minHeight:84 }) }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                   <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>
                     {kpi.label}
@@ -225,12 +236,12 @@ export function KnowledgePage({ navigate, toast }) {
                 value={query}
                 onChange={event => setQuery(event.target.value)}
                 placeholder="Rechercher par objection, script ou source..."
-                style={{ width:'100%', border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--input-on-card)', padding:'10px 11px', fontSize:13, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', outline:'none', boxShadow:'var(--sh-in)' }}
+                style={{ width:'100%', border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--input-on-card)', padding:'10px 11px', fontSize:13, color:'var(--txt,#4A3428)', fontFamily:'inherit', outline:'none', boxShadow:'var(--sh-in)' }}
               />
               <select
                 value={typeFilter}
                 onChange={event => setTypeFilter(event.target.value)}
-                style={{ border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
+                style={{ width:mob ? '100%' : undefined, border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               >
                 <option value="all">Toutes les objections</option>
                 {categories.map(category => (
@@ -242,7 +253,7 @@ export function KnowledgePage({ navigate, toast }) {
               <select
                 value={qualityFilter}
                 onChange={event => setQualityFilter(event.target.value)}
-                style={{ border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
+                style={{ width:mob ? '100%' : undefined, border:'1px solid var(--glass-border)', borderRadius:10, background:'var(--glass-bg)', padding:'10px 11px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               >
                 <option value="all">Qualité: toutes</option>
                 <option value="validated">Validées</option>
@@ -273,7 +284,7 @@ export function KnowledgePage({ navigate, toast }) {
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(2, minmax(0,1fr))', gap:10 }}>
               {filtered.map(item => (
-                <Card key={item.id} style={{ ...glassPanel({ padding:'12px 12px', border:`1px solid ${item.objectionColor}30`, background:`linear-gradient(145deg, rgba(255,255,255,.76), ${item.objectionColor}12)` }) }}>
+                <Card key={item.id} style={{ ...glassPanel({ padding:'12px 12px', border:`1px solid ${item.objectionColor}30`, background:`linear-gradient(145deg, rgba(255,255,255,.76), ${item.objectionColor}12)`, minHeight:168 }) }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ minWidth:0 }}>
                       <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:item.objectionColor }}>
@@ -291,12 +302,12 @@ export function KnowledgePage({ navigate, toast }) {
                         </span>
                       </div>
                     </div>
-                    <span style={{ fontSize:10, color:DS.textMuted, flexShrink:0 }}>
+                    <span style={{ fontSize:10, color:DS.textMuted, flexShrink:0, padding:'2px 6px', borderRadius:999, background:'var(--chip-bg)', border:'1px solid var(--border)' }}>
                       {item.source}
                     </span>
                   </div>
 
-                  <p style={{ margin:'9px 0 8px', fontSize:13, color:'var(--txt,#5a4a3a)', lineHeight:1.55 }}>
+                  <p style={{ margin:'9px 0 8px', fontSize:13, color:'var(--txt,#4A3428)', lineHeight:1.55 }}>
                     "{item.text}"
                   </p>
 

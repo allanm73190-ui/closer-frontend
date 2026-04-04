@@ -232,7 +232,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
   ];
 
   return (
-    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:18 }}>
+    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:18, isolation:'isolate' }}>
       <div style={{ position:'absolute', top:-30, right:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 68%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:10, left:-40, width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.14) 0%, rgba(106,172,206,0) 68%)', pointerEvents:'none' }} />
 
@@ -242,10 +242,10 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
               Benchmark interne
             </p>
-            <h1 style={{ margin:0, fontSize:mob ? 22 : 26, color:'var(--txt,#5a4a3a)', fontWeight:800 }}>
+            <h1 style={{ margin:0, fontSize:mob ? 22 : 26, color:'var(--txt,#4A3428)', fontWeight:800 }}>
               {selectedCloserName}
             </h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#b09080)', maxWidth:620 }}>
+            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#B09080)', maxWidth:620 }}>
               Comparaison contre l’historique personnel uniquement, sans classement public.
             </p>
           </div>
@@ -273,7 +273,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
                 fontWeight:700,
                 cursor:'pointer',
                 background:periodKey === option.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--glass-bg)',
-                color:periodKey === option.key ? 'white' : 'var(--txt2,#b09080)',
+                color:periodKey === option.key ? 'white' : 'var(--txt2,#B09080)',
                 border:periodKey === option.key ? '1px solid rgba(255,255,255,.24)' : '1px solid var(--border)',
                 boxShadow:periodKey === option.key ? 'var(--sh-btn)' : 'var(--sh-sm)',
               }}
@@ -285,7 +285,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             <select
               value={selectedCloserId}
               onChange={event => setSelectedCloserId(event.target.value)}
-              style={{ marginLeft:'auto', minWidth:180, background:'var(--glass-bg)', border:'1px solid var(--glass-border)', borderRadius:10, padding:'8px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
+              style={{ marginLeft:mob ? '0' : 'auto', minWidth:mob ? '100%' : 180, background:'var(--glass-bg)', border:'1px solid var(--glass-border)', borderRadius:10, padding:'8px 10px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit', boxShadow:'var(--sh-sm)' }}
               disabled={closerLoading}
             >
               {closerLoading && <option value="">Chargement...</option>}
@@ -295,6 +295,17 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               ))}
             </select>
           )}
+        </div>
+        <div style={{ marginTop:10, display:'flex', gap:7, flexWrap:'wrap' }}>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Score: {Math.round(currentMetrics.avgScore)}%
+          </span>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Closing: {currentMetrics.closeRate}%
+          </span>
+          <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
+            Objections: {currentMetrics.objectionRate}%
+          </span>
         </div>
         <p style={{ margin:'8px 0 0', fontSize:12, color:DS.textMuted }}>{comparisonLabel}</p>
       </Card>
@@ -314,12 +325,12 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
         <>
           <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4, minmax(0,1fr))', gap:10 }}>
             {metricCards.map(item => (
-              <div key={item.label} style={{ ...glassPanel({ padding:'12px 12px', display:'flex', flexDirection:'column', gap:4, background:item.tint, border:`1px solid ${item.border}` }) }}>
+              <div key={item.label} style={{ ...glassPanel({ padding:'12px 12px', display:'flex', flexDirection:'column', gap:4, background:item.tint, border:`1px solid ${item.border}`, minHeight:86 }) }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                   <p style={{ margin:0, fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>{item.label}</p>
                   <span className="material-symbols-outlined" style={{ fontSize:16, color:'var(--txt3,#c8b8a8)' }}>{item.icon}</span>
                 </div>
-                <p style={{ margin:0, fontSize:22, fontWeight:800, color:'var(--txt,#5a4a3a)' }}>{item.value}</p>
+                <p style={{ margin:0, fontSize:22, fontWeight:800, color:'var(--txt,#4A3428)' }}>{item.value}</p>
                 <p style={{ margin:0, fontSize:11, fontWeight:700, color:deltaColor(item.current, item.previous) }}>
                   vs période précédente: {item.delta}
                 </p>
@@ -330,7 +341,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
           <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1.05fr .95fr', gap:12, alignItems:'start' }}>
             <Card style={{ ...glassPanel({ padding:16 }) }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
-                <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+                <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
                   <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>timeline</span>
                   Évolution personnelle
                 </h2>
@@ -342,7 +353,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             </Card>
 
             <Card style={{ ...glassPanel({ padding:16 }) }}>
-              <h2 style={{ margin:'0 0 8px', fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+              <h2 style={{ margin:'0 0 8px', fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
                 <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>radar</span>
                 Répartition des compétences
               </h2>
@@ -369,7 +380,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
 
           <Card style={{ ...glassPanel({ padding:16, background:'linear-gradient(150deg, rgba(255,255,255,.7), rgba(124,58,237,.08))' }) }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-              <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#5a4a3a)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
+              <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
                 <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--accent-violet,#7C3AED)' }}>psychology</span>
                 Patterns prioritaires
               </h2>
@@ -387,13 +398,18 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(3, minmax(0,1fr))', gap:8 }}>
                 {patterns.slice(0, 3).map(pattern => (
                   <div key={pattern.id} style={{ ...glassPanel({ padding:'10px 11px', background:'linear-gradient(150deg, rgba(255,255,255,.74), rgba(255,126,95,.08))', border:'1px solid rgba(255,126,95,.2)' }) }}>
-                    <p style={{ margin:'0 0 4px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
-                      {pattern.title}
-                    </p>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
+                      <p style={{ margin:'0 0 4px', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>
+                        {pattern.title}
+                      </p>
+                      <span style={{ flexShrink:0, fontSize:10, fontWeight:700, borderRadius:999, padding:'2px 7px', background:'var(--danger-bg)', color:'var(--danger-txt)' }}>
+                        Priorité
+                      </span>
+                    </div>
                     <p style={{ margin:'0 0 6px', fontSize:11, color:DS.textMuted }}>
                       {pattern.count} cas · {pattern.rate}% des appels non closés
                     </p>
-                    <p style={{ margin:0, fontSize:12, color:'var(--txt2,#b09080)' }}>
+                    <p style={{ margin:0, fontSize:12, color:'var(--txt2,#B09080)' }}>
                       {pattern.recommendation}
                     </p>
                   </div>
