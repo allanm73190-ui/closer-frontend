@@ -4,6 +4,8 @@ import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { avgSectionScores, copy } from '../../utils/scoring';
 import { Btn, Card, Modal, Spinner, Empty, Input } from '../ui';
+
+const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
 import { Radar, SectionBars } from '../ui/Charts';
 import { Chart } from '../dashboard/StatsChart';
 import { ObjectiveModal } from '../gamification/Objectives';
@@ -35,7 +37,7 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
         padding:'16px 18px',
         textAlign:'left',
         cursor:'pointer',
-        background:active ? 'var(--gradient-primary)' : 'white',
+        background:active ? 'var(--gradient-primary)' : 'var(--glass-bg)',
         color:active ? 'white' : '#4A3428',
         boxShadow:active ? '0 16px 34px rgba(255,126,95,.35)' : '0 12px 24px rgba(28,26,40,.09)',
         transition:'all .2s',
@@ -67,7 +69,7 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
   const closeRate = member.totalDebriefs > 0 ? Math.round((member.closed / member.totalDebriefs) * 100) : 0;
 
   return (
-    <div style={{ border:'1px solid rgba(255,126,95,.12)', borderRadius:12, overflow:'hidden', background:'white' }}>
+    <div style={{ border:'1px solid rgba(255,126,95,.12)', borderRadius:12, overflow:'hidden', background:'var(--glass-bg)' }}>
       <div
         onClick={onToggle}
         style={{
@@ -95,7 +97,7 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
         <div style={{ padding:'14px 14px 16px', borderTop:'1px solid rgba(255,126,95,.08)', background:'rgba(255,248,245,.45)', display:'flex', flexDirection:'column', gap:14 }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
             {[{ label:'Debriefs', value:member.totalDebriefs }, { label:'Closings', value:member.closed }, { label:'Taux', value:`${closeRate}%` }].map(stat => (
-              <div key={stat.label} style={{ background:'white', border:'1px solid rgba(255,126,95,.1)', borderRadius:8, padding:'8px 10px' }}>
+              <div key={stat.label} style={{ background:'var(--glass-bg)', border:'1px solid rgba(255,126,95,.1)', borderRadius:8, padding:'8px 10px' }}>
                 <p style={{ margin:'0 0 2px', fontSize:11, color:DS.textMuted }}>{stat.label}</p>
                 <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#4A3428' }}>{stat.value}</p>
               </div>
@@ -128,7 +130,7 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
                   value={targetTeamId}
                   onChange={e=>setTargetTeamId(e.target.value)}
                   style={{
-                    background:'white',
+                    background:'var(--glass-bg)',
                     border:'1px solid rgba(255,126,95,.2)',
                     borderRadius:8,
                     padding:'8px 10px',
@@ -208,7 +210,7 @@ function ManagerCopilotCard({ toast }) {
                 { label:'Closing', value:`${summary.metrics.current_week?.closeRate ?? 0}%`, color:'#d97706' },
                 { label:'Deals à risque', value:summary.metrics.pipeline_alerts?.atRisk ?? 0, color:'#dc2626' },
               ].map(item => (
-                <div key={item.label} style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'8px 10px' }}>
+                <div key={item.label} style={{ background:'var(--glass-bg)', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'8px 10px' }}>
                   <p style={{ margin:'0 0 3px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{item.label}</p>
                   <p style={{ margin:0, fontSize:18, fontWeight:700, color:item.color }}>{item.value}</p>
                 </div>
@@ -217,7 +219,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {Array.isArray(summary.highlights) && summary.highlights.length > 0 && (
-            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'var(--glass-bg)', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Faits marquants</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.highlights.slice(0, 4).map((line, idx) => (
@@ -228,7 +230,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {Array.isArray(summary.recommendations) && summary.recommendations.length > 0 && (
-            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'var(--glass-bg)', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Recommandations concrètes</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.recommendations.slice(0, 4).map((line, idx) => (
@@ -239,7 +241,7 @@ function ManagerCopilotCard({ toast }) {
           )}
 
           {summary.aiSummary && (
-            <div style={{ background:'white', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
+            <div style={{ background:'var(--glass-bg)', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:'10px 12px' }}>
               <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>
                 Synthèse IA {summary.model ? `(${summary.model})` : ''}
               </p>

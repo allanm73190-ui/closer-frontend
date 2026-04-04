@@ -5,6 +5,8 @@ import { useIsMobile } from '../../hooks';
 import { fmtDate, copy } from '../../utils/scoring';
 import { Btn, Card, Spinner, Empty } from '../ui';
 
+const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
+
 const OBJECTION_META = {
   budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(255,126,95,.06,.8)',  border: 'rgba(192,80,64,.3)' },
   reflechir: { icon: '🤔', color: '#D97706', bg: 'rgba(254,243,224,.8)',  border: 'rgba(192,120,48,.3)' },
@@ -51,7 +53,7 @@ function ObjectionCard({ objection, toast }) {
   };
 
   return (
-    <div style={{ ...card(), overflow: 'hidden', transition: 'box-shadow .2s' }}>
+    <div style={{ ...G(), overflow: 'hidden', transition: 'box-shadow .2s' }}>
       {/* Header */}
       <div
         onClick={() => setExpanded(v => !v)}
@@ -174,7 +176,7 @@ function ObjectionCard({ objection, toast }) {
                       <button
                         type="button"
                         onClick={() => { copy(item.text); toast('Réponse copiée'); }}
-                        style={{ border:'none', background:'white', borderRadius:8, padding:'4px 8px', fontSize:11, cursor:'pointer', color:'#7C3AED', fontWeight:700 }}
+                        style={{ border:'none', background:'var(--glass-bg)', borderRadius:8, padding:'4px 8px', fontSize:11, cursor:'pointer', color:'#7C3AED', fontWeight:700 }}
                       >
                         Copier
                       </button>

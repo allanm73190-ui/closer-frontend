@@ -12,6 +12,8 @@ import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { Btn, Card, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Textarea } from '../ui';
 
+const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
+
 function getStageByKey(stages, key) {
   return stages.find(stage => stage.key === key) || null;
 }

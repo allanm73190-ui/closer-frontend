@@ -6,6 +6,8 @@ import { getDefaultTemplateCatalog, normalizeDebriefTemplateCatalog } from '../.
 import { DebriefConfigEditor } from '../debrief/Settings';
 import { AlertBox, Btn, Card, Input, Spinner, Textarea } from '../ui';
 
+const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
+
 const TEMPLATE_MIN_DESCRIPTION = 'Template personnalisé pour votre équipe.';
 
 function resolveSettingsTab(tabs, requested, fallback = 'account') {
