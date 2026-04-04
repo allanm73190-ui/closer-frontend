@@ -35,7 +35,7 @@ const SCORE_FILTERS = [
 
 function Dashboard({ debriefs, navigate, user, gam, toast }) {
   const mob = useIsMobile();
-  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
+  const isHOS = user.role === 'head_of_sales';
   const [patternsData, setPatternsData] = useState(null);
   const [patternsLoading, setPatternsLoading] = useState(true);
   const latestDebriefs = [...debriefs]
@@ -67,7 +67,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
           <div>
             <p style={{ margin:'0 0 4px', fontSize:11, color:DS.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em' }}>Tableau de bord</p>
-            <h1 style={{ fontSize:mob ? 24 : 32, fontWeight:800, color:'var(--txt,#5a4a3a)', margin:0 }}>Bonjour, {user.name}</h1>
+            <h1 style={{ fontSize:mob ? 24 : 32, fontWeight:800, color:'var(--txt,#4A3428)', margin:0 }}>Bonjour, {user.name}</h1>
             <p style={{ color:'var(--txt2,#8f7462)', marginTop:6, fontSize:14, maxWidth:520 }}>
               Pilotez vos performances, vos priorités de closing et les prochaines actions à fort impact.
             </p>
@@ -80,14 +80,14 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             'Patterns IA',
             'Pipeline synchronisé',
           ].map(tag => (
-            <span key={tag} style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, color:'var(--txt,#5a4a3a)', background:'var(--surface-accent)', border:'1px solid var(--border)' }}>
+            <span key={tag} style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, color:'var(--txt,#4A3428)', background:'var(--surface-accent)', border:'1px solid var(--border)' }}>
               {tag}
             </span>
           ))}
         </div>
       </Card>
 
-      {isManager ? (
+      {isHOS ? (
         <GamCard gam={gam}/>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1.1fr .9fr', gap:14 }}>
@@ -98,40 +98,12 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 
       <StatsRow debriefs={debriefs}/>
 
-      <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'repeat(2,minmax(0,1fr))', gap:12 }}>
-        <Card style={{ padding:16, background:'linear-gradient(140deg, rgba(232,125,106,.18), rgba(255,255,255,.95))' }}>
-          <p style={{ margin:'0 0 4px', fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:DS.textMuted, fontWeight:700 }}>
-            Feature
-          </p>
-          <h2 style={{ margin:'0 0 6px', fontSize:16, color:'var(--txt,#5a4a3a)' }}>Benchmark interne</h2>
-          <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt2,#b09080)' }}>
-            Compare ta progression uniquement à ton historique, sans classement public.
-          </p>
-          <Btn variant="secondary" onClick={()=>navigate('Benchmark')} style={{ fontSize:12, padding:'7px 11px' }}>
-            Ouvrir le benchmark
-          </Btn>
-        </Card>
-
-        <Card style={{ padding:16, background:'linear-gradient(140deg, rgba(106,172,206,.18), rgba(255,255,255,.95))' }}>
-          <p style={{ margin:'0 0 4px', fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:DS.textMuted, fontWeight:700 }}>
-            Feature
-          </p>
-          <h2 style={{ margin:'0 0 6px', fontSize:16, color:'var(--txt,#5a4a3a)' }}>Centre de connaissances</h2>
-          <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt2,#b09080)' }}>
-            Retrouve les meilleurs scripts validés et réutilise-les en 1 clic.
-          </p>
-          <Btn variant="secondary" onClick={()=>navigate('Knowledge')} style={{ fontSize:12, padding:'7px 11px' }}>
-            Ouvrir le centre
-          </Btn>
-        </Card>
-      </div>
-
       <Card style={{ padding:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap', marginBottom:10 }}>
           <div>
-            <h2 style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>🧠 Détection de patterns</h2>
+            <h2 style={{ margin:0, fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)' }}>🧠 Détection de patterns</h2>
             <p style={{ margin:'3px 0 0', fontSize:12, color:DS.textMuted }}>
-              {isManager ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
+              {isHOS ? "Tendances prioritaires de l'équipe" : 'Tendances prioritaires sur vos appels non closés'}
             </p>
           </div>
           <Btn variant="secondary" onClick={()=>navigate('History')} style={{ fontSize:12, padding:'6px 11px' }}>
@@ -150,7 +122,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
             {patternsData.patterns.slice(0, 3).map(pattern => (
               <div key={pattern.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'var(--surface-accent)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', gap:8, marginBottom:4, flexWrap:'wrap' }}>
-                  <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+                  <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>
                     {pattern.title}
                   </p>
                   <span style={{ fontSize:11, fontWeight:700, color:'var(--danger-txt)' }}>
@@ -158,7 +130,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                   </span>
                 </div>
                 <p style={{ margin:'0 0 4px', fontSize:12, color:DS.textMuted }}>{pattern.message}</p>
-                <p style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>
+                <p style={{ margin:0, fontSize:12, color:'#4A3428' }}>
                   Action suggérée: {pattern.recommendation}
                 </p>
               </div>
@@ -169,7 +141,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 
       <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)', gap:14, alignItems:'start' }}>
         <Card style={{ padding:18 }}>
-          <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>Évolution du score</h2>
+          <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#4A3428)', marginBottom:8 }}>Évolution du score</h2>
           <p style={{ margin:'0 0 10px', fontSize:12, color:DS.textMuted }}>
             Vue simplifiée sur les derniers appels.
           </p>
@@ -178,13 +150,13 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
 
         <Card style={{ padding:18 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:10 }}>
-            <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>
+            <h2 style={{ fontSize:15, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>
               Historique des derniers appels
             </h2>
             {debriefs.length > 0 && (
               <button
                 onClick={()=>navigate('History')}
-                style={{ background:'none', border:'none', color:'#e87d6a', cursor:'pointer', fontSize:12, fontWeight:700, fontFamily:'inherit' }}
+                style={{ background:'none', border:'none', color:'#FF7E5F', cursor:'pointer', fontSize:12, fontWeight:700, fontFamily:'inherit' }}
               >
                 Voir tout →
               </button>
@@ -217,7 +189,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
                   }}
                 >
                   <div style={{ minWidth:0 }}>
-                    <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    <p style={{ margin:0, fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {d.prospect_name || 'Prospect'}
                     </p>
                     <p style={{ margin:'2px 0 0', fontSize:11, color:DS.textMuted }}>
@@ -242,11 +214,11 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
       {/* Mini Pipeline */}
       <div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-          <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h2>
+          <h2 style={{ fontSize:16, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>🎯 Pipeline</h2>
         </div>
         <MiniPipeline navigate={navigate} user={user}/>
       </div>
-      {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
+      {!isHOS && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast}/>}
     </div>
   );
 }
@@ -293,12 +265,12 @@ function MiniPipeline({ navigate, user }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
         {[
           { label:'CA Signé',  value:`${signed.toLocaleString('fr-FR')} €`,  color:'#5a9858' },
-          { label:'Pipeline',  value:`${pipeline.toLocaleString('fr-FR')} €`, color:'#e87d6a' },
-          { label:'Taux win',  value:`${winRate}%`,                           color:'#6aacce' },
-          { label:'Sans date', value:noDate,                                  color:noDate>0?'#c07830':'#c8b8a8' },
+          { label:'Pipeline',  value:`${pipeline.toLocaleString('fr-FR')} €`, color:'#FF7E5F' },
+          { label:'Taux win',  value:`${winRate}%`,                           color:'#7C3AED' },
+          { label:'Sans date', value:noDate,                                  color:noDate>0?'#c07830':'#C8B8A8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...cardSm(), padding:'12px 14px' }}>
-            <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
+            <p style={{ fontSize:10, color:'var(--txt3,#C8B8A8)', margin:'0 0 4px', textTransform:'uppercase', letterSpacing:'.04em', fontWeight:600 }}>{label}</p>
             <p style={{ fontSize:18, fontWeight:700, color, margin:0 }}>{value}</p>
           </div>
         ))}
@@ -319,7 +291,7 @@ function MiniPipeline({ navigate, user }) {
                   </div>
                   {cols.slice(0,3).map(d => (
                     <div key={d.id} style={{ ...cardSm(), padding:'8px 10px' }}>
-                      <p style={{ fontWeight:600, fontSize:12, color:'var(--txt,#5a4a3a)', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
+                      <p style={{ fontWeight:600, fontSize:12, color:'var(--txt,#4A3428)', margin:'0 0 3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.prospect_name}</p>
                       {d.value>0 && <p style={{ fontSize:11, color:'#5a9858', fontWeight:700, margin:0 }}>{d.value.toLocaleString('fr-FR')} €</p>}
                     </div>
                   ))}
@@ -330,7 +302,7 @@ function MiniPipeline({ navigate, user }) {
         </div>
       )}
 
-      <button onClick={()=>navigate('Pipeline')} style={{ background:'white', color:'var(--txt,#5a4a3a)', border:'none', boxShadow:SH_SM, padding:'8px 16px', fontSize:13, borderRadius:R_FULL, alignSelf:'flex-end', cursor:'pointer', fontFamily:'inherit' }}>
+      <button onClick={()=>navigate('Pipeline')} style={{ background:'white', color:'var(--txt,#4A3428)', border:'none', boxShadow:SH_SM, padding:'8px 16px', fontSize:13, borderRadius:R_FULL, alignSelf:'flex-end', cursor:'pointer', fontFamily:'inherit' }}>
         Voir tout le pipeline →
       </button>
     </div>
@@ -343,7 +315,7 @@ function History({ debriefs, navigate, user }) {
   const [scoreFilter, setScoreFilter] = useState('all');
   const [objectionFilter, setObjectionFilter] = useState('all');
   const [prospectTypeFilter, setProspectTypeFilter] = useState('all');
-  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
+  const isHOS = user.role==='head_of_sales';
   const objectionOptions = [...new Set(
     debriefs.flatMap(d => (d.sections?.closing?.objections || []).filter(obj => obj && obj !== 'aucune'))
   )];
@@ -381,19 +353,19 @@ function History({ debriefs, navigate, user }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div>
-        <h1 style={{ fontSize:22, fontWeight:700, color:'#5a4a3a', margin:0 }}>Historique</h1>
+        <h1 style={{ fontSize:22, fontWeight:700, color:'#4A3428', margin:0 }}>Historique</h1>
         <p style={{ color:DS.textMuted, fontSize:13, marginTop:4 }}>{debriefs.length} debrief{debriefs.length!==1?'s':''}</p>
       </div>
       <div style={{ position:'relative' }}>
         <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:DS.textMuted, pointerEvents:'none' }}>🔍</span>
-        <input placeholder="Rechercher..." value={q} onChange={e=>setQ(e.target.value)} style={{ width:'100%', padding:'12px 36px', border:'1px solid rgba(232,125,106,.12)', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
+        <input placeholder="Rechercher..." value={q} onChange={e=>setQ(e.target.value)} style={{ width:'100%', padding:'12px 36px', border:'1px solid rgba(255,126,95,.12)', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
         {q && <button onClick={()=>setQ('')} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:DS.textMuted, cursor:'pointer', fontSize:18 }}>✕</button>}
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:8 }}>
         <select
           value={resultFilter}
           onChange={e=>setResultFilter(e.target.value)}
-          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit' }}
         >
           <option value="all">Résultat: Tous</option>
           <option value="closed">Résultat: Closés</option>
@@ -403,7 +375,7 @@ function History({ debriefs, navigate, user }) {
         <select
           value={scoreFilter}
           onChange={e=>setScoreFilter(e.target.value)}
-          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit' }}
         >
           {SCORE_FILTERS.map(filter => (
             <option key={filter.key} value={filter.key}>
@@ -415,7 +387,7 @@ function History({ debriefs, navigate, user }) {
         <select
           value={objectionFilter}
           onChange={e=>setObjectionFilter(e.target.value)}
-          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit' }}
         >
           <option value="all">Objection: Toutes</option>
           {objectionOptions.map(objection => (
@@ -428,7 +400,7 @@ function History({ debriefs, navigate, user }) {
         <select
           value={prospectTypeFilter}
           onChange={e=>setProspectTypeFilter(e.target.value)}
-          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontFamily:'inherit' }}
+          style={{ background:'var(--card,#fff)', border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', fontSize:12, color:'var(--txt,#4A3428)', fontFamily:'inherit' }}
         >
           <option value="all">Type prospect: Tous</option>
           {prospectTypeOptions.map(type => (
@@ -463,7 +435,7 @@ function History({ debriefs, navigate, user }) {
             {filtered.map(d => (
               <div key={d.id} style={{ display:'flex', alignItems:'stretch', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <DebriefCard debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isManager}/>
+                  <DebriefCard debrief={d} onClick={()=>navigate('Detail',d.id,'History')} showUser={isHOS}/>
                 </div>
                 <Btn variant="secondary" onClick={()=>navigate('EditDebrief', d.id, 'History')} style={{ fontSize:12, padding:'0 12px' }}>
                   ✏️ Modifier

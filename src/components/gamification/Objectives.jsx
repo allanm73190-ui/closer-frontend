@@ -24,7 +24,7 @@ function ObjectiveBanner({ userId }) {
       <div style={{ flex:1 }}>
         <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 10px' }}>{label}</p>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-          {targetReecoutes > 0 && <ProgBar label="Réécoutes" current={p.reecoutes ?? p.debriefs ?? 0} target={targetReecoutes} color='#e87d6a'/>}
+          {targetReecoutes > 0 && <ProgBar label="Réécoutes" current={p.reecoutes ?? p.debriefs ?? 0} target={targetReecoutes} color='#FF7E5F'/>}
           {targetPerformance > 0 && <ProgBar label="Performance (%)" current={p.performance ?? p.score ?? 0} target={targetPerformance} color='#d97706'/>}
           {obj.target_closings > 0 && <ProgBar label="Closings" current={p.closings||0} target={obj.target_closings} color='#059669'/>}
           {obj.target_revenue  > 0 && <ProgBar label="CA (€)" current={p.revenue||0} target={obj.target_revenue} color='#8b5cf6'/>}
@@ -34,8 +34,8 @@ function ObjectiveBanner({ userId }) {
   };
 
   return (
-    <div style={{ background:'#ffffff', border:'1px solid rgba(232,125,106,.12)', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #e87d6a' }}>
-      <p style={{ fontSize:13, fontWeight:700, color:'#5a4a3a', margin:'0 0 14px' }}>🎯 Mes objectifs</p>
+    <div style={{ background:'#ffffff', border:'1px solid rgba(255,126,95,.12)', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #FF7E5F' }}>
+      <p style={{ fontSize:13, fontWeight:700, color:'#4A3428', margin:'0 0 14px' }}>🎯 Mes objectifs</p>
       <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
         {render(monthly, 'Ce mois-ci')}
         {monthly && weekly && <div style={{ width:1, background:'#e2e8f0', alignSelf:'stretch' }}/>}
@@ -103,7 +103,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
 
   return (
     <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
-      <div style={{ display:'flex', gap:4, background:'rgba(232,125,106,.06)', padding:4, borderRadius:DS.radiusSm, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, background:'rgba(255,126,95,.06)', padding:4, borderRadius:DS.radiusSm, marginBottom:20 }}>
         {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
           <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
@@ -121,7 +121,7 @@ function ObjectiveModal({ closer, onClose, toast }) {
             { key:'target_revenue',  label:'💶 CA (€)', ph:'Ex: 15000' },
           ].map(({ key, label, ph }) => (
             <div key={key}>
-              <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#5a4a3a', marginBottom:5 }}>{label}</label>
+              <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#4A3428', marginBottom:5 }}>{label}</label>
               <Input type="number" placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>
             </div>
           ))}
@@ -183,9 +183,9 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
 
   return (
     <Card style={{ overflow:'hidden' }}>
-      <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(232,125,106,.08)', background:'rgba(255,245,242,.5)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(255,126,95,.08)', background:'rgba(255,245,242,.5)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <h3 style={{ fontSize:14, fontWeight:700, color:'#5a4a3a', margin:0 }}>📌 Plan d'action</h3>
+          <h3 style={{ fontSize:14, fontWeight:700, color:'#4A3428', margin:0 }}>📌 Plan d'action</h3>
           <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{active.length}/3 axe{active.length!==1?'s':''} actif{active.length!==1?'s':''}</p>
         </div>
         {isHOS && active.length < 3 && (
@@ -204,10 +204,10 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(232,125,106,.1)', alignItems:'flex-start' }}>
-              <div style={{ width:8, height:8, borderRadius:'50%', background:'#e87d6a', marginTop:5, flexShrink:0 }}/>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(253,232,228,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(255,126,95,.1)', alignItems:'flex-start' }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'#FF7E5F', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ fontWeight:600, fontSize:13, color:'#5a4a3a', margin:'0 0 2px' }}>{plan.axis}</p>
+                <p style={{ fontWeight:600, fontSize:13, color:'#4A3428', margin:'0 0 2px' }}>{plan.axis}</p>
                 {plan.description && <p style={{ fontSize:12, color:'#6b7280', margin:0 }}>{plan.description}</p>}
                 <p style={{ fontSize:11, color:DS.textMuted, margin:'4px 0 0' }}>
                   Ajouté le {fmtDate(plan.created_at)}

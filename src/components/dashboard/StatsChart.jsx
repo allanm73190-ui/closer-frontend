@@ -14,7 +14,7 @@ function StatsRow({ debriefs }) {
   const pA = sorted.slice(3,6).reduce((s,d)=>s+(d.percentage||0),0) / Math.max(sorted.slice(3,6).length,1);
   const trend = sorted.slice(3,6).length > 0 ? Math.round(rA - pA) : 0;
   const items = [
-    { label:'Total appels',   value:total,                         icon:'📞', bg:'var(--surface-accent)', c:'var(--txt,#5a4a3a)' },
+    { label:'Total appels',   value:total,                         icon:'📞', bg:'var(--surface-accent)', c:'var(--txt,#4A3428)' },
     { label:'Score moyen',    value:`${avg}%`,                     icon:'🎯', bg:'var(--positive-bg)', c:'var(--positive-txt)' },
     { label:'Meilleur score', value:`${Math.round(best)}%`,        icon:'🏆', bg:'var(--warning-bg)', c:'var(--warning-txt)' },
     { label:'Tendance',       value:`${trend>=0?'+':''}${trend}%`, icon:trend>=0?'📈':'📉', bg:trend>=0?'var(--positive-bg)':'var(--danger-bg)', c:trend>=0?'var(--positive-txt)':'var(--danger-txt)' },
@@ -25,7 +25,7 @@ function StatsRow({ debriefs }) {
         <Card key={label} style={{ padding:mob?'12px 14px':'16px 18px', display:'flex', alignItems:'center', gap:mob?10:12, background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
           <div style={{ width:mob?36:44, height:mob?36:44, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:mob?16:20, flexShrink:0 }}>{icon}</div>
           <div>
-            <p style={{ fontSize:10, color:'var(--txt3,#c8b8a8)', margin:0, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em' }}>{label}</p>
+            <p style={{ fontSize:10, color:'var(--txt3,#C8B8A8)', margin:0, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em' }}>{label}</p>
             <p style={{ fontSize:mob?18:22, fontWeight:700, color:c, margin:0 }}>{value}</p>
           </div>
         </Card>
@@ -61,10 +61,10 @@ function Chart({ debriefs, compact = false, simple = false }) {
                   height:`${Math.max(16, item.score)}%`,
                   borderRadius:'8px 8px 5px 5px',
                   background:item.score >= 75
-                    ? 'linear-gradient(180deg,#6aacce,#3a7a9a)'
+                    ? 'linear-gradient(180deg,#7C3AED,#7C3AED)'
                     : item.score >= 55
                       ? 'linear-gradient(180deg,#e8a58d,#d97706)'
-                      : 'linear-gradient(180deg,#f4b2a5,#d4604e)',
+                      : 'linear-gradient(180deg,#f4b2a5,#FEB47B)',
                   boxShadow:'0 8px 16px rgba(90,74,58,.12)',
                 }}
                 title={`${item.prospect || 'Debrief'} · ${item.score}%`}
@@ -76,8 +76,8 @@ function Chart({ debriefs, compact = false, simple = false }) {
           ))}
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12 }}>
-          <span style={{ color:'var(--txt2,#b09080)' }}>Moyenne récente: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{avg}%</strong></span>
-          <span style={{ color:'var(--txt2,#b09080)' }}>Dernier appel: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{last}%</strong></span>
+          <span style={{ color:'var(--txt2,#B09080)' }}>Moyenne récente: <strong style={{ color:'var(--txt,#4A3428)' }}>{avg}%</strong></span>
+          <span style={{ color:'var(--txt2,#B09080)' }}>Dernier appel: <strong style={{ color:'var(--txt,#4A3428)' }}>{last}%</strong></span>
         </div>
       </div>
     );
@@ -97,8 +97,8 @@ function Chart({ debriefs, compact = false, simple = false }) {
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ minWidth:280 }}>
         <defs>
           <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#e87d6a" stopOpacity=".18"/>
-            <stop offset="100%" stopColor="#e87d6a" stopOpacity="0"/>
+            <stop offset="0%" stopColor="#FF7E5F" stopOpacity=".18"/>
+            <stop offset="100%" stopColor="#FF7E5F" stopOpacity="0"/>
           </linearGradient>
         </defs>
         {[0,50,100].map(v => {
@@ -106,10 +106,10 @@ function Chart({ debriefs, compact = false, simple = false }) {
           return <g key={v}><line x1={pL} y1={y} x2={W-pR} y2={y} stroke="#f1f5f9" strokeWidth="1"/><text x={pL-6} y={y+4} textAnchor="end" fontSize="10" fill="#94a3b8">{v}%</text></g>;
         })}
         <path d={`${path} L ${xs[xs.length-1]} ${pT+iH} L ${pL} ${pT+iH} Z`} fill="url(#cg)"/>
-        <path d={path} fill="none" stroke="#e87d6a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d={path} fill="none" stroke="#FF7E5F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
         {data.map((d,i) => (
           <g key={i} onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)} onTouchStart={()=>setHov(hov===i?null:i)} style={{ cursor:'pointer' }}>
-            <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:5} fill="#e87d6a" stroke="white" strokeWidth="2"/>
+            <circle cx={xs[i]} cy={ys[i]} r={hov===i?7:5} fill="#FF7E5F" stroke="white" strokeWidth="2"/>
             {hov===i && (
               <g>
                 <rect x={Math.max(pL, Math.min(xs[i]-55, W-pR-110))} y={ys[i]-52} width={110} height={44} rx="6" fill="white" stroke="#e2e8f0" strokeWidth="1"/>

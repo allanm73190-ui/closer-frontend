@@ -35,9 +35,9 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
         padding:'16px 18px',
         textAlign:'left',
         cursor:'pointer',
-        background:active ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'white',
-        color:active ? 'white' : '#5a4a3a',
-        boxShadow:active ? '0 16px 34px rgba(232,125,106,.35)' : '0 12px 24px rgba(28,26,40,.09)',
+        background:active ? 'var(--gradient-primary)' : 'white',
+        color:active ? 'white' : '#4A3428',
+        boxShadow:active ? '0 16px 34px rgba(255,126,95,.35)' : '0 12px 24px rgba(28,26,40,.09)',
         transition:'all .2s',
       }}
     >
@@ -67,7 +67,7 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
   const closeRate = member.totalDebriefs > 0 ? Math.round((member.closed / member.totalDebriefs) * 100) : 0;
 
   return (
-    <div style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:12, overflow:'hidden', background:'white' }}>
+    <div style={{ border:'1px solid rgba(255,126,95,.12)', borderRadius:12, overflow:'hidden', background:'white' }}>
       <div
         onClick={onToggle}
         style={{
@@ -79,25 +79,25 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
           background:selected ? 'rgba(255,248,245,.85)' : 'white',
         }}
       >
-        <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.9)', color:'#e87d6a', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, flexShrink:0 }}>
+        <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,245,242,.9)', color:'#FF7E5F', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, flexShrink:0 }}>
           {member.name?.charAt(0)}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ margin:'0 0 2px', fontSize:14, fontWeight:700, color:'#5a4a3a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</p>
+          <p style={{ margin:'0 0 2px', fontSize:14, fontWeight:700, color:'#4A3428', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</p>
           <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
             {member.totalDebriefs} debrief{member.totalDebriefs > 1 ? 's' : ''} · {member.avgScore}% · {closeRate}% de closing
           </p>
         </div>
-        <span style={{ color:selected ? '#e87d6a' : '#cbd5e1', fontSize:13 }}>{selected ? '▲' : '▼'}</span>
+        <span style={{ color:selected ? '#FF7E5F' : '#cbd5e1', fontSize:13 }}>{selected ? '▲' : '▼'}</span>
       </div>
 
       {selected && (
-        <div style={{ padding:'14px 14px 16px', borderTop:'1px solid rgba(232,125,106,.08)', background:'rgba(255,248,245,.45)', display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ padding:'14px 14px 16px', borderTop:'1px solid rgba(255,126,95,.08)', background:'rgba(255,248,245,.45)', display:'flex', flexDirection:'column', gap:14 }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
             {[{ label:'Debriefs', value:member.totalDebriefs }, { label:'Closings', value:member.closed }, { label:'Taux', value:`${closeRate}%` }].map(stat => (
-              <div key={stat.label} style={{ background:'white', border:'1px solid rgba(232,125,106,.1)', borderRadius:8, padding:'8px 10px' }}>
+              <div key={stat.label} style={{ background:'white', border:'1px solid rgba(255,126,95,.1)', borderRadius:8, padding:'8px 10px' }}>
                 <p style={{ margin:'0 0 2px', fontSize:11, color:DS.textMuted }}>{stat.label}</p>
-                <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#5a4a3a' }}>{stat.value}</p>
+                <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#4A3428' }}>{stat.value}</p>
               </div>
             ))}
           </div>
@@ -129,12 +129,12 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
                   onChange={e=>setTargetTeamId(e.target.value)}
                   style={{
                     background:'white',
-                    border:'1px solid rgba(232,125,106,.2)',
+                    border:'1px solid rgba(255,126,95,.2)',
                     borderRadius:8,
                     padding:'8px 10px',
                     fontSize:12,
                     fontFamily:'inherit',
-                    color:'#5a4a3a',
+                    color:'#4A3428',
                   }}
                 >
                   <option value="">Déplacer vers...</option>
@@ -184,7 +184,7 @@ function ManagerCopilotCard({ toast }) {
     <Card style={{ padding:16, border:'1px solid rgba(106,172,206,.22)', background:'linear-gradient(135deg, rgba(218,237,245,.45), rgba(253,232,228,.35))' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap', marginBottom:10 }}>
         <div>
-          <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#5a4a3a' }}>🧭 Copilot Manager</h3>
+          <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#4A3428' }}>🧭 Copilot Manager</h3>
           <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
             Résumé hebdo équipe + recommandations actionnables {periodLabel ? `(${periodLabel})` : ''}
           </p>
@@ -203,7 +203,7 @@ function ManagerCopilotCard({ toast }) {
           {summary.metrics && (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4, minmax(0,1fr))', gap:8 }}>
               {[
-                { label:'Debriefs semaine', value:summary.metrics.current_week?.total ?? 0, color:'#e87d6a' },
+                { label:'Debriefs semaine', value:summary.metrics.current_week?.total ?? 0, color:'#FF7E5F' },
                 { label:'Score moyen', value:`${summary.metrics.current_week?.avgScore ?? 0}%`, color:'#059669' },
                 { label:'Closing', value:`${summary.metrics.current_week?.closeRate ?? 0}%`, color:'#d97706' },
                 { label:'Deals à risque', value:summary.metrics.pipeline_alerts?.atRisk ?? 0, color:'#dc2626' },
@@ -218,10 +218,10 @@ function ManagerCopilotCard({ toast }) {
 
           {Array.isArray(summary.highlights) && summary.highlights.length > 0 && (
             <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
-              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>Faits marquants</p>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Faits marquants</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.highlights.slice(0, 4).map((line, idx) => (
-                  <p key={idx} style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>• {line}</p>
+                  <p key={idx} style={{ margin:0, fontSize:12, color:'#4A3428' }}>• {line}</p>
                 ))}
               </div>
             </div>
@@ -229,10 +229,10 @@ function ManagerCopilotCard({ toast }) {
 
           {Array.isArray(summary.recommendations) && summary.recommendations.length > 0 && (
             <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
-              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>Recommandations concrètes</p>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>Recommandations concrètes</p>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                 {summary.recommendations.slice(0, 4).map((line, idx) => (
-                  <p key={idx} style={{ margin:0, fontSize:12, color:'#5a4a3a' }}>• {line}</p>
+                  <p key={idx} style={{ margin:0, fontSize:12, color:'#4A3428' }}>• {line}</p>
                 ))}
               </div>
             </div>
@@ -240,10 +240,10 @@ function ManagerCopilotCard({ toast }) {
 
           {summary.aiSummary && (
             <div style={{ background:'white', border:'1px solid rgba(106,172,206,.2)', borderRadius:10, padding:'10px 12px' }}>
-              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#3a7a9a' }}>
+              <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:700, color:'#7C3AED' }}>
                 Synthèse IA {summary.model ? `(${summary.model})` : ''}
               </p>
-              <p style={{ margin:0, fontSize:12, color:'#5a4a3a', whiteSpace:'pre-wrap', lineHeight:1.55 }}>
+              <p style={{ margin:0, fontSize:12, color:'#4A3428', whiteSpace:'pre-wrap', lineHeight:1.55 }}>
                 {summary.aiSummary}
               </p>
             </div>
@@ -407,7 +407,7 @@ function HOSPage({ toast, allDebriefs }) {
     <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
-          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'#5a4a3a' }}>👥 Espace Équipe</h1>
+          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'#4A3428' }}>👥 Espace Équipe</h1>
           <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
             Dashboard synchronisé par équipe · {teams.length} équipe{teams.length > 1 ? 's' : ''}
             {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
@@ -463,7 +463,7 @@ function HOSPage({ toast, allDebriefs }) {
                       </div>
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <h2 style={{ margin:0, fontSize:20, color:'#5a4a3a' }}>{activeTeam.name}</h2>
+                        <h2 style={{ margin:0, fontSize:20, color:'#4A3428' }}>{activeTeam.name}</h2>
                         <button onClick={()=>{ setEditingTeamId(activeTeam.id); setEditingName(activeTeam.name); }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16, color:DS.textMuted }}>✏️</button>
                       </div>
                     )}
@@ -477,8 +477,8 @@ function HOSPage({ toast, allDebriefs }) {
                 </div>
 
                 <div style={{ marginTop:14, display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
-                  {[{ label:'Debriefs', value:teamStats.total, color:'#e87d6a' }, { label:'Score moyen', value:`${teamStats.avg}%`, color:'#059669' }, { label:'Closings', value:teamStats.closed, color:'#059669' }, { label:'Taux closing', value:`${teamStats.closeRate}%`, color:'#d97706' }].map(kpi => (
-                    <div key={kpi.label} style={{ border:'1px solid rgba(232,125,106,.12)', borderRadius:12, padding:'10px 12px', background:'linear-gradient(145deg, rgba(255,255,255,.92), rgba(249,239,233,.74))' }}>
+                  {[{ label:'Debriefs', value:teamStats.total, color:'#FF7E5F' }, { label:'Score moyen', value:`${teamStats.avg}%`, color:'#059669' }, { label:'Closings', value:teamStats.closed, color:'#059669' }, { label:'Taux closing', value:`${teamStats.closeRate}%`, color:'#d97706' }].map(kpi => (
+                    <div key={kpi.label} style={{ border:'1px solid rgba(255,126,95,.12)', borderRadius:12, padding:'10px 12px', background:'linear-gradient(145deg, rgba(255,255,255,.92), rgba(249,239,233,.74))' }}>
                       <p style={{ margin:'0 0 3px', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em' }}>{kpi.label}</p>
                       <p style={{ margin:0, fontSize:20, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
                     </div>
@@ -488,7 +488,7 @@ function HOSPage({ toast, allDebriefs }) {
 
               {teamSectionScores && teamStats.total > 0 && (
                 <Card style={{ padding:16 }}>
-                  <h3 style={{ margin:'0 0 4px', fontSize:14, color:'#5a4a3a' }}>Analyse de performance par section</h3>
+                  <h3 style={{ margin:'0 0 4px', fontSize:14, color:'#4A3428' }}>Analyse de performance par section</h3>
                   <p style={{ margin:'0 0 16px', fontSize:12, color:DS.textMuted }}>Comparaison équipe vs global</p>
                   <div style={{ display:'grid', gridTemplateColumns:mob ? '1fr' : '1fr 1fr', gap:20, alignItems:'center' }}>
                     <div style={{ display:'flex', justifyContent:'center' }}>
@@ -501,7 +501,7 @@ function HOSPage({ toast, allDebriefs }) {
 
               {teamStats.total > 0 && (
                 <Card style={{ padding:16 }}>
-                  <h3 style={{ margin:'0 0 10px', fontSize:14, color:'#5a4a3a' }}>Évolution de l'équipe</h3>
+                  <h3 style={{ margin:'0 0 10px', fontSize:14, color:'#4A3428' }}>Évolution de l'équipe</h3>
                   <Chart debriefs={teamStats.debriefs} />
                 </Card>
               )}
@@ -509,7 +509,7 @@ function HOSPage({ toast, allDebriefs }) {
               <Card style={{ padding:16 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
                   <div>
-                    <h3 style={{ margin:'0 0 3px', fontSize:14, color:'#5a4a3a' }}>Codes d'invitation</h3>
+                    <h3 style={{ margin:'0 0 3px', fontSize:14, color:'#4A3428' }}>Codes d'invitation</h3>
                     <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
                       Ajoutez des membres via code, avec synchronisation HOS ↔ closer.
                     </p>
@@ -524,8 +524,8 @@ function HOSPage({ toast, allDebriefs }) {
                     <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>Aucun code actif.</p>
                   )}
                   {activeTeam.inviteCodes.map(code => (
-                    <div key={code.id} style={{ display:'flex', alignItems:'center', gap:8, border:'1px solid rgba(232,125,106,.18)', background:'rgba(255,248,245,.85)', borderRadius:10, padding:'8px 10px' }}>
-                      <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight:700, letterSpacing:'.08em', color:'#e87d6a' }}>{code.code}</span>
+                    <div key={code.id} style={{ display:'flex', alignItems:'center', gap:8, border:'1px solid rgba(255,126,95,.18)', background:'rgba(255,248,245,.85)', borderRadius:10, padding:'8px 10px' }}>
+                      <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight:700, letterSpacing:'.08em', color:'#FF7E5F' }}>{code.code}</span>
                       <button
                         onClick={() => { copy(code.code); setCopiedCode(code.code); toast('Code copié'); setTimeout(() => setCopiedCode(''), 1500); }}
                         style={{ border:'none', background:'none', cursor:'pointer', color:copiedCode === code.code ? '#059669' : '#64748b' }}
@@ -540,7 +540,7 @@ function HOSPage({ toast, allDebriefs }) {
               </Card>
 
               <Card style={{ padding:16 }}>
-                <h3 style={{ margin:'0 0 8px', fontSize:14, color:'#5a4a3a' }}>
+                <h3 style={{ margin:'0 0 8px', fontSize:14, color:'#4A3428' }}>
                   Closer de l'équipe ({activeTeam.members.length})
                 </h3>
                 {activeTeam.members.length === 0 ? (
@@ -572,7 +572,7 @@ function HOSPage({ toast, allDebriefs }) {
       {showCreate && (
         <Modal title="Créer une nouvelle équipe" onClose={()=>setShowCreate(false)}>
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#5a4a3a', marginBottom:6 }}>Nom de l'équipe</label>
+            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#4A3428', marginBottom:6 }}>Nom de l'équipe</label>
             <Input
               placeholder="Ex: Team Setter FR"
               value={newTeamName}

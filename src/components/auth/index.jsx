@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { apiFetch, setToken } from '../../config/api';
 import { DS, P, P2 } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { PASSWORD_POLICY, getPasswordStrength, validatePasswordPolicy } from '../../utils/security';
 import { AlertBox } from '../ui';
 
 const fieldWrap = { display:'flex', flexDirection:'column', gap:6 };
@@ -11,7 +10,7 @@ const fieldLabel = {
   fontWeight:700,
   letterSpacing:'.12em',
   textTransform:'uppercase',
-  color:'var(--txt2,#b09080)',
+  color:'var(--txt2,#B09080)',
 };
 const fieldInput = {
   width:'100%',
@@ -20,7 +19,7 @@ const fieldInput = {
   borderRadius:14,
   padding:'12px 14px',
   fontSize:14,
-  color:'var(--txt,#5a4a3a)',
+  color:'var(--txt,#4A3428)',
   fontFamily:'inherit',
   outline:'none',
   boxShadow:'inset 0 1px 0 rgba(255,255,255,.75)',
@@ -52,8 +51,8 @@ const linkBtn = {
 function AuthShell({ title, subtitle, children, wide=false }) {
   const mob = useIsMobile();
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg, linear-gradient(160deg,#f5ede6 0%,#e8f0f5 100%))', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', top:-120, right:-110, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.26), rgba(232,125,106,0) 72%)', pointerEvents:'none' }} />
+    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:mob?14:26, position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-120, right:-110, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(255,126,95,.26), rgba(255,126,95,0) 72%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:-120, left:-120, width:330, height:330, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.24), rgba(106,172,206,0) 72%)', pointerEvents:'none' }} />
 
       <div
@@ -91,13 +90,13 @@ function AuthShell({ title, subtitle, children, wide=false }) {
           {mob && (
             <div style={{ marginBottom:20 }}>
               <h1 style={{ margin:0, fontSize:30, fontWeight:800, color:P, lineHeight:1 }}>CloserDebrief</h1>
-              <p style={{ margin:'6px 0 0', fontSize:10, letterSpacing:'.2em', textTransform:'uppercase', color:'var(--txt2,#b09080)', fontWeight:700 }}>Sales Intelligence</p>
+              <p style={{ margin:'6px 0 0', fontSize:10, letterSpacing:'.2em', textTransform:'uppercase', color:'var(--txt2,#B09080)', fontWeight:700 }}>Sales Intelligence</p>
             </div>
           )}
 
           <div style={{ marginBottom:22 }}>
-            <h2 style={{ margin:0, fontSize:mob ? 26 : 30, fontWeight:800, color:'var(--txt,#5a4a3a)', lineHeight:1.08 }}>{title}</h2>
-            <p style={{ margin:'8px 0 0', fontSize:14, color:'var(--txt2,#b09080)', maxWidth:420, lineHeight:1.5 }}>{subtitle}</p>
+            <h2 style={{ margin:0, fontSize:mob ? 26 : 30, fontWeight:800, color:'var(--txt,#4A3428)', lineHeight:1.08 }}>{title}</h2>
+            <p style={{ margin:'8px 0 0', fontSize:14, color:'var(--txt2,#B09080)', maxWidth:420, lineHeight:1.5 }}>{subtitle}</p>
           </div>
           {children}
         </section>
@@ -200,8 +199,7 @@ function RegisterPage({ onLogin, goLogin }) {
     e.preventDefault();
     setErr('');
     if (f.password !== f.confirm) return setErr('Les mots de passe ne correspondent pas');
-    const pwdPolicy = validatePasswordPolicy(f.password, { email:f.email, name:f.name });
-    if (!pwdPolicy.ok) return setErr(pwdPolicy.message);
+    if (f.password.length < 8) return setErr('Mot de passe trop court (8 car. min)');
     if (f.role === 'closer' && !f.invite_code) return setErr("Un code d'invitation est requis");
     setLoading(true);
     try {
@@ -223,7 +221,6 @@ function RegisterPage({ onLogin, goLogin }) {
       setLoading(false);
     }
   };
-  const strength = getPasswordStrength(f.password);
 
   return (
     <AuthShell wide title="Créer un compte" subtitle="Choisissez votre rôle pour activer la bonne expérience (Closer ou Head of Sales).">
@@ -243,7 +240,7 @@ function RegisterPage({ onLogin, goLogin }) {
                 type="button"
                 onClick={()=>setF({ ...f, role:item.value })}
                 style={{
-                  border:`1.5px solid ${active ? P : 'rgba(195,147,121,.34)'}`,
+                  border:`1.5px solid ${active ? P : 'rgba(200,160,140,.34)'}`,
                   background:active ? 'rgba(253,232,228,.75)' : 'rgba(255,255,255,.86)',
                   borderRadius:14,
                   padding:'10px 12px',
@@ -259,7 +256,7 @@ function RegisterPage({ onLogin, goLogin }) {
                   {item.icon}
                 </span>
                 <span>
-                  <span style={{ display:'block', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{item.label}</span>
+                  <span style={{ display:'block', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>{item.label}</span>
                   <span style={{ display:'block', fontSize:11, marginTop:3, color:DS.textMuted }}>{item.desc}</span>
                 </span>
               </button>
@@ -295,7 +292,7 @@ function RegisterPage({ onLogin, goLogin }) {
           type="password"
           value={f.password}
           onChange={e => setF({ ...f, password:e.target.value })}
-          placeholder={`${PASSWORD_POLICY.minLength} caractères minimum`}
+          placeholder="8 caractères minimum"
           required
         />
         <TextField
@@ -306,14 +303,6 @@ function RegisterPage({ onLogin, goLogin }) {
           placeholder="••••••••"
           required
         />
-        <div style={{ gridColumn:'1 / -1', marginTop:-4 }}>
-          <p style={{ margin:0, fontSize:11, color:strength.color, fontWeight:700 }}>
-            Sécurité du mot de passe: {strength.label}
-          </p>
-          <p style={{ margin:'2px 0 0', fontSize:11, color:DS.textMuted }}>
-            Requis: {PASSWORD_POLICY.minLength}+ caractères, 3 éléments parmi majuscule, minuscule, chiffre, symbole.
-          </p>
-        </div>
 
         {f.role === 'closer' && (
           <div style={{ gridColumn:'1 / -1' }}>
@@ -367,7 +356,7 @@ function ForgotPage({ goLogin }) {
       {sent ? (
         <div style={{ textAlign:'center', padding:'8px 0 2px' }}>
           <span style={{ fontSize:50, display:'inline-block', marginBottom:8 }}>📬</span>
-          <h3 style={{ margin:'0 0 8px', fontSize:22, fontWeight:800, color:'var(--txt,#5a4a3a)' }}>Email envoyé</h3>
+          <h3 style={{ margin:'0 0 8px', fontSize:22, fontWeight:800, color:'var(--txt,#4A3428)' }}>Email envoyé</h3>
           <p style={{ margin:'0 0 16px', fontSize:14, color:DS.textMuted }}>
             Si cet email existe, vous recevrez un lien de réinitialisation.
           </p>
@@ -409,8 +398,7 @@ function ResetPage({ token, onDone }) {
     e.preventDefault();
     setErr('');
     if (f.password !== f.confirm) return setErr('Les mots de passe ne correspondent pas');
-    const pwdPolicy = validatePasswordPolicy(f.password);
-    if (!pwdPolicy.ok) return setErr(pwdPolicy.message);
+    if (f.password.length < 8) return setErr('Mot de passe trop court');
     setLoading(true);
     try {
       await apiFetch('/auth/reset-password', { method:'POST', body:{ token, password:f.password } });
@@ -422,7 +410,6 @@ function ResetPage({ token, onDone }) {
       setLoading(false);
     }
   };
-  const strength = getPasswordStrength(f.password);
 
   return (
     <AuthShell title="Nouveau mot de passe" subtitle="Définissez un mot de passe sécurisé pour reprendre l’accès.">
@@ -437,7 +424,7 @@ function ResetPage({ token, onDone }) {
               type="password"
               value={f.password}
               onChange={e => setF({ ...f, password:e.target.value })}
-              placeholder={`${PASSWORD_POLICY.minLength} caractères minimum`}
+              placeholder="8 caractères minimum"
               required
               autoFocus
             />
@@ -449,9 +436,6 @@ function ResetPage({ token, onDone }) {
               placeholder="••••••••"
               required
             />
-            <p style={{ margin:'-2px 0 0', fontSize:11, color:strength.color, fontWeight:700 }}>
-              Sécurité du mot de passe: {strength.label}
-            </p>
             <button type="submit" disabled={loading} style={{ ...primaryBtn, opacity:loading ? .7 : 1, cursor:loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Modification...' : 'Modifier le mot de passe'}
             </button>

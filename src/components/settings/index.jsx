@@ -3,7 +3,6 @@ import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { DEFAULT_PIPELINE_CONFIG, LEAD_FIELD_OPTIONS, makeStatusKey, normalizePipelineConfig } from '../../config/pipeline';
 import { getDefaultTemplateCatalog, normalizeDebriefTemplateCatalog } from '../../config/debriefTemplates';
-import { PASSWORD_POLICY, getPasswordStrength, validatePasswordPolicy } from '../../utils/security';
 import { DebriefConfigEditor } from '../debrief/Settings';
 import { AlertBox, Btn, Card, Input, Spinner, Textarea } from '../ui';
 
@@ -21,16 +20,6 @@ function fieldLabelByKey(key) {
 
 function AccountSettingsSection({ user, toast }) {
   const isCloser = user.role === 'closer';
-  const roleLabel = user.role === 'admin'
-    ? 'Admin'
-    : user.role === 'head_of_sales'
-      ? 'Head of Sales'
-      : 'Closer';
-  const roleColor = user.role === 'admin'
-    ? '#7c3aed'
-    : user.role === 'head_of_sales'
-      ? '#c07830'
-      : '#3a7a9a';
   const [teamLoading, setTeamLoading] = useState(isCloser);
   const [team, setTeam] = useState(null);
   const [inviteCode, setInviteCode] = useState('');
@@ -38,7 +27,6 @@ function AccountSettingsSection({ user, toast }) {
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdError, setPwdError] = useState('');
-  const pwdStrength = useMemo(() => getPasswordStrength(pwd.next), [pwd.next]);
 
   const loadTeam = useCallback(async () => {
     if (!isCloser) return;
@@ -76,13 +64,12 @@ function AccountSettingsSection({ user, toast }) {
 
   const changePassword = async () => {
     setPwdError('');
-    if (pwd.next !== pwd.confirm) {
-      setPwdError('La confirmation du mot de passe ne correspond pas.');
+    if (pwd.next.length < 8) {
+      setPwdError('Le nouveau mot de passe doit contenir 8 caractères minimum.');
       return;
     }
-    const policy = validatePasswordPolicy(pwd.next, { email:user?.email, name:user?.name });
-    if (!policy.ok) {
-      setPwdError(policy.message);
+    if (pwd.next !== pwd.confirm) {
+      setPwdError('La confirmation du mot de passe ne correspond pas.');
       return;
     }
     setPwdSaving(true);
@@ -105,14 +92,14 @@ function AccountSettingsSection({ user, toast }) {
       <Card style={{ padding:16 }}>
         <p style={{ margin:'0 0 6px', fontSize:11, letterSpacing:'.08em', textTransform:'uppercase', color:DS.textMuted, fontWeight:700 }}>Profil</p>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', color:'white', fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:44, height:44, borderRadius:'50%', background:'var(--gradient-primary)', color:'white', fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>
             {user.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
           <div>
-            <p style={{ margin:0, fontSize:16, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{user.name}</p>
+            <p style={{ margin:0, fontSize:16, fontWeight:700, color:'var(--txt,#4A3428)' }}>{user.name}</p>
             <p style={{ margin:'2px 0 0', fontSize:13, color:DS.textMuted }}>{user.email}</p>
-            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:roleColor }}>
-              {roleLabel}
+            <p style={{ margin:'4px 0 0', fontSize:11, fontWeight:700, color:user.role === 'head_of_sales' ? '#c07830' : '#7C3AED' }}>
+              {user.role === 'head_of_sales' ? 'Head of Sales' : 'Closer'}
             </p>
           </div>
         </div>
@@ -125,7 +112,7 @@ function AccountSettingsSection({ user, toast }) {
             <Spinner size={20} />
           ) : (
             <>
-              <p style={{ margin:'0 0 10px', fontSize:13, color:'var(--txt,#5a4a3a)' }}>
+              <p style={{ margin:'0 0 10px', fontSize:13, color:'var(--txt,#4A3428)' }}>
                 Équipe actuelle: <strong>{team?.name || 'Aucune équipe'}</strong>
               </p>
               <div style={{ display:'flex', gap:8 }}>
@@ -149,24 +136,18 @@ function AccountSettingsSection({ user, toast }) {
         <AlertBox type="error" message={pwdError} />
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:10 }}>
           <div>
-            <label style={{ display:'block', fontSize:12, color:'var(--txt,#5a4a3a)', marginBottom:5 }}>Mot de passe actuel</label>
+            <label style={{ display:'block', fontSize:12, color:'var(--txt,#4A3428)', marginBottom:5 }}>Mot de passe actuel</label>
             <Input type="password" value={pwd.current} onChange={e=>setPwd(prev => ({ ...prev, current:e.target.value }))} />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:12, color:'var(--txt,#5a4a3a)', marginBottom:5 }}>Nouveau mot de passe</label>
+            <label style={{ display:'block', fontSize:12, color:'var(--txt,#4A3428)', marginBottom:5 }}>Nouveau mot de passe</label>
             <Input type="password" value={pwd.next} onChange={e=>setPwd(prev => ({ ...prev, next:e.target.value }))} />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:12, color:'var(--txt,#5a4a3a)', marginBottom:5 }}>Confirmer</label>
+            <label style={{ display:'block', fontSize:12, color:'var(--txt,#4A3428)', marginBottom:5 }}>Confirmer</label>
             <Input type="password" value={pwd.confirm} onChange={e=>setPwd(prev => ({ ...prev, confirm:e.target.value }))} />
           </div>
         </div>
-        <p style={{ margin:'10px 0 0', fontSize:11, color:pwdStrength.color, fontWeight:700 }}>
-          Force du mot de passe: {pwdStrength.label}
-        </p>
-        <p style={{ margin:'3px 0 0', fontSize:11, color:DS.textMuted }}>
-          Politique: {PASSWORD_POLICY.minLength}+ caractères et 3 éléments parmi majuscule, minuscule, chiffre, symbole.
-        </p>
         <div style={{ marginTop:12 }}>
           <Btn onClick={changePassword} disabled={pwdSaving || !pwd.current || !pwd.next || !pwd.confirm}>
             {pwdSaving ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
@@ -218,8 +199,8 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
                 fontWeight:700,
                 fontFamily:'inherit',
                 cursor:'pointer',
-                background:draft.theme === item.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--card,#fff)',
-                color:draft.theme === item.key ? 'white' : 'var(--txt,#5a4a3a)',
+                background:draft.theme === item.key ? 'var(--gradient-primary)' : 'var(--card,#fff)',
+                color:draft.theme === item.key ? 'white' : 'var(--txt,#4A3428)',
               }}
             >
               {item.label}
@@ -247,7 +228,7 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
           }}
         >
           <span style={{ textAlign:'left' }}>
-            <span style={{ display:'block', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
+            <span style={{ display:'block', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>
               Lancer automatiquement l’analyse IA après enregistrement
             </span>
             <span style={{ display:'block', fontSize:12, color:DS.textMuted, marginTop:2 }}>
@@ -265,159 +246,6 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
           {saving ? 'Enregistrement...' : 'Enregistrer les préférences'}
         </Btn>
       </div>
-    </div>
-  );
-}
-
-function SecurityTrustSection({ user, toast }) {
-  const isAdmin = user.role === 'admin';
-  const [scope, setScope] = useState('all');
-  const [posture, setPosture] = useState(null);
-  const [audit, setAudit] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    try {
-      const effectiveScope = isAdmin ? scope : 'own';
-      const [postureData, auditData] = await Promise.all([
-        apiFetch('/security/posture'),
-        apiFetch(`/security/audit?limit=40&scope=${encodeURIComponent(effectiveScope)}`),
-      ]);
-      setPosture(postureData || null);
-      setAudit(Array.isArray(auditData?.events) ? auditData.events : []);
-    } catch (e) {
-      toast(e.message, 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [isAdmin, scope, toast]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const statusColor = (outcome) => {
-    if (outcome === 'failure') return { bg:'var(--danger-bg)', color:'var(--danger-txt)' };
-    return { bg:'var(--positive-bg)', color:'var(--positive-txt)' };
-  };
-
-  const formatDateTime = (value) => {
-    try {
-      return new Date(value).toLocaleString('fr-FR', {
-        day:'2-digit',
-        month:'short',
-        hour:'2-digit',
-        minute:'2-digit',
-      });
-    } catch {
-      return value || '—';
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card style={{ padding:16 }}>
-        <Spinner size={22} />
-      </Card>
-    );
-  }
-
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-      <Card style={{ padding:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-          <div>
-            <p style={{ margin:'0 0 4px', fontSize:11, letterSpacing:'.08em', textTransform:'uppercase', color:DS.textMuted, fontWeight:700 }}>Confiance</p>
-            <p style={{ margin:0, fontSize:13, color:'var(--txt,#5a4a3a)' }}>
-              Socle sécurité actif: verrouillage anti brute-force, politique mot de passe renforcée, audit des actions sensibles.
-            </p>
-          </div>
-          <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-            {isAdmin && (
-              <select
-                value={scope}
-                onChange={e=>setScope(e.target.value)}
-                style={{ border:'1px solid var(--border)', borderRadius:10, background:'var(--card,#fff)', padding:'8px 10px', fontSize:12, fontFamily:'inherit', color:'var(--txt,#5a4a3a)' }}
-              >
-                <option value="all">Audit global</option>
-                <option value="own">Audit personnel</option>
-              </select>
-            )}
-            <Btn variant="secondary" onClick={()=>load(true)} disabled={refreshing}>
-              {refreshing ? 'Actualisation...' : '↻ Actualiser'}
-            </Btn>
-          </div>
-        </div>
-      </Card>
-
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:8 }}>
-        <Card style={{ padding:'12px 12px' }}>
-          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>JWT session</p>
-          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
-            {posture?.auth?.jwt_expiration || '—'}
-          </p>
-        </Card>
-        <Card style={{ padding:'12px 12px' }}>
-          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Verrouillage login</p>
-          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
-            {posture?.protections?.brute_force_lock?.threshold || 0} tentatives
-          </p>
-        </Card>
-        <Card style={{ padding:'12px 12px' }}>
-          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Politique mot de passe</p>
-          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>
-            {posture?.password_policy?.min_length || PASSWORD_POLICY.minLength}+ caractères
-          </p>
-        </Card>
-        <Card style={{ padding:'12px 12px' }}>
-          <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>Événements audit</p>
-          <p style={{ margin:0, fontSize:18, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{audit.length}</p>
-        </Card>
-      </div>
-
-      <Card style={{ padding:14 }}>
-        <p style={{ margin:'0 0 8px', fontSize:11, letterSpacing:'.08em', textTransform:'uppercase', color:DS.textMuted, fontWeight:700 }}>
-          Journal d’audit sécurité
-        </p>
-        {audit.length === 0 ? (
-          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-            Aucun événement récent.
-          </p>
-        ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:7, maxHeight:420, overflowY:'auto', paddingRight:2 }}>
-            {audit.map(event => {
-              const state = statusColor(event.outcome);
-              return (
-                <div key={event.id} style={{ border:'1px solid var(--border)', borderRadius:10, padding:'9px 10px', background:'var(--card,#fff)' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>{event.action}</span>
-                      <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:state.bg, color:state.color }}>
-                        {event.outcome === 'failure' ? 'Échec' : 'Succès'}
-                      </span>
-                    </div>
-                    <span style={{ fontSize:11, color:DS.textMuted }}>
-                      {formatDateTime(event.created_at)}
-                    </span>
-                  </div>
-                  <p style={{ margin:'0 0 3px', fontSize:11, color:DS.textMuted }}>
-                    Acteur: {event.actor_role || 'n/a'} · IP: {event.ip || 'n/a'}
-                  </p>
-                  {event.details && Object.keys(event.details).length > 0 && (
-                    <p style={{ margin:0, fontSize:11, color:'var(--txt2,#b09080)' }}>
-                      Détails: {Object.entries(event.details).slice(0, 4).map(([key, value]) => `${key}=${String(value)}`).join(' · ')}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
@@ -521,7 +349,7 @@ function DebriefTemplatesSection({ debriefTemplates, setDebriefTemplates, toast 
       {catalog.templates.map((template, idx) => (
         <Card key={template.key} style={{ padding:14 }}>
           <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'center', marginBottom:10 }}>
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--txt,#5a4a3a)', fontWeight:700 }}>
+            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--txt,#4A3428)', fontWeight:700 }}>
               <input
                 type="radio"
                 name="default_template"
@@ -688,7 +516,7 @@ function PipelineSettingsSection({ toast }) {
       </Card>
 
       <Card style={{ padding:14 }}>
-        <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt,#5a4a3a)', fontWeight:700 }}>Champs visibles dans la fiche contact</p>
+        <p style={{ margin:'0 0 10px', fontSize:12, color:'var(--txt,#4A3428)', fontWeight:700 }}>Champs visibles dans la fiche contact</p>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:8 }}>
           {LEAD_FIELD_OPTIONS.map(field => {
             const active = (draft.importantFields || []).includes(field.key);
@@ -702,7 +530,7 @@ function PipelineSettingsSection({ toast }) {
                   borderRadius:10,
                   padding:'9px 10px',
                   background:active ? 'var(--surface-accent)' : 'var(--card,#fff)',
-                  color:active ? 'var(--txt,#5a4a3a)' : DS.textMuted,
+                  color:active ? 'var(--txt,#4A3428)' : DS.textMuted,
                   fontSize:12,
                   fontWeight:700,
                   textAlign:'left',
@@ -774,19 +602,16 @@ function SettingsPage({
   appSettings,
   onSaveAppSettings,
 }) {
-  const isAdmin = user.role === 'admin';
   const isHOS = user.role === 'head_of_sales';
-  const isManager = isAdmin || isHOS;
   const tabs = useMemo(() => ([
     { key:'account', label:'Compte' },
     { key:'app', label:'Application' },
-    ...(isAdmin ? [{ key:'security', label:'Sécurité' }] : []),
-    ...(isManager ? [
+    ...(isHOS ? [
       { key:'debrief', label:'Debrief' },
       { key:'templates', label:'Templates' },
       { key:'pipeline', label:'Pipeline' },
     ] : []),
-  ]), [isAdmin, isManager]);
+  ]), [isHOS]);
   const [activeTab, setActiveTab] = useState(() => resolveSettingsTab(tabs, requestedTab));
 
   useEffect(() => {
@@ -798,7 +623,7 @@ function SettingsPage({
       <Card style={{ padding:18, background:'linear-gradient(145deg, var(--surface-a), var(--surface-b))' }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
           <div>
-            <h1 style={{ margin:0, fontSize:24, color:'var(--txt,#5a4a3a)' }}>Paramètres</h1>
+            <h1 style={{ margin:0, fontSize:24, color:'var(--txt,#4A3428)' }}>Paramètres</h1>
             <p style={{ margin:'6px 0 0', fontSize:13, color:DS.textMuted }}>
               Tous les réglages sont reliés à leurs fonctions et synchronisés avec l’application.
             </p>
@@ -820,8 +645,8 @@ function SettingsPage({
                 border:'none',
                 borderRadius:999,
                 padding:'8px 12px',
-                background:activeTab === tab.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
-                color:activeTab === tab.key ? 'white' : 'var(--txt2,#b09080)',
+                background:activeTab === tab.key ? 'var(--gradient-primary)' : 'var(--input,#FFF5EB)',
+                color:activeTab === tab.key ? 'white' : 'var(--txt2,#B09080)',
                 fontSize:12,
                 fontWeight:700,
                 cursor:'pointer',
@@ -842,11 +667,8 @@ function SettingsPage({
           toast={toast}
         />
       )}
-      {activeTab === 'security' && isAdmin && (
-        <SecurityTrustSection user={user} toast={toast} />
-      )}
 
-      {activeTab === 'debrief' && isManager && (
+      {activeTab === 'debrief' && isHOS && (
         <Card style={{ padding:16 }}>
           <DebriefConfigEditor
             debriefConfig={debriefConfig}
@@ -858,7 +680,7 @@ function SettingsPage({
         </Card>
       )}
 
-      {activeTab === 'templates' && isManager && (
+      {activeTab === 'templates' && isHOS && (
         <DebriefTemplatesSection
           debriefTemplates={debriefTemplates}
           setDebriefTemplates={setDebriefTemplates}
@@ -866,7 +688,7 @@ function SettingsPage({
         />
       )}
 
-      {activeTab === 'pipeline' && isManager && (
+      {activeTab === 'pipeline' && isHOS && (
         <PipelineSettingsSection toast={toast} />
       )}
     </div>

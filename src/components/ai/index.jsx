@@ -52,19 +52,19 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
     return lines.map((line, i) => {
       const trimmed = line.trim();
       if (!trimmed) return <div key={i} style={{ height: 8 }}/>;
-      if (trimmed.startsWith('## ')) return <h2 key={i} style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt,#5a4a3a)', margin: '20px 0 12px', borderBottom: '2px solid var(--border)', paddingBottom: 8 }}>{trimmed.slice(3)}</h2>;
-      if (trimmed.startsWith('### ')) return <h3 key={i} style={{ fontSize: 15, fontWeight: 700, color: '#e87d6a', margin: '16px 0 8px' }}>{trimmed.slice(4)}</h3>;
-      if (trimmed.startsWith('**') && trimmed.endsWith('**')) return <p key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--txt,#5a4a3a)', margin: '12px 0 6px', background: 'var(--surface-accent)', padding: '10px 14px', borderRadius: 8, borderLeft: '3px solid #e87d6a' }}>{trimmed.slice(2, -2)}</p>;
-      if (trimmed.startsWith('- ')) return <div key={i} style={{ display: 'flex', gap: 8, padding: '3px 0', fontSize: 13, color: 'var(--txt,#5a4a3a)', lineHeight: 1.6 }}><span style={{ color: '#e87d6a', flexShrink: 0, marginTop: 2 }}>•</span><span>{renderBold(trimmed.slice(2))}</span></div>;
-      return <p key={i} style={{ fontSize: 13, color: 'var(--txt,#5a4a3a)', lineHeight: 1.6, margin: '4px 0' }}>{renderBold(trimmed)}</p>;
+      if (trimmed.startsWith('## ')) return <h2 key={i} style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt,#4A3428)', margin: '20px 0 12px', borderBottom: '2px solid var(--border)', paddingBottom: 8 }}>{trimmed.slice(3)}</h2>;
+      if (trimmed.startsWith('### ')) return <h3 key={i} style={{ fontSize: 15, fontWeight: 700, color: '#FF7E5F', margin: '16px 0 8px' }}>{trimmed.slice(4)}</h3>;
+      if (trimmed.startsWith('**') && trimmed.endsWith('**')) return <p key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--txt,#4A3428)', margin: '12px 0 6px', background: 'var(--surface-accent)', padding: '10px 14px', borderRadius: 8, borderLeft: '3px solid #FF7E5F' }}>{trimmed.slice(2, -2)}</p>;
+      if (trimmed.startsWith('- ')) return <div key={i} style={{ display: 'flex', gap: 8, padding: '3px 0', fontSize: 13, color: 'var(--txt,#4A3428)', lineHeight: 1.6 }}><span style={{ color: '#FF7E5F', flexShrink: 0, marginTop: 2 }}>•</span><span>{renderBold(trimmed.slice(2))}</span></div>;
+      return <p key={i} style={{ fontSize: 13, color: 'var(--txt,#4A3428)', lineHeight: 1.6, margin: '4px 0' }}>{renderBold(trimmed)}</p>;
     });
   };
 
   const renderBold = (text) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) return <strong key={i} style={{ fontWeight: 700, color: '#d4604e' }}>{part.slice(2, -2)}</strong>;
-      return <span key={i} style={{ color:'var(--txt,#5a4a3a)' }}>{part}</span>;
+      if (part.startsWith('**') && part.endsWith('**')) return <strong key={i} style={{ fontWeight: 700, color: '#FEB47B' }}>{part.slice(2, -2)}</strong>;
+      return <span key={i} style={{ color:'var(--txt,#4A3428)' }}>{part}</span>;
     });
   };
 
@@ -72,9 +72,9 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
     <Card style={{ overflow: 'hidden' }}>
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'linear-gradient(135deg,var(--surface-accent),var(--surface-info))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#e87d6a,#d4604e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤖</div>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤖</div>
           <div>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt,#5a4a3a)', margin: 0 }}>Analyse IA</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt,#4A3428)', margin: 0 }}>Analyse IA</h3>
             <p style={{ fontSize: 11, color: DS.textMuted, margin: 0 }}>CloserDebrief AI</p>
           </div>
         </div>
@@ -100,7 +100,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
       {analysis && !loading && !collapsed && (
         <div style={{ padding: '16px 20px', maxHeight: 600, overflowY: 'auto' }}>
           {renderMarkdown(analysis)}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(232,125,106,.1)' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,126,95,.1)' }}>
             <Btn variant="secondary" onClick={() => { copy(analysis); toast('Analyse copiée !'); }} style={{ fontSize: 12, padding: '6px 12px' }}>📋 Copier</Btn>
             <Btn variant="secondary" onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '6px 12px' }}>🔄 Régénérer</Btn>
           </div>
@@ -110,7 +110,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
       {!analysis && !loading && (
         <div style={{ padding: '32px 20px', textAlign: 'center' }}>
           <p style={{ fontSize: 36, margin: '0 0 10px' }}>🤖</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt,#5a4a3a)', margin: '0 0 6px' }}>Analyse IA disponible</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt,#4A3428)', margin: '0 0 6px' }}>Analyse IA disponible</p>
           <p style={{ fontSize: 13, color: DS.textMuted, margin: '0 0 16px' }}>Obtenez un coaching personnalisé basé sur ce debrief</p>
           <Btn onClick={generate} style={{ fontSize: 13 }}>🤖 Lancer l'analyse</Btn>
         </div>
@@ -150,9 +150,9 @@ function CommentsSection({ debriefId, user, toast }) {
   return (
     <Card style={{ overflow:'hidden' }}>
       <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', background:'var(--surface-accent)' }}>
-        <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>
+        <h3 style={{ fontSize:14, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>
           💬 Commentaires
-          {comments.length > 0 && <span style={{ marginLeft:8, background:'var(--card,#fff)', color:'var(--txt,#5a4a3a)', fontSize:11, fontWeight:600, padding:'2px 7px', borderRadius:10 }}>{comments.length}</span>}
+          {comments.length > 0 && <span style={{ marginLeft:8, background:'var(--card,#fff)', color:'var(--txt,#4A3428)', fontSize:11, fontWeight:600, padding:'2px 7px', borderRadius:10 }}>{comments.length}</span>}
         </h3>
       </div>
       <div style={{ padding:16, display:'flex', flexDirection:'column', gap:12 }}>
@@ -160,25 +160,25 @@ function CommentsSection({ debriefId, user, toast }) {
           <p style={{ color:DS.textMuted, fontSize:13, textAlign:'center', padding:'8px 0' }}>Aucun commentaire</p>
         ) : comments.map(c => (
           <div key={c.id} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-            <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
+            <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--gradient-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{c.author_name?.charAt(0)}</div>
             <div style={{ flex:1, background:'var(--surface-accent)', borderRadius:'0 10px 10px 10px', padding:'10px 14px', border:'1px solid var(--border)' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-                <span style={{ fontWeight:600, fontSize:12, color:'var(--txt,#5a4a3a)' }}>{c.author_name}</span>
+                <span style={{ fontWeight:600, fontSize:12, color:'var(--txt,#4A3428)' }}>{c.author_name}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(c.created_at)}</span>
-                  {(c.author_id === user.id || user.role === 'head_of_sales' || user.role === 'admin') && (
+                  {(c.author_id === user.id || user.role === 'head_of_sales') && (
                     <button onClick={()=>del(c.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:12, padding:0 }}>✕</button>
                   )}
                 </div>
               </div>
-              <p style={{ fontSize:13, color:'var(--txt,#5a4a3a)', margin:0, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{c.content}</p>
+              <p style={{ fontSize:13, color:'var(--txt,#4A3428)', margin:0, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{c.content}</p>
             </div>
           </div>
         ))}
 
         {/* Input */}
         <div style={{ display:'flex', gap:10, alignItems:'flex-end', marginTop:4 }}>
-          <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#e87d6a,#d4604e)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{user.name?.charAt(0)}</div>
+          <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--gradient-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:'white', flexShrink:0 }}>{user.name?.charAt(0)}</div>
           <div style={{ flex:1 }}>
             <Textarea placeholder="Ajouter un commentaire..." rows={2} value={text} onChange={e=>setText(e.target.value)}/>
           </div>
@@ -192,9 +192,9 @@ function CommentsSection({ debriefId, user, toast }) {
 // ─── PIPELINE PAGE ────────────────────────────────────────────────────────────
 const PIPELINE_STAGES = [
   { key:'prospect',     label:'Prospects',    color:'#6b7280', bg:'#f1f5f9',  icon:'👤' },
-  { key:'premier_appel',label:'1er appel',    color:'#e87d6a', bg:'rgba(253,232,228,.6)',  icon:'📞' },
+  { key:'premier_appel',label:'1er appel',    color:'#FF7E5F', bg:'rgba(253,232,228,.6)',  icon:'📞' },
   { key:'relance',      label:'Relance',      color:'#d97706', bg:'#fef3c7',  icon:'🔄' },
-  { key:'negociation',  label:'Négociation',  color:'#e87d6a', bg:'rgba(255,248,245,.8)',  icon:'🤝' },
+  { key:'negociation',  label:'Négociation',  color:'#FF7E5F', bg:'rgba(255,248,245,.8)',  icon:'🤝' },
   { key:'signe',        label:'Signés ✓',     color:'#059669', bg:'#d1fae5',  icon:'✅' },
   { key:'perdu',        label:'Perdus',       color:'#dc2626', bg:'#fee2e2',  icon:'❌' },
 ];

@@ -120,7 +120,7 @@ function buildNotesState(configSections, previous = null) {
 
 function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, debriefTemplates, existingDebrief, fromPage, leadContext, autoAiAfterSave = true }) {
   const mob = useIsMobile();
-  const isManager = user?.role === 'head_of_sales' || user?.role === 'admin';
+  const isHOS = user?.role === 'head_of_sales';
   const isEditing = !!existingDebrief?.id;
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const templateCatalog = useMemo(
@@ -213,12 +213,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       },
     }));
   };
-  const hasNoObjectionInForm = Array.isArray(secs?.closing?.objections) && secs.closing.objections.includes('aucune');
-  const shouldHideQuestion = (sectionKey, questionId) => (
-    sectionKey === 'closing'
-    && hasNoObjectionInForm
-    && (questionId === 'douleur_reancree' || questionId === 'objection_isolee')
-  );
 
   const submit = async e => {
     e.preventDefault();
@@ -228,7 +222,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
     }
     setLoading(true);
     try {
-      let mergedSections = isEditing
+      const mergedSections = isEditing
         ? { ...(existingDebrief.sections || {}), ...secs }
         : secs;
       const mergedMeta = {
@@ -236,14 +230,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         offer_template_key: selectedTemplateKey,
         prospect_type: form.prospect_type || '',
       };
-      const mergedClosing = { ...(mergedSections.closing || {}) };
-      if (Array.isArray(mergedClosing.objections) && mergedClosing.objections.includes('aucune')) {
-        delete mergedClosing.douleur_reancree;
-        delete mergedClosing.objection_isolee;
-        delete mergedClosing.douleur_reancree_note;
-        delete mergedClosing.objection_isolee_note;
-      }
-      mergedSections = { ...mergedSections, closing: mergedClosing };
       mergedSections.__meta = mergedMeta;
       const mergedSectionNotes = isEditing
         ? { ...(existingDebrief.section_notes || {}), ...notes }
@@ -252,7 +238,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         method: isEditing ? 'PATCH' : 'POST',
         body:{
           ...form,
-          linked_deal_id: !isEditing && linkedDealId ? linkedDealId : undefined,
           sections: mergedSections,
           section_notes: mergedSectionNotes,
           total_score: total,
@@ -262,6 +247,19 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           criteria_notes: {},
         },
       });
+      if (!isEditing && linkedDealId) {
+        try {
+          await apiFetch(`/deals/${linkedDealId}`, {
+            method: 'PATCH',
+            body: {
+              debrief_id: r.debrief.id,
+              deal_closed: !!form.is_closed,
+            },
+          });
+        } catch {
+          // Lien deal non bloquant: on garde le debrief même si le patch échoue
+        }
+      }
       if (isEditing) {
         onUpdate?.(r.debrief, r.gamification);
         toast('Debrief modifié');
@@ -295,36 +293,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           label={question.label}
           options={options}
           value={Array.isArray(value) ? value : []}
-          onChange={nextValue => {
-            const raw = Array.isArray(nextValue) ? nextValue : [];
-            if (sectionKey === 'closing' && question.id === 'objections') {
-              setSecs(prev => {
-                const prevSection = prev[sectionKey] || {};
-                const prevValues = Array.isArray(prevSection[question.id]) ? prevSection[question.id] : [];
-                const prevHadNone = prevValues.includes('aucune');
-                const nextHasNone = raw.includes('aucune');
-                const nextOthers = raw.filter(item => item !== 'aucune');
-                let normalized = raw;
-
-                if (nextHasNone && nextOthers.length > 0) {
-                  normalized = prevHadNone ? nextOthers : ['aucune'];
-                } else if (!nextHasNone) {
-                  normalized = nextOthers;
-                }
-
-                const nextSection = { ...prevSection, [question.id]: normalized };
-                if (normalized.includes('aucune')) {
-                  delete nextSection.douleur_reancree;
-                  delete nextSection.objection_isolee;
-                  delete nextSection.douleur_reancree_note;
-                  delete nextSection.objection_isolee_note;
-                }
-                return { ...prev, [sectionKey]: nextSection };
-              });
-              return;
-            }
-            setAnswer(sectionKey, question.id, raw);
-          }}
+          onChange={v=>setAnswer(sectionKey, question.id, v)}
         />
       );
     }
@@ -332,7 +301,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
     if (type === 'text') {
       return (
         <div key={question.id} style={{ marginBottom:16 }}>
-          <label style={{ display:'block', fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>
+          <label style={{ display:'block', fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:8 }}>
             {question.label}
           </label>
           <Textarea
@@ -386,7 +355,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || (isEditing ? 'History' : 'Dashboard'))} style={{ width:36, height:36, padding:0, borderRadius:8, fontSize:16, flexShrink:0 }}>←</Btn>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:800, color:'var(--txt,#5a4a3a)', margin:0 }}>
+            <h1 style={{ fontSize:22, fontWeight:800, color:'var(--txt,#4A3428)', margin:0 }}>
               {isEditing ? 'Modifier le debrief' : 'Nouveau debrief'}
             </h1>
             <p style={{ color:DS.textMuted, fontSize:13, marginTop:4 }}>
@@ -394,7 +363,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             </p>
           </div>
         </div>
-        {isManager && (
+        {isHOS && (
           <Btn
             variant="secondary"
             onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
@@ -406,7 +375,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       </div>
 
       {mob && (
-        <Card style={{ background:'linear-gradient(135deg,#e87d6a,#d4604e)', border:'1px solid rgba(255,255,255,.3)', borderRadius:16, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
+        <Card style={{ background:'var(--gradient-primary)', border:'1px solid rgba(255,255,255,.3)', borderRadius:16, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
           <div>
             <p style={{ fontSize:11, opacity:.8, margin:0, textTransform:'uppercase', letterSpacing:'.05em' }}>Score en direct</p>
             <p style={{ fontSize:28, fontWeight:700, margin:0 }}>{percentage}%</p>
@@ -419,7 +388,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       <Card style={{ padding:16, border:'1px solid var(--border)', background:'linear-gradient(135deg, var(--surface-a), var(--surface-b))' }}>
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 2fr', gap:10, alignItems:'center' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'var(--txt,#5a4a3a)', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
+            <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'var(--txt,#4A3428)', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
             <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>Le formulaire s’adapte selon votre type de produit.</p>
           </div>
           <div>
@@ -434,7 +403,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                 padding:'10px 12px',
                 fontSize:13,
                 fontFamily:'inherit',
-                color:'var(--txt,#5a4a3a)',
+                color:'var(--txt,#4A3428)',
               }}
             >
               {templateCatalog.templates.map(template => (
@@ -454,22 +423,22 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'minmax(0, 1fr) 320px', gap:mob?16:26, alignItems:'start' }}>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <Card style={{ padding:20 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:14 }}>Informations de l'appel</h3>
+              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:14 }}>Informations de l'appel</h3>
               <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'repeat(2,minmax(0,1fr))', gap:12, marginBottom:14 }}>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Prospect *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>Prospect *</label>
                   <Input required placeholder="Nom du prospect" value={form.prospect_name} onChange={e=>setForm({ ...form, prospect_name:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Closer *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>Closer *</label>
                   <Input required placeholder="Votre nom" value={form.closer_name} onChange={e=>setForm({ ...form, closer_name:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Date *</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>Date *</label>
                   <Input type="date" required value={form.call_date} onChange={e=>setForm({ ...form, call_date:e.target.value })} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>Type de prospect</label>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>Type de prospect</label>
                   <select
                     value={form.prospect_type}
                     onChange={e=>setForm({ ...form, prospect_type:e.target.value })}
@@ -481,7 +450,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                       padding:'10px 12px',
                       fontSize:13,
                       fontFamily:'inherit',
-                      color:'var(--txt,#5a4a3a)',
+                      color:'var(--txt,#4A3428)',
                       boxShadow:'0 1px 4px rgba(28,26,40,.08)',
                     }}
                   >
@@ -492,11 +461,11 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:6 }}>🔗 Lien enregistrement</label>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>🔗 Lien enregistrement</label>
                 <Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({ ...form, call_link:e.target.value })} />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:8 }}>Résultat *</label>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:8 }}>Résultat *</label>
                 <div style={{ display:'flex', gap:10 }}>
                   {[{val:true,label:'✅ Closer',border:'#059669',bg:'var(--positive-bg)',c:'var(--positive-txt)'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'var(--danger-bg)',c:'var(--danger-txt)'}].map(({val,label,border,bg,c})=>(
                     <button
@@ -505,7 +474,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                       onClick={()=>setForm({ ...form, is_closed:val })}
                       style={{
                         flex:1, padding:'12px 14px', borderRadius:10, border:`2px solid ${form.is_closed===val?border:'var(--border)'}`,
-                        background:form.is_closed===val?bg:'var(--input-on-card)', color:form.is_closed===val?c:'var(--txt2,#b09080)', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all .2s',
+                        background:form.is_closed===val?bg:'var(--input-on-card)', color:form.is_closed===val?c:'var(--txt2,#B09080)', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all .2s',
                       }}
                     >
                       {label}
@@ -515,13 +484,11 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               </div>
             </Card>
 
-            <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0 }}>Évaluation des critères</h2>
+            <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', margin:0 }}>Évaluation des critères</h2>
             {configSections.map((section, idx) => (
               <CatCard key={section.key || idx} number={String(idx + 1)} title={section.title || `Section ${idx + 1}`}>
-                {(section.questions || []).filter(question => !shouldHideQuestion(section.storeKey, question.id)).length > 0
-                  ? (section.questions || [])
-                      .filter(question => !shouldHideQuestion(section.storeKey, question.id))
-                      .map(question => renderQuestion(section, question))
+                {section.questions.length > 0
+                  ? section.questions.map(question => renderQuestion(section, question))
                   : <p style={{ fontSize:13, color:DS.textMuted, margin:'0 0 12px' }}>Aucune question configurée.</p>
                 }
                 <SectionNotes
@@ -532,7 +499,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             ))}
 
             <Card style={{ padding:20 }}>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', marginBottom:12 }}>Notes globales</h3>
+              <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:12 }}>Notes globales</h3>
               <Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({ ...form, notes:e.target.value })} />
             </Card>
 
@@ -551,7 +518,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
           {!mob && (
             <div style={{ position:'sticky', top:80 }}>
               <Card style={{ padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:14, background:'linear-gradient(165deg, var(--surface-a), var(--surface-b))' }}>
-                <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#5a4a3a)', margin:0 }}>Score en direct</h3>
+                <h3 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', margin:0 }}>Score en direct</h3>
                 <ScoreGauge percentage={percentage} />
                 <p style={{ fontSize:13, color:DS.textMuted, margin:0 }}>{total} / {max} points</p>
                 {form.is_closed !== null && <ClosedBadge isClosed={form.is_closed} />}

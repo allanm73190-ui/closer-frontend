@@ -82,14 +82,14 @@ function CloserTeamSettings({ toast }) {
       ) : (
         <Card style={{ padding:14 }}>
           <p style={{ margin:'0 0 6px', fontSize:12, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em', fontWeight:700 }}>Équipe actuelle</p>
-          <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#5a4a3a' }}>
+          <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#4A3428' }}>
             {team ? `👥 ${team.name}` : 'Aucune équipe'}
           </p>
         </Card>
       )}
 
       <div>
-        <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#5a4a3a', marginBottom:6 }}>
+        <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#4A3428', marginBottom:6 }}>
           Rejoindre une équipe avec un code
         </label>
         <div style={{ display:'flex', gap:8 }}>
@@ -112,7 +112,7 @@ function CloserTeamSettings({ toast }) {
 }
 
 function AccountSettings({ user, onClose, toast }) {
-  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
+  const isHOS = user.role === 'head_of_sales';
   const isCloser = user.role === 'closer';
   const [tab, setTab] = useState('profil');
   const [pwd, setPwd] = useState({ current:'', next:'', confirm:'' });
@@ -174,8 +174,8 @@ function AccountSettings({ user, onClose, toast }) {
             <div>
               <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:0 }}>{user.name}</p>
               <p style={{ fontSize:13, color:DS.textSecondary, margin:'2px 0 0' }}>{user.email}</p>
-              <span style={{ display:'inline-block', marginTop:4, background:isManager?'#fef3c7':'rgba(253,232,228,.6)', color:isManager?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
-                {user.role === 'admin' ? '🛡️ Admin' : isManager ? '👑 Head of Sales' : '🎯 Closer'}
+              <span style={{ display:'inline-block', marginTop:4, background:isHOS?'#fef3c7':'rgba(253,232,228,.6)', color:isHOS?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
+                {isHOS ? '👑 Head of Sales' : '🎯 Closer'}
               </span>
             </div>
           </div>
@@ -319,7 +319,7 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, 
 
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {(sec.questions || []).map((q, qi) => (
-              <div key={q.id} style={{ background:DS.bgInput, borderRadius:DS.radiusSm, padding:'10px 12px', border:'1px solid rgba(232,125,106,.1)' }}>
+              <div key={q.id} style={{ background:DS.bgInput, borderRadius:DS.radiusSm, padding:'10px 12px', border:'1px solid rgba(255,126,95,.1)' }}>
                 <label style={{ display:'block', fontSize:11, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em', marginBottom:6 }}>
                   Question
                 </label>
@@ -359,7 +359,7 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, 
             borderRadius:DS.radiusFull,
             border:'1px solid rgba(192,80,64,.3)',
             background:'rgba(253,232,228,.5)',
-            color:'#c05040',
+            color:'#DC2626',
             fontSize:12,
             cursor:'pointer',
             fontFamily:'inherit',

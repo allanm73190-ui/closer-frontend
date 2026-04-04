@@ -6,16 +6,16 @@ import { fmtDate, copy } from '../../utils/scoring';
 import { Btn, Card, Spinner, Empty } from '../ui';
 
 const OBJECTION_META = {
-  budget:    { icon: '💰', color: '#c05040', bg: 'rgba(253,232,228,.8)',  border: 'rgba(192,80,64,.3)' },
+  budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(253,232,228,.8)',  border: 'rgba(192,80,64,.3)' },
   reflechir: { icon: '🤔', color: '#c07830', bg: 'rgba(254,243,224,.8)',  border: 'rgba(192,120,48,.3)' },
   conjoint:  { icon: '👥', color: '#6366f1', bg: 'rgba(237,233,254,.85)', border: 'rgba(99,102,241,.3)' },
-  methode:   { icon: '❓', color: '#3a7a9a', bg: 'rgba(218,237,245,.8)',  border: 'rgba(58,122,154,.3)' },
+  methode:   { icon: '❓', color: '#7C3AED', bg: 'rgba(218,237,245,.8)',  border: 'rgba(58,122,154,.3)' },
 };
 
 function rateColor(rate) {
   if (rate >= 60) return { color: '#5a9858', bg: 'rgba(218,240,216,.8)', border: 'rgba(90,152,88,.3)' };
   if (rate >= 35) return { color: '#c07830', bg: 'rgba(254,243,224,.8)', border: 'rgba(192,120,48,.3)' };
-  return { color: '#c05040', bg: 'rgba(253,232,228,.8)', border: 'rgba(192,80,64,.3)' };
+  return { color: '#DC2626', bg: 'rgba(253,232,228,.8)', border: 'rgba(192,80,64,.3)' };
 }
 
 function ObjectionCard({ objection, toast }) {
@@ -23,7 +23,7 @@ function ObjectionCard({ objection, toast }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
   const mob = useIsMobile();
-  const meta = OBJECTION_META[objection.type] || { icon: '💬', color: TXT2, bg: 'rgba(245,237,230,.6)', border: 'rgba(176,144,128,.3)' };
+  const meta = OBJECTION_META[objection.type] || { icon: '💬', color: TXT2, bg: 'rgba(245,237,230,.6)', border: 'rgba(200,160,140,.3)' };
   const rc = rateColor(objection.closingRate);
   const best = objection.bestResponses?.[0];
 
@@ -58,7 +58,7 @@ function ObjectionCard({ objection, toast }) {
         style={{
           padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: expanded ? `linear-gradient(135deg,${P},${P2})` : 'rgba(255,248,244,.5)',
-          borderBottom: expanded ? 'none' : '1px solid rgba(232,125,106,.06)',
+          borderBottom: expanded ? 'none' : '1px solid rgba(255,126,95,.06)',
           transition: 'all .2s',
         }}
       >
@@ -153,7 +153,7 @@ function ObjectionCard({ objection, toast }) {
           {/* Living objection library */}
           {Array.isArray(objection.validatedResponses) && objection.validatedResponses.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3a7a9a', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
                 📚 Bibliothèque vivante (réponses validées)
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -164,17 +164,17 @@ function ObjectionCard({ objection, toast }) {
                         <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:item.validated ? 'rgba(218,240,216,.8)' : 'rgba(254,243,224,.9)', color:item.validated ? '#5a9858' : '#c07830' }}>
                           {item.validated ? 'Validée' : 'À confirmer'}
                         </span>
-                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#3a7a9a' }}>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#7C3AED' }}>
                           {item.closeRate}% closing
                         </span>
-                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#3a7a9a' }}>
+                        <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:'rgba(255,255,255,.85)', color:'#7C3AED' }}>
                           {item.uses} usage{item.uses > 1 ? 's' : ''}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => { copy(item.text); toast('Réponse copiée'); }}
-                        style={{ border:'none', background:'white', borderRadius:8, padding:'4px 8px', fontSize:11, cursor:'pointer', color:'#3a7a9a', fontWeight:700 }}
+                        style={{ border:'none', background:'white', borderRadius:8, padding:'4px 8px', fontSize:11, cursor:'pointer', color:'#7C3AED', fontWeight:700 }}
                       >
                         Copier
                       </button>
@@ -189,14 +189,14 @@ function ObjectionCard({ objection, toast }) {
           )}
 
           {/* AI Variant */}
-          <div style={{ borderTop: '1px solid rgba(232,125,106,.08)', paddingTop: 14 }}>
+          <div style={{ borderTop: '1px solid rgba(255,126,95,.08)', paddingTop: 14 }}>
             {aiResponse ? (
               <div style={{ marginBottom: 12 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
                   🤖 Variante IA
                 </p>
                 <div style={{
-                  background: 'linear-gradient(135deg,rgba(253,232,228,.3),rgba(218,237,245,.2))', border: '1px solid rgba(232,125,106,.15)', borderRadius: R_MD,
+                  background: 'linear-gradient(135deg,rgba(253,232,228,.3),rgba(218,237,245,.2))', border: '1px solid rgba(255,126,95,.15)', borderRadius: R_MD,
                   padding: '14px 16px', borderLeft: `3px solid ${P}`,
                 }}>
                   <p style={{ fontSize: 14, color: TXT, margin: 0, lineHeight: 1.65 }}>{aiResponse}</p>
@@ -215,15 +215,15 @@ function ObjectionCard({ objection, toast }) {
 
           {/* Worst cases (if any) */}
           {objection.worstCases.length > 0 && (
-            <div style={{ marginTop: 14, borderTop: '1px solid rgba(232,125,106,.08)', paddingTop: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#c05040', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
+            <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,126,95,.08)', paddingTop: 14 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '.04em', margin: '0 0 8px' }}>
                 ⚠️ Appels non closés avec cette objection
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {objection.worstCases.map(d => (
                   <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', fontSize: 12 }}>
                     <span style={{ color: TXT2 }}>{d.prospect_name} — {d.user_name} — {fmtDate(d.call_date)}</span>
-                    <span style={{ color: '#c05040', fontWeight: 600 }}>{Math.round(d.percentage || 0)}%</span>
+                    <span style={{ color: '#DC2626', fontWeight: 600 }}>{Math.round(d.percentage || 0)}%</span>
                   </div>
                 ))}
               </div>
@@ -294,7 +294,7 @@ export function ObjectionLibrary({ toast }) {
       <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12 }}>
         {[
           { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: '💬', bg: 'rgba(253,232,228,.6)', c: P },
-          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(218,237,245,.6)', c: '#3a7a9a' },
+          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(218,237,245,.6)', c: '#7C3AED' },
           { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: '🎯', bg: 'rgba(218,240,216,.6)', c: '#5a9858' },
           { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: '🔥', bg: 'rgba(254,243,224,.6)', c: '#c07830' },
         ].map(({ label, value, icon, bg, c }) => (
@@ -316,7 +316,7 @@ export function ObjectionLibrary({ toast }) {
             cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
             background: filter === key ? `linear-gradient(135deg,${P},${P2})` : WHITE,
             color: filter === key ? 'white' : TXT2,
-            border: filter === key ? 'none' : '1px solid rgba(232,125,106,.15)',
+            border: filter === key ? 'none' : '1px solid rgba(255,126,95,.15)',
             boxShadow: filter === key ? SH_BTN : SH_SM,
           }}>
             {label} ({count})

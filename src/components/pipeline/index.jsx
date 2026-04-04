@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../config/api';
 import { fmtDate, computeSectionScores } from '../../utils/scoring';
 import { SECTIONS } from '../../config/ai';
@@ -201,7 +201,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
             <StatusBadge stage={activeStage} />
             <div style={{ display:'flex', gap:8 }}>
               {!isNew && <Btn variant="danger" onClick={remove} disabled={deleting} style={{ fontSize:12, padding:'7px 10px' }}>Supprimer</Btn>}
-              <button onClick={onClose} style={{ border:'none', background:'none', cursor:'pointer', fontSize:20, color:'var(--txt3,#c8b8a8)' }}>✕</button>
+              <button onClick={onClose} style={{ border:'none', background:'none', cursor:'pointer', fontSize:20, color:'var(--txt3,#C8B8A8)' }}>✕</button>
             </div>
           </div>
 
@@ -222,8 +222,8 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
                   fontSize:12,
                   fontWeight:700,
                   cursor:'pointer',
-                  background:activeTab === tab.key ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
-                  color:activeTab === tab.key ? 'white' : 'var(--txt2,#b09080)',
+                  background:activeTab === tab.key ? 'var(--gradient-primary)' : 'var(--input,#FFF5EB)',
+                  color:activeTab === tab.key ? 'white' : 'var(--txt2,#B09080)',
                 }}
               >
                 {tab.label}
@@ -320,17 +320,17 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
           {activeTab === 'debrief' && (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <Card style={{ padding:14, border:'1px solid rgba(106,172,206,.3)' }}>
-                <p style={{ margin:'0 0 6px', fontWeight:700, fontSize:14, color:'var(--txt,#5a4a3a)' }}>
+                <p style={{ margin:'0 0 6px', fontWeight:700, fontSize:14, color:'var(--txt,#4A3428)' }}>
                   {buildProspectName() || 'Contact à compléter'}
                 </p>
                 <p style={{ margin:'0 0 8px', fontSize:12, color:DS.textMuted }}>
                   {form.email || 'Email non renseigné'} · {form.phone || 'Téléphone non renseigné'}
                 </p>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                  {visibleFields.has('source') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Source: {form.source || '—'}</span>}
-                  {visibleFields.has('value') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Valeur: {(Number(form.value) || 0).toLocaleString('fr-FR')} €</span>}
-                  {visibleFields.has('contact_date') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Date: {form.contact_date ? fmtDate(form.contact_date) : '—'}</span>}
-                  {visibleFields.has('deal_closed') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#f5ede6)', border:'1px solid var(--border)' }}>Deal: {form.deal_closed ? 'Closé' : 'Non closé'}</span>}
+                  {visibleFields.has('source') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#FFF5EB)', border:'1px solid var(--border)' }}>Source: {form.source || '—'}</span>}
+                  {visibleFields.has('value') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#FFF5EB)', border:'1px solid var(--border)' }}>Valeur: {(Number(form.value) || 0).toLocaleString('fr-FR')} €</span>}
+                  {visibleFields.has('contact_date') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#FFF5EB)', border:'1px solid var(--border)' }}>Date: {form.contact_date ? fmtDate(form.contact_date) : '—'}</span>}
+                  {visibleFields.has('deal_closed') && <span style={{ padding:'3px 8px', borderRadius:999, fontSize:11, background:'var(--input,#FFF5EB)', border:'1px solid var(--border)' }}>Deal: {form.deal_closed ? 'Closé' : 'Non closé'}</span>}
                 </div>
               </Card>
 
@@ -338,7 +338,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
                 <Card style={{ padding:12, border:'1px solid rgba(106,172,206,.3)' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', marginBottom:8 }}>
                     <div>
-                      <p style={{ margin:0, fontWeight:700, fontSize:14, color:'var(--txt,#5a4a3a)' }}>{linkedDebrief.prospect_name}</p>
+                      <p style={{ margin:0, fontWeight:700, fontSize:14, color:'var(--txt,#4A3428)' }}>{linkedDebrief.prospect_name}</p>
                       <p style={{ margin:'2px 0 0', fontSize:12, color:DS.textMuted }}>{fmtDate(linkedDebrief.call_date)} · {linkedDebrief.closer_name}</p>
                     </div>
                     <div style={{ display:'flex', gap:6 }}>
@@ -350,7 +350,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
                     {SECTIONS.map(({ key }) => {
                       const value = computeSectionScores(linkedDebrief.sections || {})[key] || 0;
                       return (
-                        <div key={key} style={{ background:'var(--input,#f5ede6)', borderRadius:8, padding:'5px 4px', textAlign:'center', fontSize:11, color:barColor(value), fontWeight:700 }}>
+                        <div key={key} style={{ background:'var(--input,#FFF5EB)', borderRadius:8, padding:'5px 4px', textAlign:'center', fontSize:11, color:barColor(value), fontWeight:700 }}>
                           {value}/5
                         </div>
                       );
@@ -377,7 +377,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
 function barColor(value) {
   if (value >= 4) return '#059669';
   if (value >= 3) return '#d97706';
-  if (value >= 2) return '#e87d6a';
+  if (value >= 2) return '#FF7E5F';
   return '#ef4444';
 }
 
@@ -403,13 +403,13 @@ function DealCard({ deal, stages, onOpen }) {
         transition:'all .15s',
       }}
     >
-      <p style={{ margin:'0 0 6px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+      <p style={{ margin:'0 0 6px', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
         {contactName}
       </p>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
         {deal.value > 0 && <span style={{ fontSize:12, fontWeight:700, color:'#059669' }}>{deal.value.toLocaleString('fr-FR')} €</span>}
         {debriefScore != null && (
-          <span style={{ fontSize:10, fontWeight:700, padding:'1px 7px', borderRadius:999, background:'var(--input,#f5ede6)', color:'var(--txt,#5a4a3a)' }}>
+          <span style={{ fontSize:10, fontWeight:700, padding:'1px 7px', borderRadius:999, background:'var(--input,#FFF5EB)', color:'var(--txt,#4A3428)' }}>
             {debriefScore}%
           </span>
         )}
@@ -487,7 +487,6 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   const [alertFocus, setAlertFocus] = useState('all');
   const [pipelineConfig, setPipelineConfig] = useState(DEFAULT_PIPELINE_CONFIG);
   const mob = useIsMobile();
-  const isAdmin = user.role === 'admin';
 
   useEffect(() => {
     let mounted = true;
@@ -504,21 +503,12 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     return () => { mounted = false; };
   }, [user?.id, toast]);
 
-  const loadDeals = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiFetch('/deals');
-      setDeals(data || []);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    loadDeals();
-  }, [loadDeals]);
+    apiFetch('/deals')
+      .then(setDeals)
+      .catch(err => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const statuses = useMemo(() => {
     const list = pipelineConfig?.statuses?.length ? pipelineConfig.statuses : DEFAULT_PIPELINE_STATUSES;
@@ -543,31 +533,9 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   const handleDelete = (id) => setDeals(prev => prev.filter(item => item.id !== id));
 
-  const isManager = user.role === 'head_of_sales' || user.role === 'admin';
-  const profileFilters = useMemo(() => {
-    const map = new Map();
-    for (const deal of deals) {
-      const rawUserId = String(deal?.user_id || '').trim();
-      const rawName = String(deal?.user_name || '').trim() || 'Profil inconnu';
-      const key = rawUserId || `name:${rawName.toLowerCase()}`;
-      if (map.has(key)) {
-        map.get(key).count += 1;
-      } else {
-        map.set(key, { key, user_id: rawUserId || null, user_name: rawName, count: 1 });
-      }
-    }
-    return [...map.values()].sort((a, b) => a.user_name.localeCompare(b.user_name, 'fr', { sensitivity:'base' }));
-  }, [deals]);
-  const closerFilteredDeals = filter === 'all'
-    ? deals
-    : deals.filter(deal => {
-      const rawUserId = String(deal?.user_id || '').trim();
-      if (filter.startsWith('name:')) {
-        const rawName = String(deal?.user_name || '').trim().toLowerCase();
-        return !rawUserId && `name:${rawName}` === filter;
-      }
-      return rawUserId === filter;
-    });
+  const isHOS = user.role === 'head_of_sales';
+  const closers = [...new Map(deals.map(deal => [deal.user_id, { id: deal.user_id, name: deal.user_name }])).values()];
+  const closerFilteredDeals = filter === 'all' ? deals : deals.filter(deal => deal.user_id === filter);
 
   const closedKeys = statuses.filter(status => status.closed).map(status => status.key);
   const wonKeys = statuses.filter(status => status.won).map(status => status.key);
@@ -630,47 +598,6 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     navigate?.('NewDebrief', null, 'Pipeline', { leadContext });
   };
 
-  const purgeProfile = async (profile) => {
-    if (!isAdmin || !profile) return;
-    const ok = confirm(`Supprimer définitivement tous les leads du profil "${profile.user_name}" ?`);
-    if (!ok) return;
-    try {
-      const response = await apiFetch('/deals/purge-profile', {
-        method:'POST',
-        body:{
-          profile_key: profile.key,
-          user_id: profile.user_id || undefined,
-          user_name: profile.user_name || undefined,
-        },
-      });
-      await loadDeals();
-      if (filter === profile.key) setFilter('all');
-      toast(`${response.deleted || 0} lead(s) supprimé(s) pour ${profile.user_name}`);
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
-
-  const purgeLegacyProfiles = async () => {
-    if (!isAdmin) return;
-    const ok = confirm('Supprimer toutes les traces legacy / Zapier / tests du pipeline ?');
-    if (!ok) return;
-    try {
-      const response = await apiFetch('/deals/purge-profile', {
-        method:'POST',
-        body:{
-          profile_key:'legacy_cleanup',
-          cleanup_scope:'legacy',
-        },
-      });
-      await loadDeals();
-      setFilter('all');
-      toast(`Nettoyage terminé: ${response.deleted || 0} lead(s) supprimé(s)`);
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
-
   if (loading) return <Spinner full />;
 
   return (
@@ -678,23 +605,18 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       <Card style={{ padding:18, border:'1px solid var(--border)', background:'linear-gradient(145deg, rgba(253,232,228,.6), rgba(218,237,245,.6))' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#5a4a3a)', margin:0 }}>🎯 Pipeline</h1>
+            <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>🎯 Pipeline</h1>
             <p style={{ color:DS.textMuted, fontSize:13, margin:'4px 0 0' }}>
               {deals.length} contact{deals.length !== 1 ? 's' : ''} · fiche contact unifiée
             </p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            {isManager && (
+            {isHOS && (
               <Btn
                 variant="secondary"
                 onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
               >
                 ⚙️ Paramètres
-              </Btn>
-            )}
-            {isAdmin && (
-              <Btn variant="danger" onClick={purgeLegacyProfiles}>
-                🧹 Nettoyer legacy
               </Btn>
             )}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
@@ -717,7 +639,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
         {[
           { label:'CA signé', value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', color:'#059669' },
-          { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'🧭', color:'#e87d6a' },
+          { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'🧭', color:'#FF7E5F' },
           { label:'Taux win', value:`${winRate}%`, icon:'🏆', color:'#d97706' },
           { label:'Sans date', value:noDateCount, icon:'🗓️', color:noDateCount > 0 ? '#d97706' : '#64748b' },
         ].map(kpi => (
@@ -732,7 +654,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       <Card style={{ padding:14, border:'1px solid var(--border)' }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
           <div>
-            <p style={{ margin:'0 0 3px', fontSize:13, fontWeight:700, color:'var(--txt,#5a4a3a)' }}>Relance intelligente</p>
+            <p style={{ margin:'0 0 3px', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>Relance intelligente</p>
             <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
               Priorisez automatiquement les deals à traiter en premier.
             </p>
@@ -744,8 +666,8 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
               border:'none',
               borderRadius:999,
               padding:'6px 10px',
-              background:alertFocus === 'all' ? 'linear-gradient(135deg,#e87d6a,#d4604e)' : 'var(--input,#f5ede6)',
-              color:alertFocus === 'all' ? 'white' : 'var(--txt2,#b09080)',
+              background:alertFocus === 'all' ? 'var(--gradient-primary)' : 'var(--input,#FFF5EB)',
+              color:alertFocus === 'all' ? 'white' : 'var(--txt2,#B09080)',
               fontSize:11,
               fontWeight:700,
               cursor:'pointer',
@@ -779,43 +701,22 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         </div>
       </Card>
 
-      {isManager && profileFilters.length > 1 && (
+      {isHOS && closers.length > 1 && (
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}
-            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#e87d6a' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === 'all' ? '#e87d6a' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#FF7E5F' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === 'all' ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
           >
             Tous les closers
           </button>
-          {profileFilters.map(profile => (
-            <div key={profile.key} style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
-              <button
-                onClick={()=>setFilter(profile.key)}
-                style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === profile.key ? '#e87d6a' : 'var(--border)'}`, background:filter === profile.key ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === profile.key ? '#e87d6a' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
-              >
-                👤 {profile.user_name} · {profile.count}
-              </button>
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => purgeProfile(profile)}
-                  title={`Supprimer le profil ${profile.user_name}`}
-                  style={{
-                    border:'1px solid rgba(220,38,38,.35)',
-                    background:'rgba(254,226,226,.72)',
-                    color:'#b91c1c',
-                    borderRadius:999,
-                    padding:'5px 9px',
-                    cursor:'pointer',
-                    fontFamily:'inherit',
-                    fontSize:12,
-                    fontWeight:700,
-                  }}
-                >
-                  🗑
-                </button>
-              )}
-            </div>
+          {closers.map(closer => (
+            <button
+              key={closer.id}
+              onClick={()=>setFilter(closer.id)}
+              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(253,232,228,.6)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+            >
+              👤 {closer.name}
+            </button>
           ))}
         </div>
       )}
@@ -823,7 +724,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
       {alertFocus !== 'all' && (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
           <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-            Focus actif: <strong style={{ color:'var(--txt,#5a4a3a)' }}>{activeAlert?.title || 'Alerte'}</strong> ({displayDeals.length} deal{displayDeals.length > 1 ? 's' : ''})
+            Focus actif: <strong style={{ color:'var(--txt,#4A3428)' }}>{activeAlert?.title || 'Alerte'}</strong> ({displayDeals.length} deal{displayDeals.length > 1 ? 's' : ''})
           </p>
           <Btn variant="secondary" onClick={()=>setAlertFocus('all')} style={{ fontSize:12, padding:'6px 11px' }}>
             Retirer le focus
