@@ -8,9 +8,29 @@ import { apiFetch } from '../../config/api';
 import { Btn, Card, ScoreGauge, ClosedBadge, Empty } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
+import { QualityBadge, QualityFlagsList, QualityBreakdown } from './QualityBadge';
 
-function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
+function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toast, allDebriefs, autoAI }) {
+  const [debrief, setDebrief] = useState(debriefProp);
+  React.useEffect(() => { setDebrief(debriefProp); }, [debriefProp]);
   const mob = useIsMobile();
+  const isManager = user && (user.role === 'head_of_sales' || user.role === 'admin');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewNote, setReviewNote] = useState('');
+  const submitReview = async (status) => {
+    if (reviewBusy || !debrief) return;
+    setReviewBusy(true);
+    try {
+      await apiFetch(`/debriefs/${debrief.id}/review`, { method: 'POST', body: { status, review_note: reviewNote } });
+      setDebrief({ ...debrief, validation_status: status, validated_at: new Date().toISOString() });
+      setReviewNote('');
+      toast?.(`Debrief ${status === 'validated' ? 'validé' : status === 'corrected' ? 'corrigé' : 'rejeté'}`, 'success');
+    } catch (e) {
+      toast?.(e.message || 'Erreur review', 'error');
+    } finally {
+      setReviewBusy(false);
+    }
+  };
   const [exportingPdf, setExportingPdf] = useState(false);
   if (!debrief) return (
     <div style={{ textAlign:'center', padding:60 }}>
@@ -72,6 +92,36 @@ function Detail({ debrief, navigate, onDelete, fromPage, user, toast, allDebrief
           <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
         </div>
       </div>
+
+      {typeof debrief.overall_quality_score === 'number' && (
+        <Card style={{ padding: 14, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <strong style={{ fontSize: 13 }}>Qualité du debrief</strong>
+            <QualityBadge score={debrief.overall_quality_score} flags={debrief.quality_flags} />
+            {debrief.validation_status && debrief.validation_status !== 'pending' && (
+              <span style={{ fontSize: 11, color: '#6b7280' }}>statut: {debrief.validation_status}</span>
+            )}
+          </div>
+          <QualityBreakdown breakdown={debrief.quality_breakdown} />
+          <QualityFlagsList flags={debrief.quality_flags} />
+          {isManager && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <textarea
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                placeholder="Note de review (optionnel)"
+                rows={2}
+                style={{ width: '100%', fontSize: 12, padding: 6, border: '1px solid var(--border)', borderRadius: 6 }}
+              />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('validated')} style={{ fontSize: 11, padding: '6px 10px' }}>✅ Valider</Btn>
+                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('corrected')} style={{ fontSize: 11, padding: '6px 10px' }}>✏️ Corriger</Btn>
+                <Btn variant="danger" disabled={reviewBusy} onClick={() => submitReview('rejected')} style={{ fontSize: 11, padding: '6px 10px' }}>✖ Rejeter</Btn>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {mob ? (
         <>
