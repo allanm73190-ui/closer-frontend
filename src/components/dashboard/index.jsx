@@ -169,7 +169,10 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ ...G({ padding: '16px 14px' }) }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt)' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{debriefs.length} debriefs · Pipeline: {pipelineActiveCount} leads</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>
+            {debriefs.length} debriefs · Pipeline: {pipelineActiveCount} leads
+            {streak > 0 && <span style={{ marginLeft: 8, color: '#F59E0B', fontWeight: 600 }}>{streak >= 7 ? '🔥' : '⚡'} {streak}j</span>}
+          </div>
           <Btn onClick={() => navigate('NewDebrief')} style={{ marginTop: 12, width: '100%' }}>+ Nouveau debrief</Btn>
         </div>
         <GamCard gam={gam} />
@@ -203,7 +206,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', letterSpacing: '-.02em' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€{streak > 0 && <span style={{ marginLeft: 8, color: '#F59E0B', fontWeight: 600 }}>{streak >= 7 ? '🔥' : '⚡'} {streak}j streak</span>}</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€<span style={{ marginLeft: 8, color: streak > 0 ? '#F59E0B' : 'var(--txt3)', fontWeight: 600 }}>{streak >= 7 ? '🔥' : streak > 0 ? '⚡' : '—'} {streak}j streak</span></div>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>
