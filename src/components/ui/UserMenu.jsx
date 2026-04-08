@@ -47,8 +47,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
               <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>{roleLabel}</p>
             </div>
-            {gam && <span style={{ fontSize: 13 }} title={`${gam.level.name} \u00b7 ${gam.points} pts`}>{gam.level.icon}</span>}
-            <span style={{ fontSize: 10, color: 'var(--txt3)' }}>{open ? '\u25b2' : '\u25bc'}</span>
+            {gam && <span style={{ fontSize: 13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
+            <span style={{ fontSize: 10, color: 'var(--txt3)' }}>{open ? '▲' : '▼'}</span>
           </>
         )}
       </button>
@@ -94,8 +94,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
           </div>
 
           {[
-            { icon: '\u2699\uFE0F', label: 'Param\u00e8tres du compte', action: () => { onSettings(); setOpen(false); } },
-            { icon: '\uD83D\uDD14', label: 'Notifications', action: () => { toast('Bient\u00f4t disponible !', 'info'); setOpen(false); } },
+            { icon: '⚙️', label: 'Paramètres du compte', action: () => { onSettings(); setOpen(false); } },
+            { icon: '🔔', label: 'Notifications', action: () => { toast('Bientôt disponible !', 'info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
             <button
               key={label} onClick={action}
@@ -125,7 +125,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'\uD83C\uDF19'}</span>
+              <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'🌙'}</span>
               Mode nuit
             </span>
             <div style={{
@@ -149,7 +149,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
             onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
-            <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'\u21A9'}</span>D\u00e9connexion
+            <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'↩'}</span>Déconnexion
           </button>
         </div>
       )}

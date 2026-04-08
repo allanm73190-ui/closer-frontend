@@ -42,8 +42,8 @@ function AuthShell({ title, subtitle, children, wide = false }) {
               <p style={{ margin: '8px 0 0', fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', opacity: .8, fontWeight: 600 }}>Sales Intelligence</p>
             </div>
             <div style={{ position: 'relative' }}>
-              <h2 style={{ margin: 0, fontSize: 34, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-.02em' }}>Transformez chaque appel en progr\u00e8s mesurable.</h2>
-              <p style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.6, opacity: .85 }}>Analyse, coaching IA et ex\u00e9cution commerciale dans une seule interface pens\u00e9e pour closer mieux.</p>
+              <h2 style={{ margin: 0, fontSize: 34, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-.02em' }}>Transformez chaque appel en progrès mesurable.</h2>
+              <p style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.6, opacity: .85 }}>Analyse, coaching IA et exécution commerciale dans une seule interface pensée pour closer mieux.</p>
             </div>
           </aside>
         )}
@@ -84,12 +84,12 @@ function LoginPage({ onLogin, goRegister, goForgot }) {
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
-    <AuthShell title="Connexion" subtitle="Acc\u00e9dez \u00e0 votre tableau de bord et reprenez votre dynamique de closing.">
+    <AuthShell title="Connexion" subtitle="Accédez à votre tableau de bord et reprenez votre dynamique de closing.">
       <AlertBox type="error" message={err} />
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <TextField label="Email" type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} placeholder="votre@email.com" required autoFocus />
-        <TextField label="Mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" required />
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button type="button" onClick={goForgot} style={linkBtn}>Mot de passe oubli\u00e9 ?</button></div>
+        <TextField label="Mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="••••••••" required />
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button type="button" onClick={goForgot} style={linkBtn}>Mot de passe oublié ?</button></div>
         <button type="submit" disabled={loading} style={{ ...primaryBtn, opacity: loading ? .7 : 1 }}>{loading ? 'Connexion...' : 'Se connecter'}</button>
       </form>
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, color: 'var(--txt3)' }}>Pas encore de compte ? <button type="button" onClick={goRegister} style={linkBtn}>S'inscrire</button></p>
@@ -112,14 +112,14 @@ function RegisterPage({ onLogin, goLogin }) {
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
-    <AuthShell title="Cr\u00e9er un compte" subtitle="Rejoignez CloserDebrief et commencez \u00e0 mesurer vos progr\u00e8s d\u00e8s aujourd'hui." wide>
+    <AuthShell title="Créer un compte" subtitle="Rejoignez CloserDebrief et commencez à mesurer vos progrès dès aujourd'hui." wide>
       <AlertBox type="error" message={err} />
       <div style={{ marginBottom: 16 }}>
-        <p style={{ ...fieldLabel, margin: '0 0 8px' }}>R\u00f4le</p>
+        <p style={{ ...fieldLabel, margin: '0 0 8px' }}>Rôle</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 8 }}>
           {[
             { value: 'closer', label: 'Closer', desc: 'Je passe les appels de vente' },
-            { value: 'head_of_sales', label: 'Head of Sales', desc: "Je pilote l'\u00e9quipe commerciale" },
+            { value: 'head_of_sales', label: 'Head of Sales', desc: "Je pilote l'équipe commerciale" },
           ].map(item => {
             const active = f.role === item.value;
             return (
@@ -142,12 +142,12 @@ function RegisterPage({ onLogin, goLogin }) {
       <form onSubmit={submit} style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 12 }}>
         <div style={{ gridColumn: '1 / -1' }}><TextField label="Nom complet" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Jean Dupont" required /></div>
         <div style={{ gridColumn: '1 / -1' }}><TextField label="Email" type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} placeholder="votre@email.com" required /></div>
-        <TextField label="Mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="8 caract\u00e8res min." required />
-        <TextField label="Confirmer" type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" required />
+        <TextField label="Mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="8 caractères min." required />
+        <TextField label="Confirmer" type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} placeholder="••••••••" required />
         {f.role === 'closer' && <div style={{ gridColumn: '1 / -1' }}><TextField label="Code d'invitation" value={f.invite_code} onChange={e => setF({ ...f, invite_code: e.target.value.toUpperCase() })} placeholder="ABC-123-XYZ" required /></div>}
-        <div style={{ gridColumn: '1 / -1', marginTop: 2 }}><button type="submit" disabled={loading} style={{ ...primaryBtn, opacity: loading ? .7 : 1 }}>{loading ? 'Cr\u00e9ation...' : 'Cr\u00e9er mon compte'}</button></div>
+        <div style={{ gridColumn: '1 / -1', marginTop: 2 }}><button type="submit" disabled={loading} style={{ ...primaryBtn, opacity: loading ? .7 : 1 }}>{loading ? 'Création...' : 'Créer mon compte'}</button></div>
       </form>
-      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, color: 'var(--txt3)' }}>D\u00e9j\u00e0 un compte ? <button type="button" onClick={goLogin} style={linkBtn}>Se connecter</button></p>
+      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, color: 'var(--txt3)' }}>Déjà un compte ? <button type="button" onClick={goLogin} style={linkBtn}>Se connecter</button></p>
     </AuthShell>
   );
 }
@@ -163,13 +163,13 @@ function ForgotPage({ goLogin }) {
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
-    <AuthShell title="Mot de passe oubli\u00e9" subtitle="Entrez votre email pour recevoir le lien de r\u00e9initialisation.">
+    <AuthShell title="Mot de passe oublié" subtitle="Entrez votre email pour recevoir le lien de réinitialisation.">
       {sent ? (
         <div style={{ textAlign: 'center', padding: '8px 0 2px' }}>
           <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 22, color: P }}>@</div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: 'var(--txt)' }}>Email envoy\u00e9</h3>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--txt3)' }}>Si cet email existe, vous recevrez un lien de r\u00e9initialisation.</p>
-          <button type="button" onClick={goLogin} style={{ ...primaryBtn, maxWidth: 280 }}>Retour \u00e0 la connexion</button>
+          <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: 'var(--txt)' }}>Email envoyé</h3>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--txt3)' }}>Si cet email existe, vous recevrez un lien de réinitialisation.</p>
+          <button type="button" onClick={goLogin} style={{ ...primaryBtn, maxWidth: 280 }}>Retour à la connexion</button>
         </div>
       ) : (
         <>
@@ -199,13 +199,13 @@ function ResetPage({ token, onDone }) {
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
-    <AuthShell title="Nouveau mot de passe" subtitle="D\u00e9finissez un mot de passe s\u00e9curis\u00e9 pour reprendre l'acc\u00e8s.">
-      {ok ? <AlertBox type="success" message="Mot de passe modifi\u00e9. Redirection en cours..." /> : (
+    <AuthShell title="Nouveau mot de passe" subtitle="Définissez un mot de passe sécurisé pour reprendre l'accès.">
+      {ok ? <AlertBox type="success" message="Mot de passe modifié. Redirection en cours..." /> : (
         <>
           <AlertBox type="error" message={err} />
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <TextField label="Nouveau mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="8 caract\u00e8res minimum" required autoFocus />
-            <TextField label="Confirmer" type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" required />
+            <TextField label="Nouveau mot de passe" type="password" value={f.password} onChange={e => setF({ ...f, password: e.target.value })} placeholder="8 caractères minimum" required autoFocus />
+            <TextField label="Confirmer" type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} placeholder="••••••••" required />
             <button type="submit" disabled={loading} style={{ ...primaryBtn, opacity: loading ? .7 : 1 }}>{loading ? 'Modification...' : 'Modifier le mot de passe'}</button>
           </form>
         </>

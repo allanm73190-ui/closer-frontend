@@ -28,7 +28,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
       const result = await fetchAIAnalysis(debrief.id);
       setAnalysis(result);
       try { localStorage.setItem(`cd_ai_${debrief.id}`, result); } catch {}
-      toast('Analyse IA g\u00e9n\u00e9r\u00e9e !');
+      toast('Analyse IA générée !');
     } catch (e) { toast(e.message || "Erreur lors de l'analyse IA", 'error'); }
     finally { setLoading(false); }
   }, [debrief?.id, loading, toast]);
@@ -54,7 +54,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
       if (t.startsWith('## ')) return <h2 key={i} style={{ fontSize: 16, fontWeight: 700, color: 'var(--txt)', margin: '18px 0 10px', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>{t.slice(3)}</h2>;
       if (t.startsWith('### ')) return <h3 key={i} style={{ fontSize: 14, fontWeight: 700, color: P, margin: '14px 0 6px' }}>{t.slice(4)}</h3>;
       if (t.startsWith('**') && t.endsWith('**')) return <p key={i} style={{ fontWeight: 700, fontSize: 13, color: 'var(--txt)', margin: '10px 0 6px', background: 'var(--surface-accent)', padding: '10px 14px', borderRadius: 8, borderLeft: `3px solid ${P}` }}>{t.slice(2, -2)}</p>;
-      if (t.startsWith('- ')) return <div key={i} style={{ display: 'flex', gap: 8, padding: '3px 0', fontSize: 13, color: 'var(--txt)', lineHeight: 1.6 }}><span style={{ color: P, flexShrink: 0, marginTop: 2 }}>{'\u2022'}</span><span>{renderBold(t.slice(2))}</span></div>;
+      if (t.startsWith('- ')) return <div key={i} style={{ display: 'flex', gap: 8, padding: '3px 0', fontSize: 13, color: 'var(--txt)', lineHeight: 1.6 }}><span style={{ color: P, flexShrink: 0, marginTop: 2 }}>{'•'}</span><span>{renderBold(t.slice(2))}</span></div>;
       return <p key={i} style={{ fontSize: 13, color: 'var(--txt)', lineHeight: 1.6, margin: '4px 0' }}>{renderBold(t)}</p>;
     });
   };
@@ -71,7 +71,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {analysis && <button onClick={() => setCollapsed(v => !v)} style={{ background: 'none', border: 'none', color: 'var(--txt3)', cursor: 'pointer', fontSize: 14, padding: '4px 8px' }}>{collapsed ? '\u25BC' : '\u25B2'}</button>}
+          {analysis && <button onClick={() => setCollapsed(v => !v)} style={{ background: 'none', border: 'none', color: 'var(--txt3)', cursor: 'pointer', fontSize: 14, padding: '4px 8px' }}>{collapsed ? '▼' : '▲'}</button>}
           <Btn onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '7px 14px' }}>
             {loading ? 'Analyse en cours...' : analysis ? 'Relancer' : 'Analyser'}
           </Btn>
@@ -89,8 +89,8 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
         <div style={{ padding: '16px 20px', maxHeight: 600, overflowY: 'auto' }}>
           {renderMarkdown(analysis)}
           <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-            <Btn variant="secondary" onClick={() => { copy(analysis); toast('Analyse copi\u00e9e !'); }} style={{ fontSize: 12, padding: '6px 12px' }}>Copier</Btn>
-            <Btn variant="secondary" onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '6px 12px' }}>R\u00e9g\u00e9n\u00e9rer</Btn>
+            <Btn variant="secondary" onClick={() => { copy(analysis); toast('Analyse copiée !'); }} style={{ fontSize: 12, padding: '6px 12px' }}>Copier</Btn>
+            <Btn variant="secondary" onClick={generate} disabled={loading} style={{ fontSize: 12, padding: '6px 12px' }}>Régénérer</Btn>
           </div>
         </div>
       )}
@@ -99,7 +99,7 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
         <div style={{ padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent-violet-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 20, color: 'var(--accent-violet)' }}>A</div>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt)', margin: '0 0 6px' }}>Analyse IA disponible</p>
-          <p style={{ fontSize: 13, color: 'var(--txt3)', margin: '0 0 16px' }}>Coaching personnalis\u00e9 bas\u00e9 sur ce debrief</p>
+          <p style={{ fontSize: 13, color: 'var(--txt3)', margin: '0 0 16px' }}>Coaching personnalisé basé sur ce debrief</p>
           <Btn onClick={generate} style={{ fontSize: 13 }}>Lancer l'analyse</Btn>
         </div>
       )}
@@ -149,7 +149,7 @@ function CommentsSection({ debriefId, user, toast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(c.created_at)}</span>
                   {(c.author_id === user.id || user.role === 'head_of_sales' || user.role === 'admin') && (
-                    <button onClick={() => del(c.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 12, padding: 0 }}>{'\u2715'}</button>
+                    <button onClick={() => del(c.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 12, padding: 0 }}>{'✕'}</button>
                   )}
                 </div>
               </div>
