@@ -79,6 +79,7 @@ export default function App() {
   const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
   const [settingsTabRequest, setSettingsTabRequest] = useState('account');
+  const [objectivesRefreshTick, setObjectivesRefreshTick] = useState(0);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('cd_theme');
     return saved === 'dark' ? 'dark' : 'light';
@@ -230,6 +231,7 @@ export default function App() {
 
   const onSave = (debrief, g) => {
     setDebriefs(p => [debrief, ...p]);
+    setObjectivesRefreshTick(t => t + 1);
     if (g) { setGam(g); if (g.pointsEarned > 0) setBurst({ points: g.pointsEarned, levelUp: g.levelUp, newLevel: g.level.name }); }
   };
 
@@ -315,7 +317,7 @@ export default function App() {
   // ─── Content renderer ──────────────────────────────────────────────────────
   const Content = () => (
     <>
-      {page === 'Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} toast={toast} />}
+      {page === 'Dashboard' && <Dashboard debriefs={debriefs} navigate={navigate} user={user} gam={gam} toast={toast} objectivesRefreshTick={objectivesRefreshTick} />}
       {page === 'NewDebrief' && (
         <NewDebrief navigate={navigate} onSave={onSave} onUpdate={onUpdateDebrief} toast={toast} user={user}
           debriefConfig={debriefConfig} debriefTemplates={debriefTemplates} leadContext={leadContext} autoAiAfterSave={autoAiAfterDebrief} />

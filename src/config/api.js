@@ -47,6 +47,7 @@ export async function apiFetch(path, opts = {}) {
   try {
     res = await fetch(`${API_BASE}${path}`, {
       ...fetchOpts,
+      credentials: 'include',
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',

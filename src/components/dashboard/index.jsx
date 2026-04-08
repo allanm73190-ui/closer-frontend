@@ -49,7 +49,7 @@ const Gv = (extra = {}) => ({
 });
 
 // ─── BENTO DASHBOARD ─────────────────────────────────────────────────────────
-function Dashboard({ debriefs, navigate, user, gam, toast }) {
+function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick = 0 }) {
   const mob = useIsMobile();
   const role = String(user?.role || '').toLowerCase();
   const isManager = role === 'head_of_sales' || role === 'admin';
@@ -170,7 +170,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast }) {
           <Btn onClick={() => navigate('NewDebrief')} style={{ marginTop: 12, width: '100%' }}>+ Nouveau debrief</Btn>
         </div>
         <GamCard gam={gam} />
-        {!isManager && <ObjectiveBanner userId={user.id} />}
+        {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
         <StatsRow debriefs={debriefs} />
         <div style={{ ...G({ padding: 14 }) }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', marginBottom: 8 }}>Évolution</div>

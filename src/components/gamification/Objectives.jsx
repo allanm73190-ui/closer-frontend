@@ -5,11 +5,11 @@ import { useIsMobile } from '../../hooks';
 import { fmtDate } from '../../utils/scoring';
 import { Btn, Input, Textarea, Card, Modal, Spinner, ProgBar } from '../ui';
 
-function ObjectiveBanner({ userId }) {
+function ObjectiveBanner({ userId, refreshTick = 0 }) {
   const [objectives, setObjectives] = useState([]);
   useEffect(() => {
     apiFetch('/objectives/me').then(setObjectives).catch(() => {});
-  }, [userId]);
+  }, [userId, refreshTick]);
 
   const monthly = objectives.find(o => o.period_type === 'monthly');
   const weekly  = objectives.find(o => o.period_type === 'weekly');
