@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 
 // ─── Config & Utils ──────────────────────────────────────────────────────────
 import { apiFetch, getToken, clearToken, setOnExpired } from './config/api';
@@ -13,17 +13,18 @@ import { UserMenu } from './components/ui/UserMenu';
 // ─── Auth ────────────────────────────────────────────────────────────────────
 import { LoginPage, RegisterPage, ForgotPage, ResetPage } from './components/auth';
 
-// ─── Pages ───────────────────────────────────────────────────────────────────
-import { Dashboard, History } from './components/dashboard';
-import { Detail } from './components/debrief/Detail';
-import { NewDebrief } from './components/debrief/NewDebrief';
-import { PdfViewer } from './components/debrief/PdfViewer';
-import { PipelinePage } from './components/pipeline';
-import { HOSPage } from './components/team';
-import { ObjectionLibrary } from './components/objections';
-import { SettingsPage } from './components/settings';
-import { BenchmarkPage } from './components/features/Benchmark';
-import { KnowledgePage } from './components/features/Knowledge';
+// ─── Pages (lazy-loaded) ────────────────────────────────────────────────────
+const Dashboard        = lazy(() => import('./components/dashboard').then(m => ({ default: m.Dashboard })));
+const History          = lazy(() => import('./components/dashboard').then(m => ({ default: m.History })));
+const Detail           = lazy(() => import('./components/debrief/Detail').then(m => ({ default: m.Detail })));
+const NewDebrief       = lazy(() => import('./components/debrief/NewDebrief').then(m => ({ default: m.NewDebrief })));
+const PdfViewer        = lazy(() => import('./components/debrief/PdfViewer').then(m => ({ default: m.PdfViewer })));
+const PipelinePage     = lazy(() => import('./components/pipeline').then(m => ({ default: m.PipelinePage })));
+const HOSPage          = lazy(() => import('./components/team').then(m => ({ default: m.HOSPage })));
+const ObjectionLibrary = lazy(() => import('./components/objections').then(m => ({ default: m.ObjectionLibrary })));
+const SettingsPage     = lazy(() => import('./components/settings').then(m => ({ default: m.SettingsPage })));
+const BenchmarkPage    = lazy(() => import('./components/features/Benchmark').then(m => ({ default: m.BenchmarkPage })));
+const KnowledgePage    = lazy(() => import('./components/features/Knowledge').then(m => ({ default: m.KnowledgePage })));
 
 const DESKTOP_SIDEBAR_WIDTH = 220;
 
@@ -373,7 +374,7 @@ export default function App() {
 
         {isPdfViewerPage ? (
           <main style={{ minHeight: '100vh' }}>
-            {dataLoading ? <Spinner full /> : Content()}
+            {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
           </main>
         ) : mob ? (
           /* ─── MOBILE LAYOUT ─────────────────────────────────────────────── */
@@ -404,7 +405,7 @@ export default function App() {
             </header>
 
             <main style={{ padding: '18px 14px 104px' }}>
-              {dataLoading ? <Spinner full /> : Content()}
+              {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
             </main>
 
             {/* ── Mobile bottom nav ────────────────────────────────────────── */}
@@ -608,7 +609,7 @@ export default function App() {
 
               {/* Page content */}
               <main style={{ padding: '24px 26px 40px', overflowX: 'hidden', animation: 'fadeUp .25s ease-out' }}>
-                {dataLoading ? <Spinner full /> : Content()}
+                {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
               </main>
             </div>
           </div>
