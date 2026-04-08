@@ -374,7 +374,7 @@ export default function App() {
 
         {isPdfViewerPage ? (
           <main style={{ minHeight: '100vh' }}>
-            {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
+            {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
           </main>
         ) : mob ? (
           /* ─── MOBILE LAYOUT ─────────────────────────────────────────────── */
@@ -405,7 +405,7 @@ export default function App() {
             </header>
 
             <main style={{ padding: '18px 14px 104px' }}>
-              {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
+              {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
             </main>
 
             {/* ── Mobile bottom nav ────────────────────────────────────────── */}
@@ -609,7 +609,7 @@ export default function App() {
 
               {/* Page content */}
               <main style={{ padding: '24px 26px 40px', overflowX: 'hidden', animation: 'fadeUp .25s ease-out' }}>
-                {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}><Content /></Suspense>}
+                {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
               </main>
             </div>
           </div>
