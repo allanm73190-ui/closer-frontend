@@ -4,6 +4,7 @@ import { DEFAULT_PIPELINE_STATUSES, normalizePipelineConfig } from '../../config
 import { DS, P, P2, R_FULL, SH_SM, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { fmtDate } from '../../utils/scoring';
+import { computeStreak } from '../../utils/streak';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
 import { GamCard } from '../gamification';
 import { StatsRow, Chart } from './StatsChart';
@@ -65,6 +66,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
 
   const total = debriefs.length;
   const avg = total > 0 ? Math.round(debriefs.reduce((s, d) => s + (d.percentage || 0), 0) / total) : 0;
+  const streak = computeStreak(debriefs);
   const closedCount = debriefs.filter(d => d.is_closed).length;
   const closeRate = total > 0 ? Math.round((closedCount / total) * 100) : 0;
 
@@ -200,7 +202,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', letterSpacing: '-.02em' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€</div>
+          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€{streak > 0 && <span style={{ marginLeft: 8, color: '#F59E0B', fontWeight: 600 }}>{streak >= 7 ? '🔥' : '⚡'} {streak}j streak</span>}</div>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
       </div>

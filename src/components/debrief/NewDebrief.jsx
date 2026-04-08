@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
@@ -123,6 +123,8 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   const role = String(user?.role || '').toLowerCase();
   const isManager = role === 'head_of_sales' || role === 'admin';
   const isEditing = !!existingDebrief?.id;
+  const DRAFT_KEY = 'cd_debrief_draft';
+  const saveTimer = useRef(null);
   const [linkedDealId, setLinkedDealId] = useState(() => leadContext?.deal_id || null);
   const templateCatalog = useMemo(
     () => normalizeDebriefTemplateCatalog(debriefTemplates || getDefaultTemplateCatalog()),
@@ -145,6 +147,18 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   const [secs, setSecs] = useState(() => buildSectionsState(configSections));
   const [notes, setNotes] = useState(() => buildNotesState(configSections));
   const [loading, setLoading] = useState(false);
+
+  // Auto-save draft (skip when editing an existing debrief)
+  useEffect(() => {
+    if (isEditing) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, secs, notes }));
+      } catch (_) {}
+    }, 2000);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [form, secs, notes, isEditing]);
   const { total, max, percentage } = computeScore(secs);
   const sectionScores = useMemo(() => computeSectionScores(secs), [secs]);
 
@@ -268,6 +282,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         toast('Debrief modifié');
         navigate('Detail', r.debrief.id, fromPage || 'History');
       } else {
+        try { localStorage.removeItem(DRAFT_KEY); } catch(_) {}
         onSave(r.debrief, r.gamification);
         window.dispatchEvent(new CustomEvent('cd:deals-updated'));
         toast(`Debrief enregistré ! +${r.gamification.pointsEarned} pts`);
