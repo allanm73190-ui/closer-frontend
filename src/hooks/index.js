@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '../config/api';
 
 // ─── RESPONSIVE ───────────────────────────────────────────────────────────────
 export function useIsMobile(bp = 768) {
@@ -42,11 +41,5 @@ export function useToast() {
 // ─── DEBRIEF CONFIG ──────────────────────────────────────────────────────────
 export function useDebriefConfig() {
   const [config, setConfig] = useState(null);
-  useEffect(() => {
-    if (!localStorage.getItem('cd_token')) return; // Don't fetch if not logged in
-    apiFetch('/debrief-config')
-      .then(data => { if (data.sections) setConfig(data.sections); })
-      .catch(() => {});
-  }, []);
   return [config, setConfig];
 }

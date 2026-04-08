@@ -24,9 +24,11 @@ function deepDecodeEscapedUnicode(input) {
 }
 
 // ─── AUTH TOKENS ─────────────────────────────────────────────────────────────
-export function getToken()  { return localStorage.getItem('cd_token'); }
-export function setToken(t) { localStorage.setItem('cd_token', t); }
-export function clearToken(){ localStorage.removeItem('cd_token'); }
+// Auth is now handled via httpOnly cookies set by the server.
+// These functions are kept as no-ops for compatibility but localStorage is no longer used.
+export function getToken()  { return null; }
+export function setToken(_) { /* token is set as httpOnly cookie by server */ }
+export function clearToken(){ localStorage.removeItem('cd_token'); /* cleanup legacy */ }
 
 // ─── SESSION EXPIRY CALLBACK ─────────────────────────────────────────────────
 let _onExpired = null;
@@ -34,7 +36,6 @@ export function setOnExpired(fn) { _onExpired = fn; }
 
 // ─── API FETCH ───────────────────────────────────────────────────────────────
 export async function apiFetch(path, opts = {}) {
-  const token = getToken();
   const { timeoutMs, ...fetchOpts } = opts;
   const isAiPath = typeof path === 'string' && path.startsWith('/ai/');
   const preferredTimeout = timeoutMs ?? (isAiPath ? AI_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
@@ -51,7 +52,6 @@ export async function apiFetch(path, opts = {}) {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...fetchOpts.headers,
       },
       body: fetchOpts.body ? JSON.stringify(fetchOpts.body) : undefined,

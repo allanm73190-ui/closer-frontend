@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 
 // ─── Config & Utils ──────────────────────────────────────────────────────────
-import { apiFetch, getToken, clearToken, setOnExpired } from './config/api';
+import { apiFetch, clearToken, setOnExpired } from './config/api';
 import { P, P2, TXT, TXT2, TXT3, R_MD, SH_BTN, GLOBAL_CSS } from './styles/designSystem';
 import { useIsMobile, useToast, useDebriefConfig } from './hooks';
 import { normalizeDebriefTemplateCatalog, getDefaultTemplateCatalog } from './config/debriefTemplates';
@@ -116,11 +116,9 @@ export default function App() {
     });
   }, [toast]);
 
-  // Restore session
+  // Restore session from httpOnly cookie
   useEffect(() => {
-    const t = getToken();
-    if (!t) { setAuthLoading(false); return; }
-    apiFetch('/auth/me').then(setUser).catch(() => clearToken()).finally(() => setAuthLoading(false));
+    apiFetch('/auth/me').then(setUser).catch(() => {}).finally(() => setAuthLoading(false));
   }, []);
 
   // Load data
@@ -221,7 +219,8 @@ export default function App() {
   };
 
   const onLogin = (u, g) => { setUser(u); if (g) setGam(g); setPage('Dashboard'); toast(`Bienvenue, ${u.name} !`); };
-  const onLogout = () => {
+  const onLogout = async () => {
+    try { await apiFetch('/auth/logout', { method: 'POST' }); } catch (_) {}
     clearToken();
     setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login');
     setDebriefsLoaded(false);

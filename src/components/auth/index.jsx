@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiFetch, setToken } from '../../config/api';
+import { apiFetch } from '../../config/api';
 import { DS, P, P2 } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { AlertBox } from '../ui';
@@ -80,7 +80,7 @@ function LoginPage({ onLogin, goRegister, goForgot }) {
   const [loading, setLoading] = useState(false);
   const submit = async e => {
     e.preventDefault(); setErr(''); setLoading(true);
-    try { const d = await apiFetch('/auth/login', { method: 'POST', body: f }); setToken(d.token); onLogin(d.user, d.gamification); }
+    try { const d = await apiFetch('/auth/login', { method: 'POST', body: f }); onLogin(d.user, d.gamification); }
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
@@ -108,7 +108,7 @@ function RegisterPage({ onLogin, goLogin }) {
     if (f.password.length < 8) return setErr('Mot de passe trop court (8 car. min)');
     if (f.role === 'closer' && !f.invite_code) return setErr("Un code d'invitation est requis");
     setLoading(true);
-    try { const d = await apiFetch('/auth/register', { method: 'POST', body: { name: f.name, email: f.email, password: f.password, role: f.role, invite_code: f.invite_code } }); setToken(d.token); onLogin(d.user, d.gamification); }
+    try { const d = await apiFetch('/auth/register', { method: 'POST', body: { name: f.name, email: f.email, password: f.password, role: f.role, invite_code: f.invite_code } }); onLogin(d.user, d.gamification); }
     catch (e) { setErr(e.message); } finally { setLoading(false); }
   };
   return (
