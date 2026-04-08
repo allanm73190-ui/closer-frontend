@@ -413,7 +413,7 @@ function PipelineSettingsSection({ toast }) {
       .then(([config, list]) => {
         if (!mounted) return;
         setDraft(normalizePipelineConfig(config || DEFAULT_PIPELINE_CONFIG));
-        setDeals(Array.isArray(list) ? list : []);
+        setDeals(Array.isArray(list) ? list : (list?.data || []));
       })
       .catch(e => {
         if (!mounted) return;

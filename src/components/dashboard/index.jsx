@@ -94,7 +94,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
     if (!silent) setDealsLoading(true);
     try {
       const data = await apiFetch('/deals');
-      setDeals(Array.isArray(data) ? data : []);
+      setDeals(Array.isArray(data) ? data : (data?.data || []));
     } catch {
       if (!silent) setDeals([]);
     } finally {
@@ -399,7 +399,7 @@ function MiniPipeline({ navigate, user }) {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    apiFetch('/deals').then(setDeals).catch(() => {}).finally(() => setLoading(false));
+    apiFetch('/deals').then(r => setDeals(Array.isArray(r) ? r : (r?.data || []))).catch(() => {}).finally(() => setLoading(false));
   }, []);
   React.useEffect(() => {
     let mounted = true;

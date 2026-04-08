@@ -507,7 +507,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   useEffect(() => {
     apiFetch('/deals')
-      .then(setDeals)
+      .then(r => setDeals(Array.isArray(r) ? r : (r?.data || [])))
       .catch(err => toast(err.message, 'error'))
       .finally(() => setLoading(false));
   }, []);
