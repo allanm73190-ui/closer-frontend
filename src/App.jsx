@@ -129,7 +129,7 @@ export default function App() {
     setDataLoading(true);
     setDebriefsLoaded(false);
     Promise.all([apiFetch('/debriefs'), apiFetch('/gamification/me')])
-      .then(([d, g]) => { setDebriefs(d); setGam(g); })
+      .then(([d, g]) => { setDebriefs(Array.isArray(d) ? d : (d?.data || [])); setGam(g); })
       .catch(err => toast(err.message, 'error'))
       .finally(() => {
         setDataLoading(false);
