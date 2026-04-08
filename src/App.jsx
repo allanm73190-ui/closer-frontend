@@ -452,34 +452,32 @@ export default function App() {
               background: 'var(--sidebar)',
               borderRight: '1px solid var(--sidebar-border)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              padding: '18px 10px 12px',
+              padding: 0,
             }}>
-              {/* Logo */}
-              <button
-                onClick={() => navigate('Dashboard')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  padding: '6px 8px 16px', borderRadius: R_MD, marginBottom: 2, width: '100%',
-                  transition: 'background .15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <div style={{
-                  width: 34, height: 34, borderRadius: 10,
-                  background: 'var(--gradient-primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  color: 'white', fontSize: 14, fontWeight: 500,
-                }}>C</div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)', lineHeight: 1.05, letterSpacing: '-.02em' }}>CloserDebrief</div>
-                  <div style={{ fontSize: 9, color: 'var(--txt3)', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600, marginTop: 2 }}>Sales Intelligence</div>
+              {/* Logo section */}
+              <div style={{ padding: '20px 16px 14px', borderBottom: '1px solid var(--border)' }}>
+                <button onClick={() => navigate('Dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: 13, fontWeight: 700 }}>C</div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: 'Manrope, Inter, sans-serif', background: 'linear-gradient(135deg, var(--accent), var(--accent-violet))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.3px' }}>CloserDebrief</div>
+                    <div style={{ fontSize: 9, color: 'var(--txt3)', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>Sales Intelligence</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* User section */}
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-violet), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                  {(user.name || 'U').substring(0, 1).toUpperCase()}
                 </div>
-              </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
+                  <div style={{ fontSize: 10, color: P, fontWeight: 600 }}>{gam?.level?.icon || ''} {gam?.level?.name || 'Découvreur'}</div>
+                </div>
+              </div>
 
               {/* Nav items */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
+              <div style={{ flex: 1, paddingTop: 6, paddingBottom: 6 }}>
                 {navItems.map(({ key, label, icon }) => {
                   const isActive = page === key;
                   return (
@@ -487,25 +485,19 @@ export default function App() {
                       key={key}
                       onClick={() => navigate(key)}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 9,
-                        padding: '8px 10px', borderRadius: 10, border: 'none',
-                        fontSize: 12, fontWeight: isActive ? 600 : 500,
-                        cursor: 'pointer', transition: 'all .18s',
-                        background: isActive ? 'var(--nav-active)' : 'transparent',
-                        border: isActive ? '1px solid var(--nav-active-border)' : '1px solid transparent',
-                        color: isActive ? P : 'var(--txt2)',
-                        textAlign: 'left', width: '100%',
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '9px 16px', borderRadius: 0, border: 'none',
+                        borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+                        fontSize: 13, fontWeight: isActive ? 600 : 500,
+                        cursor: 'pointer', transition: 'all .15s',
+                        background: isActive ? 'rgba(255,126,95,.10)' : 'transparent',
+                        color: isActive ? P : 'var(--txt3)',
+                        textAlign: 'left', width: '100%', fontFamily: 'inherit',
                       }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--nav-hover)'; }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--nav-hover)'; e.currentTarget.style.color = 'var(--txt)'; } }}
+                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--txt3)'; } }}
                     >
-                      <span style={{
-                        width: 22, height: 22, borderRadius: 7,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        background: isActive ? 'var(--gradient-primary)' : 'rgba(200,160,140,.06)',
-                      }}>
-                        <NavIcon name={icon} active={isActive} size={14} color={isActive ? 'white' : 'var(--txt3)'} />
-                      </span>
+                      <NavIcon name={icon} active={isActive} size={16} color={isActive ? P : 'var(--txt3)'} />
                       <span>{label}</span>
                     </button>
                   );
@@ -513,43 +505,31 @@ export default function App() {
               </div>
 
               {/* Bottom sidebar */}
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 6, display: 'grid', gap: 3 }}>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4, paddingBottom: 4 }}>
                 <button
                   onClick={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 9, border: 'none',
-                    background: page === 'Settings' ? 'var(--nav-active)' : 'transparent',
-                    padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
-                    color: page === 'Settings' ? P : 'var(--txt2)',
-                    fontSize: 12, fontWeight: page === 'Settings' ? 600 : 500,
+                    background: page === 'Settings' ? 'rgba(255,126,95,.10)' : 'transparent',
+                    padding: '9px 16px', borderRadius: 0, borderLeft: page === 'Settings' ? '3px solid var(--accent)' : '3px solid transparent', cursor: 'pointer',
+                    color: page === 'Settings' ? P : 'var(--txt3)',
+                    fontSize: 13, fontWeight: page === 'Settings' ? 600 : 500,
                     textAlign: 'left', fontFamily: 'inherit',
                   }}
                 >
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 7,
-                    background: page === 'Settings' ? 'var(--gradient-primary)' : 'rgba(200,160,140,.06)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <NavIcon name="settings" size={13} color={page === 'Settings' ? 'white' : 'var(--txt3)'} />
-                  </span>
+                  <NavIcon name="settings" size={16} color={page === 'Settings' ? P : 'var(--txt3)'} />
                   Paramètres
                 </button>
                 <button
                   onClick={onLogout}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 9, border: 'none',
-                    background: 'transparent', padding: '8px 10px', borderRadius: 10,
-                    cursor: 'pointer', color: 'var(--txt2)', fontSize: 12, fontWeight: 500,
+                    background: 'transparent', padding: '9px 16px', borderRadius: 0, borderLeft: '3px solid transparent',
+                    cursor: 'pointer', color: 'var(--txt3)', fontSize: 13, fontWeight: 500,
                     textAlign: 'left', fontFamily: 'inherit',
                   }}
                 >
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 7,
-                    background: 'rgba(200,160,140,.06)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <NavIcon name="logout" size={13} color="var(--txt3)" />
-                  </span>
+                  <NavIcon name="logout" size={16} color="var(--txt3)" />
                   Déconnexion
                 </button>
               </div>
@@ -571,7 +551,7 @@ export default function App() {
                   <p style={{ margin: '0 0 1px', fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--txt3)', fontWeight: 600 }}>
                     CloserDebrief
                   </p>
-                  <h2 style={{ margin: 0, fontSize: 17, color: 'var(--txt)', fontWeight: 700, lineHeight: 1.2 }}>
+                  <h2 style={{ margin: 0, fontSize: 20, color: 'var(--txt)', fontWeight: 800, fontFamily: 'Manrope, Inter, sans-serif', lineHeight: 1.2, letterSpacing: '-.02em' }}>
                     {pageMeta.title}
                   </h2>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--txt2)' }}>

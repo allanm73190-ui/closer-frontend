@@ -7,9 +7,9 @@ export const P2 = '#FEB47B';          // primary gradient end — peach
 export const A  = '#7C3AED';          // accent — violet
 export const BG = 'linear-gradient(150deg,#FFF5EB 0%,#FDE8E8 35%,#EDE4F5 75%,#E4EEF8 100%)';
 export const WHITE = '#ffffff';
-export const TXT  = '#4A3428';        // text primary — warm dark brown
-export const TXT2 = '#B09080';        // text secondary
-export const TXT3 = '#C8B8A8';        // text muted
+export const TXT  = '#3A2418';        // text primary — warm dark brown
+export const TXT2 = '#7A5040';        // text secondary
+export const TXT3 = '#9A7A6A';        // text muted
 export const SAND = '#FFF8F3';        // input background
 
 // ─── Shadows ─────────────────────────────────────────────────────────────────
@@ -123,10 +123,10 @@ export const GLOBAL_CSS = `
     --card-soft: rgba(255,255,255,.5);
     --card-border: rgba(255,255,255,.7);
     --input: #FFF8F3;
-    --txt:  #4A3428;
-    --txt2: #B09080;
-    --txt3: #C8B8A8;
-    --border: rgba(200,160,140,.12);
+    --txt:  #3A2418;
+    --txt2: #7A5040;
+    --txt3: #9A7A6A;
+    --border: rgba(200,160,140,.18);
 
     --sh-card: 0 8px 32px rgba(74,52,40,.08), inset 0 1px 0 rgba(255,255,255,.8);
     --sh-sm:   0 4px 16px rgba(74,52,40,.06), inset 0 1px 0 rgba(255,255,255,.7);
