@@ -5,6 +5,7 @@ import { DS, P, P2, R_FULL, SH_SM, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { fmtDate } from '../../utils/scoring';
 import { computeStreak } from '../../utils/streak';
+import { filterByPeriod, sortDebriefs, paginateDebriefs } from '../../utils/historyFilters';
 import { Btn, Input, Card, Spinner, Empty } from '../ui';
 import { GamCard } from '../gamification';
 import { StatsRow, Chart } from './StatsChart';
@@ -446,42 +447,51 @@ function History({ debriefs, navigate, user }) {
   const [scoreFilter, setScoreFilter] = useState('all');
   const [objectionFilter, setObjectionFilter] = useState('all');
   const [prospectTypeFilter, setProspectTypeFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   const isManager = ['head_of_sales', 'admin'].includes(String(user?.role || '').toLowerCase());
   const objectionOptions = [...new Set(debriefs.flatMap(d => (d.sections?.closing?.objections || []).filter(o => o && o !== 'aucune')))];
   const prospectTypeOptions = [...new Set(debriefs.map(d => String(d.sections?.__meta?.prospect_type || '').trim()).filter(Boolean))];
   const matchesScoreFilter = (pct, key) => key === 'low' ? pct < 50 : key === 'mid' ? pct >= 50 && pct < 75 : key === 'high' ? pct >= 75 : true;
 
-  const filtered = debriefs.filter(d => {
-    const s = q.toLowerCase();
-    const objs = (d.sections?.closing?.objections || []).filter(o => o && o !== 'aucune');
-    const pt = String(d.sections?.__meta?.prospect_type || '').trim();
-    return (resultFilter === 'all' ? true : resultFilter === 'closed' ? !!d.is_closed : !d.is_closed)
-      && matchesScoreFilter(d.percentage, scoreFilter)
-      && (objectionFilter === 'all' || objs.includes(objectionFilter))
-      && (prospectTypeFilter === 'all' || pt === prospectTypeFilter)
-      && (!s || d.prospect_name?.toLowerCase().includes(s) || d.closer_name?.toLowerCase().includes(s) || d.user_name?.toLowerCase().includes(s));
-  });
-  const hasFilters = resultFilter !== 'all' || scoreFilter !== 'all' || objectionFilter !== 'all' || prospectTypeFilter !== 'all';
+  const allFiltered = sortDebriefs(
+    filterByPeriod(debriefs, periodFilter).filter(d => {
+      const s = q.toLowerCase();
+      const objs = (d.sections?.closing?.objections || []).filter(o => o && o !== 'aucune');
+      const pt = String(d.sections?.__meta?.prospect_type || '').trim();
+      return (resultFilter === 'all' ? true : resultFilter === 'closed' ? !!d.is_closed : !d.is_closed)
+        && matchesScoreFilter(d.percentage, scoreFilter)
+        && (objectionFilter === 'all' || objs.includes(objectionFilter))
+        && (prospectTypeFilter === 'all' || pt === prospectTypeFilter)
+        && (!s || d.prospect_name?.toLowerCase().includes(s) || d.closer_name?.toLowerCase().includes(s) || d.user_name?.toLowerCase().includes(s));
+    }), sortBy, 'desc');
+  const filtered = paginateDebriefs(allFiltered, page, PAGE_SIZE);
+  const hasMore = filtered.length < allFiltered.length;
+  const hasFilters = resultFilter !== 'all' || scoreFilter !== 'all' || objectionFilter !== 'all' || prospectTypeFilter !== 'all' || periodFilter !== 'all';
   const sel = { background: 'var(--glass-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 10px', fontSize: 12, color: 'var(--txt)', fontFamily: 'inherit', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', margin: 0 }}>Historique</h1>
-        <p style={{ color: 'var(--txt3)', fontSize: 13, marginTop: 4 }}>{debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
+        <p style={{ color: 'var(--txt3)', fontSize: 13, marginTop: 4 }}>{allFiltered.length} / {debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
       </div>
       <div style={{ position: 'relative' }}>
         <input placeholder="Rechercher..." value={q} onChange={e => setQ(e.target.value)} style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: 'var(--glass-bg)', color: 'var(--txt)', backdropFilter: 'blur(4px)' }} />
         {q && <button onClick={() => setQ('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--txt3)', cursor: 'pointer', fontSize: 18 }}>{'\u2715'}</button>}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
-        <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={sel}><option value="all">Résultat: Tous</option><option value="closed">Closés</option><option value="open">Non closés</option></select>
-        <select value={scoreFilter} onChange={e => setScoreFilter(e.target.value)} style={sel}>{SCORE_FILTERS.map(f => <option key={f.key} value={f.key}>Score: {f.label}</option>)}</select>
-        <select value={objectionFilter} onChange={e => setObjectionFilter(e.target.value)} style={sel}><option value="all">Objection: Toutes</option>{objectionOptions.map(o => <option key={o} value={o}>{OBJECTION_LABELS[o] || o}</option>)}</select>
-        <select value={prospectTypeFilter} onChange={e => setProspectTypeFilter(e.target.value)} style={sel}><option value="all">Type: Tous</option>{prospectTypeOptions.map(t => <option key={t} value={t}>{PROSPECT_TYPE_LABELS[t] || t}</option>)}</select>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+        <select value={periodFilter} onChange={e => { setPeriodFilter(e.target.value); setPage(1); }} style={sel}><option value="all">Période: Toutes</option><option value="month">Ce mois</option><option value="quarter">Ce trimestre</option><option value="year">Cette année</option></select>
+        <select value={resultFilter} onChange={e => { setResultFilter(e.target.value); setPage(1); }} style={sel}><option value="all">Résultat: Tous</option><option value="closed">Closés</option><option value="open">Non closés</option></select>
+        <select value={scoreFilter} onChange={e => { setScoreFilter(e.target.value); setPage(1); }} style={sel}>{SCORE_FILTERS.map(f => <option key={f.key} value={f.key}>Score: {f.label}</option>)}</select>
+        <select value={objectionFilter} onChange={e => { setObjectionFilter(e.target.value); setPage(1); }} style={sel}><option value="all">Objection: Toutes</option>{objectionOptions.map(o => <option key={o} value={o}>{OBJECTION_LABELS[o] || o}</option>)}</select>
+        <select value={prospectTypeFilter} onChange={e => { setProspectTypeFilter(e.target.value); setPage(1); }} style={sel}><option value="all">Type: Tous</option>{prospectTypeOptions.map(t => <option key={t} value={t}>{PROSPECT_TYPE_LABELS[t] || t}</option>)}</select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={sel}><option value="date">Tri: Date</option><option value="score">Tri: Score</option><option value="prospect">Tri: Prospect</option></select>
       </div>
       {filtered.length === 0 ? (
-        <Empty icon={'🔍'} title="Aucun résultat" subtitle={q ? `Aucun debrief pour "${q}"` : 'Aucun debrief'} action={(q || hasFilters) ? <Btn variant="secondary" onClick={() => { setQ(''); setResultFilter('all'); setScoreFilter('all'); setObjectionFilter('all'); setProspectTypeFilter('all'); }}>Réinitialiser</Btn> : null} />
+        <Empty icon={'🔍'} title="Aucun résultat" subtitle={q ? `Aucun debrief pour "${q}"` : 'Aucun debrief'} action={(q || hasFilters) ? <Btn variant="secondary" onClick={() => { setQ(''); setResultFilter('all'); setScoreFilter('all'); setObjectionFilter('all'); setProspectTypeFilter('all'); setPeriodFilter('all'); setSortBy('date'); setPage(1); }}>Réinitialiser</Btn> : null} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.map(d => (
@@ -490,6 +500,11 @@ function History({ debriefs, navigate, user }) {
               <Btn variant="secondary" onClick={() => navigate('EditDebrief', d.id, 'History')} style={{ fontSize: 12, padding: '0 12px' }}>Modifier</Btn>
             </div>
           ))}
+          {hasMore && (
+            <Btn variant="secondary" onClick={() => setPage(p => p + 1)} style={{ alignSelf: 'center', marginTop: 4 }}>
+              Charger plus ({allFiltered.length - filtered.length} restants)
+            </Btn>
+          )}
         </div>
       )}
     </div>
