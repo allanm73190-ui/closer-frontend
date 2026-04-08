@@ -612,6 +612,7 @@ function SettingsPage({
   const tabs = useMemo(() => ([
     { key:'account', label:'Compte' },
     { key:'app', label:'Application' },
+    { key:'integrations', label:'Intégrations' },
     ...(isManager ? [
       { key:'debrief', label:'Debrief' },
       { key:'templates', label:'Templates' },
@@ -697,6 +698,155 @@ function SettingsPage({
       {activeTab === 'pipeline' && isManager && (
         <PipelineSettingsSection toast={toast} />
       )}
+
+      {activeTab === 'integrations' && (
+        <IntegrationsSection user={user} toast={toast} />
+      )}
+    </div>
+  );
+}
+
+
+// ─── INTEGRATIONS SECTION ────────────────────────────────────────────────────
+function IntegrationsSection({ user, toast }) {
+  const [gcalStatus, setGcalStatus] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const loadStatus = async () => {
+    try {
+      const data = await apiFetch('/integrations/google/status');
+      setGcalStatus(data);
+    } catch { setGcalStatus({ connected: false }); }
+  };
+
+  useEffect(() => {
+    loadStatus();
+    // Handle redirect back from Google OAuth
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('gcal_connected') === '1') {
+      toast('Google Agenda connecté ! Les leads arrivent.', 'success');
+      window.history.replaceState({}, '', window.location.pathname);
+      loadStatus();
+    }
+    if (p.get('gcal_error')) {
+      toast('Erreur connexion Google : ' + p.get('gcal_error'), 'error');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const connectGoogle = () => {
+    window.location.href = (import.meta.env.VITE_API_BASE || 'https://closer-backend-production.up.railway.app/api') + '/integrations/google/auth';
+  };
+
+  const disconnectGoogle = async () => {
+    if (!confirm('Déconnecter Google Agenda ? Les leads futurs ne seront plus créés automatiquement.')) return;
+    setDisconnecting(true);
+    try {
+      await apiFetch('/integrations/google', { method: 'DELETE' });
+      toast('Google Agenda déconnecté');
+      setGcalStatus({ connected: false });
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setDisconnecting(false); }
+  };
+
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const r = await apiFetch('/integrations/google/sync', { method: 'POST' });
+      toast(`Sync terminée — ${r.leadsCreated} lead(s) créé(s)`);
+      loadStatus();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setSyncing(false); }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* ── Google Calendar card ─────────────────────────────────────────── */}
+      <div style={{ ...G({ padding: 20 }) }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+          {/* Google logo */}
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+            📅
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Google Agenda</div>
+            <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 2 }}>
+              Crée automatiquement un lead pipeline pour chaque rendez-vous avec un contact externe.
+            </div>
+          </div>
+          <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+            {gcalStatus === null ? (
+              <span style={{ fontSize: 12, color: 'var(--txt3)' }}>Chargement…</span>
+            ) : gcalStatus.connected ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'var(--positive-bg)', color: 'var(--positive-txt)', border: '1px solid rgba(5,150,105,.2)' }}>
+                ✓ Connecté
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'var(--neutral-bg)', color: 'var(--neutral-txt)' }}>
+                Non connecté
+              </span>
+            )}
+          </div>
+        </div>
+
+        {gcalStatus?.connected ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Info */}
+            <div style={{ background: 'var(--positive-bg)', border: '1px solid rgba(5,150,105,.15)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--positive-txt)' }}>
+              Les RDV avec des contacts externes seront automatiquement importés comme leads dans votre pipeline.
+              {gcalStatus.lastSynced && (
+                <span style={{ display: 'block', marginTop: 4, color: 'var(--txt3)', fontWeight: 400 }}>
+                  Dernière sync : {new Date(gcalStatus.lastSynced).toLocaleString('fr-FR')}
+                </span>
+              )}
+            </div>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Btn onClick={syncNow} disabled={syncing} style={{ flex: 1 }}>
+                {syncing ? 'Sync en cours…' : '↻ Synchroniser maintenant'}
+              </Btn>
+              <Btn variant="danger" onClick={disconnectGoogle} disabled={disconnecting}>
+                {disconnecting ? '…' : 'Déconnecter'}
+              </Btn>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: 'var(--surface-info)', border: '1px solid var(--accent-violet-border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--txt2)', lineHeight: 1.6 }}>
+              <strong>Comment ça marche :</strong> Connectez votre compte Google, puis chaque nouveau RDV avec un participant externe sera importé comme lead dans votre pipeline avec nom, email et date de suivi pré-remplis. Sync automatique toutes les 30 minutes.
+            </div>
+            <Btn onClick={connectGoogle} style={{ alignSelf: 'flex-start' }}>
+              Connecter Google Agenda
+            </Btn>
+          </div>
+        )}
+      </div>
+
+      {/* ── Calendly card ────────────────────────────────────────────────── */}
+      <div style={{ ...G({ padding: 20 }) }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+            🗓️
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Calendly</div>
+            <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 2 }}>
+              Chaque réservation crée automatiquement un lead — le webhook backend est prêt.
+            </div>
+          </div>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(217,119,6,.08)', color: '#D97706', border: '1px solid rgba(217,119,6,.2)' }}>
+            Config requise
+          </span>
+        </div>
+        <div style={{ background: 'rgba(217,119,6,.06)', border: '1px solid rgba(217,119,6,.15)', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: 'var(--txt2)', lineHeight: 1.7 }}>
+          <strong>2 étapes pour activer :</strong>
+          <ol style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+            <li>Dans votre compte Calendly → <em>Intégrations → Webhooks</em> → URL : <code style={{ background: 'rgba(0,0,0,.06)', padding: '1px 5px', borderRadius: 4 }}>https://closer-backend-production.up.railway.app/api/webhooks/calendly</code></li>
+            <li>Copiez la <em>Signing Key</em> Calendly → ajoutez-la dans Railway comme variable <code style={{ background: 'rgba(0,0,0,.06)', padding: '1px 5px', borderRadius: 4 }}>CALENDLY_SIGNING_KEY</code></li>
+          </ol>
+        </div>
+      </div>
     </div>
   );
 }
