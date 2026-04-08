@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DS, P } from '../../styles/designSystem';
 import { fmtDate } from '../../utils/scoring';
 import { ScoreBadge, ClosedBadge } from '../ui';
+import { QualityBadge } from './QualityBadge';
 
 function DebriefCard({ debrief, onClick, showUser }) {
   const [hov, setHov] = useState(false);
@@ -33,6 +34,7 @@ function DebriefCard({ debrief, onClick, showUser }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <ClosedBadge isClosed={debrief.is_closed} />
+        <QualityBadge score={debrief.overall_quality_score} flags={debrief.quality_flags} compact />
         <ScoreBadge pct={pct} />
         <span style={{ color: hov ? P : 'var(--txt3)', fontSize: 18, transition: 'color .15s' }}>{'\u2192'}</span>
       </div>

@@ -507,6 +507,28 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               <Textarea placeholder="Notes libres sur l'appel..." value={form.notes} onChange={e=>setForm({ ...form, notes:e.target.value })} />
             </Card>
 
+            {(() => {
+              // Lot 1 — feedback qualité léger côté front (déterministe, indicatif)
+              const sectionsArr = ['decouverte','reformulation','projection','offre','closing'];
+              const notesObj = form.section_notes || {};
+              const filledNotes = sectionsArr.filter(k => (notesObj[k] || '').trim().length >= 40).length;
+              const hints = [];
+              if (filledNotes < 3) hints.push(`Ajoute des notes détaillées sur au moins 3 sections (actuellement ${filledNotes}/5)`);
+              const dayDiff = (() => {
+                try { return Math.floor((Date.now() - new Date(form.call_date).getTime()) / 86400000); } catch { return 0; }
+              })();
+              if (dayDiff > 5) hints.push('Soumission tardive : pense à debriefer dans les 48h pour préserver la fraîcheur');
+              if (!hints.length) return null;
+              return (
+                <Card style={{ padding:12, background:'#fef3c7', borderColor:'#fde68a' }}>
+                  <p style={{ fontSize:12, fontWeight:600, margin:'0 0 6px', color:'#92400e' }}>💡 Améliorer la qualité du debrief</p>
+                  <ul style={{ margin:0, paddingLeft:18, fontSize:12, color:'#78350f' }}>
+                    {hints.map(h => <li key={h}>{h}</li>)}
+                  </ul>
+                </Card>
+              );
+            })()}
+
             {mob && (
               <>
                 <Card style={{ padding:14, display:'flex', alignItems:'center', justifyContent:'center' }}>
