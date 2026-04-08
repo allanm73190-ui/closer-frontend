@@ -152,6 +152,7 @@ export const GLOBAL_CSS = `
     --input-on-card: rgba(255,255,255,.5);
 
     /* Sunrise-specific tokens */
+    --accent: #FF7E5F;
     --gradient-primary: linear-gradient(135deg, #FF7E5F, #FEB47B);
     --accent-violet: #7C3AED;
     --accent-violet-soft: rgba(124,58,237,.06);
@@ -200,6 +201,7 @@ export const GLOBAL_CSS = `
 
     --input-on-card: rgba(50,35,42,.7);
 
+    --accent: #FF7E5F;
     --gradient-primary: linear-gradient(135deg, #FF7E5F, #FEB47B);
     --accent-violet: #A78BFA;
     --accent-violet-soft: rgba(167,139,250,.08);

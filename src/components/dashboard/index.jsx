@@ -205,7 +205,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
       {/* ── Header row ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', letterSpacing: '-.02em' }}>Bonjour, {user.name}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', letterSpacing: '-.03em', lineHeight: 1.1 }}>Bonjour, {user.name} 👋</div>
           <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€<span style={{ marginLeft: 8, color: streak > 0 ? '#F59E0B' : 'var(--txt3)', fontWeight: 600 }}>{streak >= 7 ? '🔥' : streak > 0 ? '⚡' : '—'} {streak}j streak</span></div>
         </div>
         <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
@@ -218,7 +218,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
           <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Debriefs</div>
           <div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.02em' }}>{total}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{total}</div>
             {debriefs.length > 0 && <div style={{ fontSize: 11, color: P, marginTop: 4 }}>+{Math.min(total, 12)} ce mois</div>}
           </div>
         </div>
@@ -226,7 +226,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
           <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Score moyen</div>
           <div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.02em' }}>{avg}%</div>
+            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{avg}%</div>
             <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>
               {(() => {
                 const sorted = [...debriefs].sort((a, b) => new Date(b.call_date) - new Date(a.call_date));
@@ -242,24 +242,42 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
           <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Taux closing</div>
           <div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.02em' }}>{closeRate}%</div>
-            <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 4 }}>Objectif: 40%</div>
+            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{closeRate}%</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+              <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(200,160,140,.08)' }}>
+                <div style={{ width: `${Math.min(closeRate, 100)}%`, height: '100%', borderRadius: 2, background: closeRate >= 40 ? '#059669' : closeRate >= 25 ? '#D97706' : P, transition: 'width .6s ease' }} />
+              </div>
+              <span style={{ fontSize: 10, color: 'var(--txt3)', flexShrink: 0 }}>/ 40%</span>
+            </div>
           </div>
         </div>
 
-        {/* Gamification mini card */}
-        <div style={{ gridColumn: 'span 3', ...Gv({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
+        {/* Streak + XP card */}
+        <div style={{ gridColumn: 'span 3', padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          background: streak >= 3 ? 'linear-gradient(135deg, rgba(245,158,11,.08), rgba(239,68,68,.04))' : 'var(--accent-violet-soft)',
+          border: `1px solid ${streak >= 3 ? 'rgba(245,158,11,.2)' : 'var(--accent-violet-border)'}`,
+          borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        }}>
+          {/* Streak row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 26, lineHeight: 1 }}>{streak >= 7 ? '🔥' : streak >= 3 ? '⚡' : '💤'}</span>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: streak >= 1 ? '#F59E0B' : 'var(--txt3)', lineHeight: 1, letterSpacing: '-.02em' }}>{streak}j</div>
+              <div style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Streak</div>
+            </div>
+          </div>
+          {/* XP bar */}
           {gam ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 4, background: 'rgba(124,58,237,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--accent-violet)', fontWeight: 700 }}>{gam.level?.icon || 'N'}</div>
-                <span style={{ fontSize: 11, color: 'var(--accent-violet)', fontWeight: 500 }}>{gam.level?.name || 'Niveau'}</span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <span style={{ fontSize: 10, color: 'var(--accent-violet)', fontWeight: 700 }}>{gam.level?.icon || '★'}</span>
+                <span style={{ fontSize: 10, color: 'var(--accent-violet)', fontWeight: 600 }}>{gam.level?.name || 'Niveau'}</span>
+                <span style={{ fontSize: 10, color: 'var(--txt3)', marginLeft: 'auto' }}>{gam.points} XP</span>
               </div>
-              <div>
-                <div style={{ height: 4, borderRadius: 2, background: 'rgba(200,160,140,.08)', marginTop: 6 }}><div style={{ width: `${gamPct}%`, height: '100%', background: 'var(--accent-violet)', borderRadius: 2 }} /></div>
-                <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 4 }}>{gam.points}{gam.level?.next ? `/${gam.level.next}` : ''} XP</div>
+              <div style={{ height: 4, borderRadius: 2, background: 'rgba(200,160,140,.08)' }}>
+                <div style={{ width: `${gamPct}%`, height: '100%', background: 'var(--accent-violet)', borderRadius: 2, transition: 'width .6s ease' }} />
               </div>
-            </>
+            </div>
           ) : (
             <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Chargement...</div>
           )}

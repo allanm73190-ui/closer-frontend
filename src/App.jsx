@@ -257,13 +257,13 @@ export default function App() {
   const isHOS = role === 'head_of_sales';
   const isManager = isAdmin || isHOS;
   const navItems = [
-    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard' },
+    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard', section: 'Principal' },
     { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
     { key: 'Objections', label: 'Objections',  icon: 'forum' },
     { key: 'Benchmark',  label: 'Benchmark', icon: 'query_stats' },
     { key: 'Knowledge',  label: 'Connaissances', icon: 'library_books' },
-    ...(isManager ? [{ key: 'HOSPage', label: 'Équipe', icon: 'groups' }] : []),
-    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle' },
+    ...(isManager ? [{ key: 'HOSPage', label: 'Équipe', icon: 'groups', section: 'Équipe' }] : []),
+    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle', section: 'Debriefs' },
     { key: 'History',    label: 'Historique',  icon: 'history' },
   ];
   const mobileNavItems = [
@@ -476,29 +476,35 @@ export default function App() {
               </div>
 
               {/* Nav items */}
-              <div style={{ flex: 1, paddingTop: 6, paddingBottom: 6 }}>
-                {navItems.map(({ key, label, icon }) => {
+              <div style={{ flex: 1, paddingTop: 4, paddingBottom: 6 }}>
+                {navItems.map(({ key, label, icon, section }) => {
                   const isActive = page === key;
                   return (
-                    <button
-                      key={key}
-                      onClick={() => navigate(key)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '9px 16px', borderRadius: 0, border: 'none',
-                        borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-                        fontSize: 13, fontWeight: isActive ? 600 : 500,
-                        cursor: 'pointer', transition: 'all .15s',
-                        background: isActive ? 'rgba(255,126,95,.10)' : 'transparent',
-                        color: isActive ? P : 'var(--txt3)',
-                        textAlign: 'left', width: '100%', fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--nav-hover)'; e.currentTarget.style.color = 'var(--txt)'; } }}
-                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--txt3)'; } }}
-                    >
-                      <NavIcon name={icon} active={isActive} size={16} color={isActive ? P : 'var(--txt3)'} />
-                      <span>{label}</span>
-                    </button>
+                    <React.Fragment key={key}>
+                      {section && (
+                        <div style={{ padding: '8px 16px 2px', fontSize: 9, fontWeight: 700, color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.1em', opacity: .6 }}>
+                          {section}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => navigate(key)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '9px 16px', borderRadius: 0, border: 'none',
+                          borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+                          fontSize: 13, fontWeight: isActive ? 600 : 500,
+                          cursor: 'pointer', transition: 'all .15s',
+                          background: isActive ? 'rgba(255,126,95,.10)' : 'transparent',
+                          color: isActive ? P : 'var(--txt3)',
+                          textAlign: 'left', width: '100%', fontFamily: 'inherit',
+                        }}
+                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--nav-hover)'; e.currentTarget.style.color = 'var(--txt)'; } }}
+                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--txt3)'; } }}
+                      >
+                        <NavIcon name={icon} active={isActive} size={16} color={isActive ? P : 'var(--txt3)'} />
+                        <span>{label}</span>
+                      </button>
+                    </React.Fragment>
                   );
                 })}
               </div>
