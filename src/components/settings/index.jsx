@@ -712,6 +712,7 @@ function IntegrationsSection({ user, toast }) {
   const [gcalStatus, setGcalStatus] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
   const [events, setEvents] = useState(null);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [importingId, setImportingId] = useState(null);
@@ -778,6 +779,16 @@ function IntegrationsSection({ user, toast }) {
     finally { setSyncing(false); }
   };
 
+  const subscribeWatch = async () => {
+    setSubscribing(true);
+    try {
+      await apiFetch('/integrations/google/subscribe', { method: 'POST' });
+      toast('Sync temps réel activée !', 'success');
+      loadStatus();
+    } catch (e) { toast(e.message || 'Erreur activation', 'error'); }
+    finally { setSubscribing(false); }
+  };
+
   const importEvent = async (ev) => {
     setImportingId(ev.id);
     try {
@@ -830,6 +841,29 @@ function IntegrationsSection({ user, toast }) {
                 <span style={{ display: 'block', marginTop: 4, color: 'var(--txt3)', fontWeight: 400 }}>
                   Dernière sync : {new Date(gcalStatus.lastSynced).toLocaleString('fr-FR')}
                 </span>
+              )}
+            </div>
+            {/* Watch API status */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt)' }}>
+                  {gcalStatus.watchActive ? '⚡ Sync temps réel active' : '🔄 Mode polling uniquement'}
+                </div>
+                {gcalStatus.watchActive && gcalStatus.channelExpiresAt && (
+                  <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
+                    Channel expire le {new Date(gcalStatus.channelExpiresAt).toLocaleDateString('fr-FR')}
+                  </div>
+                )}
+                {!gcalStatus.watchActive && (
+                  <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
+                    Activez la sync temps réel pour recevoir les nouveaux RDV instantanément.
+                  </div>
+                )}
+              </div>
+              {!gcalStatus.watchActive && (
+                <Btn onClick={subscribeWatch} disabled={subscribing} style={{ fontSize: 12, padding: '6px 12px', flexShrink: 0 }}>
+                  {subscribing ? '…' : 'Activer'}
+                </Btn>
               )}
             </div>
             {/* Actions */}

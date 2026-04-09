@@ -316,6 +316,25 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
                   <Textarea rows={4} value={form.note} onChange={e=>setValue('note', e.target.value)} />
                 </div>
               )}
+
+              {deal?.source === 'google_calendar' && (
+                <div style={{ gridColumn:'1 / -1', background:'rgba(66,133,244,.07)', border:'1px solid rgba(66,133,244,.2)', borderRadius:10, padding:'10px 14px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.15)', color:'#4285F4', border:'1px solid rgba(66,133,244,.3)' }}>📅 Google Agenda</span>
+                    <span style={{ fontSize:11, color:'var(--txt3)' }}>Lead importé automatiquement</span>
+                  </div>
+                  {deal.scheduled_at && (
+                    <div style={{ fontSize:12, color:'var(--txt2)', marginBottom:4 }}>
+                      <strong>RDV :</strong> {new Date(deal.scheduled_at).toLocaleString('fr-FR', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                    </div>
+                  )}
+                  {deal.google_event_id && (
+                    <div style={{ fontSize:11, color:'var(--txt3)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      Event ID: {deal.google_event_id}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -418,7 +437,14 @@ function DealCard({ deal, stages, onOpen }) {
       </div>
       <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
         {deal.closer_name && <span style={{ fontSize:11, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>👤 {deal.closer_name}</span>}
-        <StatusBadge stage={stage} compact />
+        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+          {deal.source === 'google_calendar' && (
+            <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.12)', color:'#4285F4', border:'1px solid rgba(66,133,244,.25)', flexShrink:0 }}>
+              📅 GCal
+            </span>
+          )}
+          <StatusBadge stage={stage} compact />
+        </div>
       </div>
     </div>
   );

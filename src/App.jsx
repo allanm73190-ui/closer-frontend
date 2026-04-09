@@ -25,6 +25,7 @@ const ObjectionLibrary = lazy(() => import('./components/objections').then(m => 
 const SettingsPage     = lazy(() => import('./components/settings').then(m => ({ default: m.SettingsPage })));
 const BenchmarkPage    = lazy(() => import('./components/features/Benchmark').then(m => ({ default: m.BenchmarkPage })));
 const KnowledgePage    = lazy(() => import('./components/features/Knowledge').then(m => ({ default: m.KnowledgePage })));
+const GamificationPage = lazy(() => import('./components/gamification').then(m => ({ default: m.GamificationPage })));
 
 const DESKTOP_SIDEBAR_WIDTH = 220;
 
@@ -37,7 +38,8 @@ const PAGE_META = {
   HOSPage:      { title:'Espace équipe',     subtitle:'Pilotage des équipes et objectifs HOS' },
   NewDebrief:   { title:'Nouveau debrief',   subtitle:'Capture structurée de votre dernier appel' },
   EditDebrief:  { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
-  History:      { title:'Historique',         subtitle:'Retrouvez et filtrez vos debriefs passés' },
+  History:      { title:'Débriefs',            subtitle:'' },
+  Gamification: { title:'Classement',          subtitle:'' },
   Detail:       { title:'Détail debrief',    subtitle:'Analyse complète, IA et export PDF' },
   PdfViewer:    { title:'Visualisateur PDF', subtitle:'Rendu web fidèle et export prêt au téléchargement' },
   Settings:     { title:'Paramètres',        subtitle:'Configuration synchronisée de votre espace' },
@@ -66,7 +68,7 @@ export default function App() {
   const [authView, setAuthView] = useState('login');
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const VALID_PAGES = ['Dashboard','Pipeline','Objections','Benchmark','Knowledge','HOSPage','NewDebrief','History','Settings','Detail','PdfViewer','EditDebrief'];
+  const VALID_PAGES = ['Dashboard','Pipeline','Objections','Benchmark','Knowledge','HOSPage','NewDebrief','History','Gamification','Settings','Detail','PdfViewer','EditDebrief'];
   const [page, setPage] = useState(() => {
     const saved = sessionStorage.getItem('cd_page');
     return (saved && VALID_PAGES.includes(saved)) ? saved : 'Dashboard';
@@ -83,6 +85,8 @@ export default function App() {
   const [autoAI, setAutoAI] = useState(false);
   const [autoAiAfterDebrief, setAutoAiAfterDebrief] = useState(true);
   const [leadContext, setLeadContext] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [settingsTabRequest, setSettingsTabRequest] = useState('account');
   const [objectivesRefreshTick, setObjectivesRefreshTick] = useState(0);
   const [theme, setTheme] = useState(() => {
@@ -168,6 +172,34 @@ export default function App() {
       .catch(() => setDebriefTemplates(getDefaultTemplateCatalog()));
   }, [user, setDebriefConfig]);
 
+  // Close notification dropdown on outside click
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handler = () => setNotifOpen(false);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [notifOpen]);
+
+  // Fetch notifications when user is logged in
+  useEffect(() => {
+    if (!user) { setNotifications([]); return; }
+    apiFetch('/notifications').then(data => setNotifications(Array.isArray(data) ? data : [])).catch(() => {});
+  }, [user]);
+
+  const markNotifRead = async (id) => {
+    try {
+      await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (_) {}
+  };
+
+  const markAllNotifRead = async () => {
+    try {
+      await apiFetch('/notifications/read-all', { method: 'PATCH' });
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (_) {}
+  };
+
   const navigate = (p, id = null, from = null, opts = {}) => {
     setPage(p); sessionStorage.setItem('cd_page', p); setSelId(id);
     if (from) setFrom(from);
@@ -184,12 +216,12 @@ export default function App() {
     const target = debriefs.find(item => String(item.id) === targetId);
     if (!target) {
       toast('Debrief introuvable pour ce lien', 'error');
-      setPendingDebriefLink(null);
+      setPendingDebriefLink(null); setNotifications([]);
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
     navigate(pendingDebriefLink.page || 'Detail', target.id, 'History');
-    setPendingDebriefLink(null);
+    setPendingDebriefLink(null); setNotifications([]);
     window.history.replaceState({}, '', window.location.pathname);
   }, [user, pendingDebriefLink, dataLoading, debriefsLoaded, debriefs, toast]);
 
@@ -229,7 +261,7 @@ export default function App() {
     setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login');
     setDebriefsLoaded(false);
     setAutoAiAfterDebrief(true); setSettingsTabRequest('account');
-    setPendingDebriefLink(null);
+    setPendingDebriefLink(null); setNotifications([]);
     toast('Déconnecté');
   };
 
@@ -261,21 +293,26 @@ export default function App() {
   const isHOS = role === 'head_of_sales';
   const isManager = isAdmin || isHOS;
   const navItems = [
-    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard', section: 'Principal' },
-    { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
-    { key: 'Objections', label: 'Objections',  icon: 'forum' },
-    { key: 'Benchmark',  label: 'Benchmark', icon: 'query_stats' },
-    { key: 'Knowledge',  label: 'Connaissances', icon: 'library_books' },
-    ...(isManager ? [{ key: 'HOSPage', label: 'Équipe', icon: 'groups', section: 'Équipe' }] : []),
-    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle', section: 'Debriefs' },
-    { key: 'History',    label: 'Historique',  icon: 'history' },
-  ];
-  const mobileNavItems = [
-    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard' },
+    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard',      section: 'Principal' },
     { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
     { key: 'Objections', label: 'Objections', icon: 'forum' },
-    { key: 'NewDebrief', label: 'Debrief',    icon: 'add_circle' },
-    { key: 'History',    label: 'Historique', icon: 'history' },
+    { key: 'History',    label: 'Débriefs',   icon: 'description' },
+    ...(isManager
+      ? [
+          { key: 'HOSPage',      label: 'Mon équipe',  icon: 'groups',       section: 'Équipe' },
+          { key: 'Gamification', label: 'Classement',  icon: 'emoji_events' },
+        ]
+      : [{ key: 'Gamification', label: 'Classement',  icon: 'emoji_events', section: 'Équipe' }]
+    ),
+    { key: 'Benchmark',  label: 'Benchmark',  icon: 'query_stats',    section: 'Outils' },
+    { key: 'Knowledge',  label: 'Connaissances', icon: 'library_books' },
+  ];
+  const mobileNavItems = [
+    { key: 'Dashboard',     label: 'Dashboard',  icon: 'dashboard' },
+    { key: 'Pipeline',      label: 'Pipeline',   icon: 'analytics' },
+    { key: 'Objections',    label: 'Objections', icon: 'forum' },
+    { key: 'History',       label: 'Débriefs',   icon: 'description' },
+    { key: 'Gamification',  label: 'Classement', icon: 'emoji_events' },
   ];
   const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
   const isPdfViewerPage = page === 'PdfViewer';
@@ -337,6 +374,7 @@ export default function App() {
       {page === 'Objections' && <ObjectionLibrary toast={toast} />}
       {page === 'Benchmark' && <BenchmarkPage user={user} debriefs={debriefs} navigate={navigate} toast={toast} />}
       {page === 'Knowledge' && <KnowledgePage navigate={navigate} toast={toast} />}
+      {page === 'Gamification' && <GamificationPage gam={gam} user={user} debriefs={debriefs} />}
       {page === 'HOSPage' && isManager && <HOSPage toast={toast} allDebriefs={debriefs} />}
       {page === 'Settings' && (
         <SettingsPage user={user} toast={toast} navigate={navigate} fromPage={from || 'Dashboard'} returnId={selId}
@@ -562,15 +600,78 @@ export default function App() {
                   </h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button style={{
-                    width: 32, height: 32, borderRadius: 10,
-                    border: '1px solid var(--border)', background: 'var(--glass-bg)',
-                    cursor: 'pointer', color: 'var(--txt2)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                  }}>
-                    <NavIcon name="help" size={15} color="var(--txt3)" />
-                  </button>
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => setNotifOpen(v => !v)}
+                      style={{
+                        width: 32, height: 32, borderRadius: 10,
+                        border: '1px solid var(--border)', background: 'var(--glass-bg)',
+                        cursor: 'pointer', color: 'var(--txt2)',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                        position: 'relative',
+                      }}
+                      title="Notifications"
+                    >
+                      <NavIcon name="notifications" size={15} color="var(--txt3)" />
+                      {notifications.some(n => !n.read) && (
+                        <span style={{
+                          position: 'absolute', top: 4, right: 4,
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#ef4444', border: '1.5px solid var(--card-soft)',
+                        }} />
+                      )}
+                    </button>
+                    {notifOpen && (
+                      <div
+                        style={{
+                          position: 'absolute', top: 40, right: 0, zIndex: 9999,
+                          width: 320, maxHeight: 420, overflowY: 'auto',
+                          background: 'var(--card, #fff)', border: '1px solid var(--border)',
+                          borderRadius: 14, boxShadow: 'var(--sh-card)',
+                          padding: '10px 0',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 14px 10px', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>Notifications</span>
+                          {notifications.some(n => !n.read) && (
+                            <button onClick={markAllNotifRead} style={{ fontSize: 11, color: 'var(--txt3)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                              Tout marquer lu
+                            </button>
+                          )}
+                        </div>
+                        {notifications.length === 0 ? (
+                          <p style={{ fontSize: 13, color: 'var(--txt3)', textAlign: 'center', margin: '16px 0' }}>Aucune notification</p>
+                        ) : (
+                          notifications.map(n => (
+                            <div
+                              key={n.id}
+                              onClick={() => { markNotifRead(n.id); setNotifOpen(false); if (n.data?.dealId) navigate('Pipeline'); }}
+                              style={{
+                                padding: '10px 14px',
+                                borderBottom: '1px solid var(--border)',
+                                cursor: 'pointer',
+                                background: n.read ? 'transparent' : 'rgba(66,133,244,.05)',
+                                transition: 'background .15s',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(66,133,244,.05)'; }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {!n.read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4285F4', flexShrink: 0 }} />}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
+                                  {n.body && <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
+                                  <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 3 }}>{new Date(n.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={toggleTheme}
                     style={{
