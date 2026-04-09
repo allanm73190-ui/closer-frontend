@@ -66,7 +66,11 @@ export default function App() {
   const [authView, setAuthView] = useState('login');
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [page, setPage] = useState('Dashboard');
+  const VALID_PAGES = ['Dashboard','Pipeline','Objections','Benchmark','Knowledge','HOSPage','NewDebrief','History','Settings','Detail','PdfViewer','EditDebrief'];
+  const [page, setPage] = useState(() => {
+    const saved = sessionStorage.getItem('cd_page');
+    return (saved && VALID_PAGES.includes(saved)) ? saved : 'Dashboard';
+  });
   const [selId, setSelId] = useState(null);
   const [from, setFrom] = useState(null);
   const [debriefs, setDebriefs] = useState([]);
@@ -111,7 +115,7 @@ export default function App() {
   // Session expiry
   useEffect(() => {
     setOnExpired(() => {
-      setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); setAuthView('login');
+      setUser(null); setDebriefs([]); setGam(null); setPage('Dashboard'); sessionStorage.removeItem('cd_page'); setAuthView('login');
       toast('Session expirée, veuillez vous reconnecter', 'error');
     });
   }, [toast]);
@@ -165,7 +169,7 @@ export default function App() {
   }, [user, setDebriefConfig]);
 
   const navigate = (p, id = null, from = null, opts = {}) => {
-    setPage(p); setSelId(id);
+    setPage(p); sessionStorage.setItem('cd_page', p); setSelId(id);
     if (from) setFrom(from);
     else if (p !== 'Detail' && p !== 'PdfViewer') setFrom(null);
     setAutoAI(!!opts.autoAI);
@@ -553,15 +557,9 @@ export default function App() {
                 borderBottom: '1px solid var(--border)',
               }}>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: '0 0 1px', fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--txt3)', fontWeight: 600 }}>
-                    CloserDebrief
-                  </p>
                   <h2 style={{ margin: 0, fontSize: 20, color: 'var(--txt)', fontWeight: 800, fontFamily: 'Manrope, Inter, sans-serif', lineHeight: 1.2, letterSpacing: '-.02em' }}>
                     {pageMeta.title}
                   </h2>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--txt2)' }}>
-                    {pageMeta.subtitle}
-                  </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button style={{
