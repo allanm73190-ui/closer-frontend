@@ -163,254 +163,295 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
     ? Math.min(Math.round(((gam.points - gam.level.min) / (gam.level.next - gam.level.min)) * 100), 100)
     : 100;
 
-  // ─── MOBILE LAYOUT (stacked) ───────────────────────────────────────────────
+  const nowLabel = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+
+  const kpis = [
+    {
+      key: 'debriefs',
+      label: isManager ? 'Débriefs équipe' : 'Débriefs ce mois',
+      value: total,
+      delta: total > 0 ? `+${Math.min(total, 12)} actifs` : 'Aucune donnée',
+      tone: total > 0 ? 'up' : 'warn',
+    },
+    {
+      key: 'score',
+      label: 'Score moyen',
+      value: `${avg}%`,
+      delta: avg >= 75 ? 'Très bon niveau' : avg >= 60 ? 'À consolider' : 'Priorité coaching',
+      tone: avg >= 75 ? 'up' : avg >= 60 ? 'warn' : 'down',
+    },
+    {
+      key: 'closing',
+      label: 'Taux de closing',
+      value: `${closeRate}%`,
+      delta: closeRate >= 35 ? 'Trajectoire positive' : 'Potentiel à débloquer',
+      tone: closeRate >= 35 ? 'up' : 'warn',
+    },
+    {
+      key: 'pipeline',
+      label: 'Pipeline actif',
+      value: `${pipelineActiveValue.toLocaleString('fr-FR')}€`,
+      delta: `${pipelineActiveCount} opportunité${pipelineActiveCount > 1 ? 's' : ''}`,
+      tone: pipelineActiveCount > 0 ? 'up' : 'warn',
+    },
+  ];
+
+  const quickDebriefs = latestDebriefs.slice(0, 5);
+
+  const renderDebriefItem = (debrief) => {
+    const pct = Math.round(debrief.percentage || 0);
+    const scoreColor = pct >= 75 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626';
+    return (
+      <button
+        key={debrief.id}
+        type="button"
+        onClick={() => navigate('Detail', debrief.id)}
+        style={{
+          width: '100%',
+          border: '1px solid var(--border)',
+          background: 'var(--card-soft)',
+          borderRadius: 10,
+          padding: '9px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          textAlign: 'left',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        <div style={{ width: 34, height: 34, borderRadius: 8, background: `${scoreColor}16`, color: scoreColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+          {pct}%
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {debrief.prospect_name || 'Prospect'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(debrief.call_date || debrief.created_at)}</div>
+        </div>
+        <ClosedBadge v={debrief.is_closed} />
+      </button>
+    );
+  };
+
+  const renderObjections = () => (
+    topObjections.length === 0 ? (
+      <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucune objection remontée.</div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {topObjections.map(objection => {
+          const accent = objection.key === 'budget' ? '#DC2626' : objection.key === 'reflechir' ? '#D97706' : '#7C3AED';
+          return (
+            <div key={objection.key}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 600 }}>{objection.label}</span>
+                <span style={{ fontSize: 11, color: accent, fontWeight: 700 }}>{objection.count}</span>
+              </div>
+              <div style={{ height: 5, borderRadius: 999, background: 'var(--surface-b)', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(objection.pct, 100)}%`, height: '100%', background: accent }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )
+  );
+
+  const renderPipelineMini = () => (
+    dealsLoading ? (
+      <Spinner size={18} />
+    ) : pipelineCounts.length === 0 ? (
+      <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun lead en pipeline.</div>
+    ) : (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+        {pipelineCounts.slice(0, 6).map(stage => (
+          <div key={stage.key} style={{ border: '1px solid var(--border)', background: 'var(--card-soft)', borderRadius: 9, padding: '8px 9px' }}>
+            <div style={{ fontSize: 10, color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>
+              {stage.label}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 18, fontWeight: 800, color: stage.color }}>
+              {stage.count}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  );
+
   if (mob) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ ...G({ padding: '16px 14px' }) }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt)' }}>Bonjour, {user.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>
-            {debriefs.length} debriefs · Pipeline: {pipelineActiveCount} leads
-            {streak > 0 && <span style={{ marginLeft: 8, color: '#F59E0B', fontWeight: 600 }}>{streak >= 7 ? '🔥' : '⚡'} {streak}j</span>}
+        <div className="cd-card">
+          <div style={{ fontSize: 21, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)' }}>
+            {isManager ? 'Vue équipe' : `Bonjour, ${user.name} 👋`}
           </div>
-          <Btn onClick={() => navigate('NewDebrief')} style={{ marginTop: 12, width: '100%' }}>+ Nouveau debrief</Btn>
+          <div style={{ marginTop: 3, fontSize: 12, color: 'var(--txt3)' }}>{nowLabel}</div>
+          <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')} style={{ marginTop: 12, width: '100%' }}>
+            {isManager ? 'Espace équipe' : '+ Nouveau debrief'}
+          </Btn>
         </div>
-        <GamCard gam={gam} />
-        {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
-        <StatsRow debriefs={debriefs} />
-        <div style={{ ...G({ padding: 14 }) }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', marginBottom: 8 }}>Évolution</div>
-          <Chart debriefs={debriefs} compact simple />
-        </div>
-        <div style={{ ...G({ padding: 14 }) }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)' }}>Derniers debriefs</span>
-            <button onClick={() => navigate('History')} style={{ background: 'none', border: 'none', color: P, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tout voir</button>
-          </div>
-          {latestDebriefs.map(d => (
-            <div key={d.id} style={{ marginBottom: 6 }}>
-              <DebriefCard debrief={d} onClick={() => navigate('Detail', d.id)} showUser={isManager} />
+
+        <div className="cd-kpi-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+          {kpis.map(kpi => (
+            <div key={kpi.key} className="cd-kpi-card">
+              <div className="cd-kpi-label">{kpi.label}</div>
+              <div className="cd-kpi-value" style={{ fontSize: 24 }}>{kpi.value}</div>
+              <div className={`cd-kpi-delta ${kpi.tone}`}>{kpi.delta}</div>
             </div>
           ))}
         </div>
+
+        <GamCard gam={gam} />
+        {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
+
+        <div className="cd-card">
+          <div className="cd-card-title">Évolution du score</div>
+          <Chart debriefs={debriefs} compact simple />
+        </div>
+
+        <div className="cd-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div className="cd-card-title" style={{ marginBottom: 0 }}>Derniers appels debriefés</div>
+            <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Voir tout
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(renderDebriefItem)}
+          </div>
+        </div>
+
+        <div className="cd-card">
+          <div className="cd-card-title">Objections fréquentes</div>
+          {renderObjections()}
+        </div>
+
+        <div className="cd-card">
+          <div className="cd-card-title">Pipeline</div>
+          {renderPipelineMini()}
+        </div>
+
         {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
       </div>
     );
   }
 
-  // ─── DESKTOP BENTO GRID ────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-      {/* ── Header row ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', letterSpacing: '-.03em', lineHeight: 1.1 }}>Bonjour, {user.name} 👋</div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', marginTop: 2 }}>{total} debriefs · Score moyen {avg}% · Pipeline: {pipelineActiveValue.toLocaleString('fr-FR')}€<span style={{ marginLeft: 8, color: streak > 0 ? '#F59E0B' : 'var(--txt3)', fontWeight: 600 }}>{streak >= 7 ? '🔥' : streak > 0 ? '⚡' : '—'} {streak}j streak</span></div>
+          <div className="page-title" style={{ fontSize: 28 }}>
+            {isManager ? 'Vue équipe' : `Bonjour, ${user.name} 👋`}
+          </div>
+          <div className="page-subtitle">{nowLabel}</div>
         </div>
-        <Btn onClick={() => navigate('NewDebrief')}>+ Nouveau debrief</Btn>
-      </div>
-
-      {/* ── Bento grid ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gridAutoRows: 'minmax(76px, auto)', gap: 10 }}>
-
-        {/* Row 1: 4 stat cards */}
-        <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
-          <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Debriefs</div>
-          <div>
-            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{total}</div>
-            {debriefs.length > 0 && <div style={{ fontSize: 11, color: P, marginTop: 4 }}>+{Math.min(total, 12)} ce mois</div>}
-          </div>
-        </div>
-
-        <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
-          <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Score moyen</div>
-          <div>
-            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{avg}%</div>
-            <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>
-              {(() => {
-                const sorted = [...debriefs].sort((a, b) => new Date(b.call_date) - new Date(a.call_date));
-                const rA = sorted.slice(0, 3).reduce((s, d) => s + (d.percentage || 0), 0) / Math.max(sorted.slice(0, 3).length, 1);
-                const pA = sorted.slice(3, 6).reduce((s, d) => s + (d.percentage || 0), 0) / Math.max(sorted.slice(3, 6).length, 1);
-                const t = sorted.slice(3, 6).length > 0 ? Math.round(rA - pA) : 0;
-                return t >= 0 ? `+${t}pts` : `${t}pts`;
-              })()}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ gridColumn: 'span 3', ...G({ padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }) }}>
-          <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Taux closing</div>
-          <div>
-            <div style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)', lineHeight: 1, letterSpacing: '-.03em' }}>{closeRate}%</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-              <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(200,160,140,.08)' }}>
-                <div style={{ width: `${Math.min(closeRate, 100)}%`, height: '100%', borderRadius: 2, background: closeRate >= 40 ? '#059669' : closeRate >= 25 ? '#D97706' : P, transition: 'width .6s ease' }} />
-              </div>
-              <span style={{ fontSize: 10, color: 'var(--txt3)', flexShrink: 0 }}>/ 40%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Streak + XP card */}
-        <div style={{ gridColumn: 'span 3', padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-          background: streak >= 3 ? 'linear-gradient(135deg, rgba(245,158,11,.08), rgba(239,68,68,.04))' : 'var(--accent-violet-soft)',
-          border: `1px solid ${streak >= 3 ? 'rgba(245,158,11,.2)' : 'var(--accent-violet-border)'}`,
-          borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        }}>
-          {/* Streak row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 26, lineHeight: 1 }}>{streak >= 7 ? '🔥' : streak >= 3 ? '⚡' : '💤'}</span>
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: streak >= 1 ? '#F59E0B' : 'var(--txt3)', lineHeight: 1, letterSpacing: '-.02em' }}>{streak}j</div>
-              <div style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Streak</div>
-            </div>
-          </div>
-          {/* XP bar */}
-          {gam ? (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                <span style={{ fontSize: 10, color: 'var(--accent-violet)', fontWeight: 700 }}>{gam.level?.icon || '★'}</span>
-                <span style={{ fontSize: 10, color: 'var(--accent-violet)', fontWeight: 600 }}>{gam.level?.name || 'Niveau'}</span>
-                <span style={{ fontSize: 10, color: 'var(--txt3)', marginLeft: 'auto' }}>{gam.points} XP</span>
-              </div>
-              <div style={{ height: 4, borderRadius: 2, background: 'rgba(200,160,140,.08)' }}>
-                <div style={{ width: `${gamPct}%`, height: '100%', background: 'var(--accent-violet)', borderRadius: 2, transition: 'width .6s ease' }} />
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Chargement...</div>
-          )}
-        </div>
-
-        {/* Row 2-3: Chart (span 8x2) + IA Insights (span 4x2) */}
-        <div style={{ gridColumn: 'span 8', gridRow: 'span 2', ...G({ padding: 14, display: 'flex', flexDirection: 'column' }) }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)' }}>Évolution des scores</span>
-            <div style={{ display: 'flex', gap: 3 }}>
-              <span style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--surface-accent)', fontSize: 11, color: P, fontWeight: 500 }}>7j</span>
-              <span style={{ padding: '2px 7px', borderRadius: 4, fontSize: 11, color: 'var(--txt3)' }}>30j</span>
-              <span style={{ padding: '2px 7px', borderRadius: 4, fontSize: 11, color: 'var(--txt3)' }}>90j</span>
-            </div>
-          </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <Chart debriefs={debriefs} compact simple />
-          </div>
-        </div>
-
-        <div style={{ gridColumn: 'span 4', gridRow: 'span 2', ...Gv({ padding: 14, display: 'flex', flexDirection: 'column' }) }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
-            <div style={{ width: 16, height: 16, borderRadius: 4, background: 'rgba(124,58,237,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--accent-violet)' }}>A</div>
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--accent-violet)' }}>IA Insights</span>
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--txt2)', lineHeight: 1.65, flex: 1 }}>
-            {patternsLoading ? (
-              <Spinner size={18} />
-            ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
-              <span>Aucun pattern critique détecté pour le moment.</span>
-            ) : (
-              patternsData.patterns.slice(0, 2).map(p => (
-                <div key={p.id} style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, color: 'var(--txt)' }}>{p.title}</span>
-                  <span style={{ color: 'var(--txt3)' }}> — {p.recommendation}</span>
-                </div>
-              ))
-            )}
-            <div
-              onClick={() => navigate('History')}
-              style={{ padding: '5px 10px', borderRadius: 7, background: 'rgba(124,58,237,.06)', border: '1px solid var(--accent-violet-border)', fontSize: 11, color: 'var(--accent-violet)', marginTop: 6, cursor: 'pointer', display: 'inline-block' }}
-            >
-              Analyse complète
-            </div>
-          </div>
-        </div>
-
-        {/* Row 4: Debriefs (span 5) + Pipeline (span 4) + Objections (span 3) */}
-        <div style={{ gridColumn: 'span 5', ...G({ padding: 14 }) }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)' }}>Derniers debriefs</span>
-            <button onClick={() => navigate('History')} style={{ background: 'none', border: 'none', color: P, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tout voir</button>
-          </div>
-          {latestDebriefs.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--txt3)', padding: '8px 0' }}>Aucun debrief.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {latestDebriefs.map(d => {
-                const pct = Math.round(d.percentage || 0);
-                const col = pct >= 75 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626';
-                return (
-                  <button key={d.id} type="button" onClick={() => navigate('Detail', d.id)} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
-                    borderRadius: 8, background: 'rgba(255,255,255,.4)', border: 'none',
-                    cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%',
-                    transition: 'background .15s',
-                  }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 7, background: `${col}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: col, fontWeight: 500, flexShrink: 0 }}>
-                      {(d.prospect_name || 'P').substring(0, 2).toUpperCase()}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.prospect_name || 'Prospect'}</div>
-                      <div style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(d.call_date || d.created_at)}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <div style={{ width: 36, height: 3, borderRadius: 2, background: 'rgba(200,160,140,.08)' }}><div style={{ width: `${pct}%`, height: '100%', background: col, borderRadius: 2 }} /></div>
-                      <span style={{ fontSize: 12, color: col, fontWeight: 600, minWidth: 28, textAlign: 'right' }}>{pct}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div style={{ gridColumn: 'span 4', ...G({ padding: 14 }) }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)' }}>Pipeline</span>
-            <button onClick={() => navigate('Pipeline')} style={{ background: 'none', border: 'none', color: P, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Ouvrir</button>
-          </div>
-          {dealsLoading ? <Spinner size={18} /> : (
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              {pipelineCounts.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun lead.</div>
-              ) : pipelineCounts.map(st => (
-                <div key={st.key} style={{ flex: '1 1 74px', minWidth: 74, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 3 }}>{st.label?.split(' ')[0] || st.key}</div>
-                  <div style={{
-                    height: 32, borderRadius: 7,
-                    background: `${st.color}10`, border: `1px solid ${st.color}20`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 600, color: st.color,
-                  }}>{st.count}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{ gridColumn: 'span 3', ...G({ padding: 14 }) }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)', marginBottom: 8 }}>Objections top</div>
-          {topObjections.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucune objection.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {topObjections.map(o => {
-                const col = o.key === 'budget' ? 'rgba(220,38,38,.35)' : o.key === 'reflechir' ? 'rgba(217,119,6,.35)' : 'rgba(124,58,237,.3)';
-                return (
-                  <div key={o.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(200,160,140,.06)' }}>
-                      <div style={{ width: `${o.pct}%`, height: '100%', background: col, borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontSize: 11, color: 'var(--txt2)', minWidth: 50 }}>{o.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Btn variant="secondary" onClick={() => navigate('History')}>Débriefs</Btn>
+          <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')}>
+            {isManager ? 'Mon équipe' : '+ Nouveau debrief'}
+          </Btn>
         </div>
       </div>
 
-      {/* ── Action plan (below bento) ──────────────────────────────────── */}
-      {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
+      <div className="cd-kpi-grid">
+        {kpis.map(kpi => (
+          <div key={kpi.key} className="cd-kpi-card">
+            <div className="cd-kpi-label">{kpi.label}</div>
+            <div className="cd-kpi-value">{kpi.value}</div>
+            <div className={`cd-kpi-delta ${kpi.tone}`}>{kpi.delta}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="cd-grid-aside">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
+
+          <div className="cd-card">
+            <div className="cd-card-title">Évolution du score</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <Chart debriefs={debriefs} compact simple />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 700 }}>Derniers appels debriefés</span>
+                  <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Voir tout</button>
+                </div>
+                {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(renderDebriefItem)}
+              </div>
+            </div>
+          </div>
+
+          {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
+
+          {isManager && (
+            <div className="cd-card">
+              <div className="cd-card-title">Détection de patterns</div>
+              {patternsLoading ? (
+                <Spinner size={20} />
+              ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
+                <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun pattern critique détecté.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {patternsData.patterns.slice(0, 4).map(pattern => (
+                    <div key={pattern.id} style={{ border: '1px solid var(--border)', borderRadius: 9, padding: '9px 10px', background: 'var(--card-soft)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>{pattern.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 3 }}>{pattern.recommendation}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="cd-card" style={{ background: streak >= 3 ? 'linear-gradient(135deg, rgba(245,158,11,.12), rgba(239,68,68,.06))' : 'var(--card)' }}>
+            <div className="cd-card-title">Progression</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ fontSize: 34, lineHeight: 1 }}>{streak >= 7 ? '🔥' : streak >= 3 ? '⚡' : '🎯'}</div>
+              <div>
+                <div style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Manrope', 'Inter', sans-serif", color: streak > 0 ? '#D97706' : 'var(--txt3)', lineHeight: 1 }}>
+                  {streak}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  Jour{streak > 1 ? 's' : ''} de streak
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--txt3)', marginBottom: 4 }}>
+                <span>{gam?.points || 0} XP</span>
+                <span>{gam?.level?.next || gam?.points || 0} XP</span>
+              </div>
+              <div style={{ height: 7, borderRadius: 999, background: 'var(--surface-b)', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(gamPct, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-violet), var(--accent))' }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="cd-card">
+            <div className="cd-card-title">Objections fréquentes</div>
+            {renderObjections()}
+          </div>
+
+          <div className="cd-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div className="cd-card-title" style={{ marginBottom: 0 }}>Pipeline</div>
+              <button onClick={() => navigate('Pipeline')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Ouvrir
+              </button>
+            </div>
+            {renderPipelineMini()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

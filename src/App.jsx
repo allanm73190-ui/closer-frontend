@@ -27,8 +27,6 @@ const BenchmarkPage    = lazy(() => import('./components/features/Benchmark').th
 const KnowledgePage    = lazy(() => import('./components/features/Knowledge').then(m => ({ default: m.KnowledgePage })));
 const GamificationPage = lazy(() => import('./components/gamification').then(m => ({ default: m.GamificationPage })));
 
-const DESKTOP_SIDEBAR_WIDTH = 220;
-
 const PAGE_META = {
   Dashboard:    { title:'Tableau de bord',   subtitle:'' },
   Pipeline:     { title:'Pipeline',          subtitle:'' },
@@ -385,6 +383,8 @@ export default function App() {
     </>
   );
 
+  const renderContent = () => (dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>);
+
   // ─── Main layout ───────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--txt, #4A3428)', position: 'relative', overflow: 'hidden' }}>
@@ -414,58 +414,48 @@ export default function App() {
         <Toasts list={toasts} />
 
         {isPdfViewerPage ? (
-          <main style={{ minHeight: '100vh' }}>
-            {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
-          </main>
+          <main style={{ minHeight: '100vh' }}>{renderContent()}</main>
         ) : mob ? (
-          /* ─── MOBILE LAYOUT ─────────────────────────────────────────────── */
           <>
-            <header style={{
-              position: 'sticky', top: 0, zIndex: 50,
-              background: 'var(--sidebar)',
-              borderBottom: '1px solid var(--sidebar-border)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            }}>
-              <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 54 }}>
-                <button onClick={() => navigate('Dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 10,
-                    background: 'var(--gradient-primary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, color: 'white',
-                  }}>C</div>
-                  <div style={{ textAlign: 'left' }}>
-                    <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--txt)', lineHeight: 1.1 }}>CloserDebrief</span>
-                    <span style={{ display: 'block', fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--txt3)' }}>Sales Intelligence</span>
-                  </div>
-                </button>
-                <UserMenu user={user} gam={gam} onLogout={onLogout}
-                  onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                  toast={toast} theme={theme} onToggleTheme={toggleTheme} />
-              </div>
+            <header className="cd-mobile-top">
+              <button
+                onClick={() => navigate('Dashboard')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
+              >
+                <span className="cd-avatar">C</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--txt)', fontFamily: 'Manrope, Inter, sans-serif' }}>CloserDebrief</span>
+              </button>
+              <UserMenu
+                user={user}
+                gam={gam}
+                onLogout={onLogout}
+                onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
+                toast={toast}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
             </header>
 
-            <main style={{ padding: '18px 14px 104px' }}>
-              {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
-            </main>
+            <main className="cd-mobile-main">{renderContent()}</main>
 
-            {/* ── Mobile bottom nav ────────────────────────────────────────── */}
-            <nav style={{
-              position: 'fixed', left: 10, right: 10,
-              bottom: 'max(10px, env(safe-area-inset-bottom))',
-              background: 'var(--sidebar)',
-              border: '1px solid var(--sidebar-border)',
-              borderRadius: 16,
-              boxShadow: 'var(--sh-card)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-              padding: '6px 4px', zIndex: 45,
-              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-            }}>
+            <nav className="cd-mobile-bottom">
               {mobileNavItems.map(({ key, label, icon }) => (
-                <button key={key} onClick={() => navigate(key)} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'inherit', flex: 1,
-                }}>
+                <button
+                  key={key}
+                  onClick={() => navigate(key)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    fontFamily: 'inherit',
+                    flex: 1,
+                  }}
+                >
                   <div style={{
                     minWidth: 32, height: 28, borderRadius: 9,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -482,33 +472,23 @@ export default function App() {
             </nav>
           </>
         ) : (
-          /* ─── DESKTOP LAYOUT ────────────────────────────────────────────── */
-          <div style={{ display: 'flex', minHeight: '100vh' }}>
-
-            {/* ── Sidebar ──────────────────────────────────────────────────── */}
-            <aside style={{
-              width: DESKTOP_SIDEBAR_WIDTH, flexShrink: 0,
-              position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 60,
-              display: 'flex', flexDirection: 'column',
-              background: 'var(--sidebar)',
-              borderRight: '1px solid var(--sidebar-border)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              padding: 0,
-            }}>
-              {/* Logo section */}
-              <div style={{ padding: '20px 16px 14px', borderBottom: '1px solid var(--border)' }}>
-                <button onClick={() => navigate('Dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: 13, fontWeight: 700 }}>C</div>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: 'Manrope, Inter, sans-serif', background: 'linear-gradient(135deg, var(--accent), var(--accent-violet))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.3px' }}>CloserDebrief</div>
-                    <div style={{ fontSize: 9, color: 'var(--txt3)', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>Sales Intelligence</div>
-                  </div>
+          <div className="cd-shell">
+            <aside className="cd-sidebar">
+              <div className="cd-sidebar-logo">
+                <button
+                  onClick={() => navigate('Dashboard')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
+                >
+                  <span className="cd-avatar">C</span>
+                  <span className="cd-sidebar-brand">
+                    CloserDebrief
+                    <span className="cd-beta-badge">Beta</span>
+                  </span>
                 </button>
               </div>
 
-              {/* User section */}
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-violet), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>
+              <div className="cd-sidebar-user">
+                <div className="cd-avatar">
                   {(user.name || 'U').substring(0, 1).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -517,31 +497,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Nav items */}
-              <div style={{ flex: 1, paddingTop: 4, paddingBottom: 6 }}>
+              <div className="cd-sidebar-nav">
                 {navItems.map(({ key, label, icon, section }) => {
                   const isActive = page === key;
                   return (
                     <React.Fragment key={key}>
-                      {section && (
-                        <div style={{ padding: '8px 16px 2px', fontSize: 9, fontWeight: 700, color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.1em', opacity: .6 }}>
-                          {section}
-                        </div>
-                      )}
+                      {section && <div className="cd-nav-section-label">{section}</div>}
                       <button
                         onClick={() => navigate(key)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '9px 16px', borderRadius: 0, border: 'none',
-                          borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-                          fontSize: 13, fontWeight: isActive ? 600 : 500,
-                          cursor: 'pointer', transition: 'all .15s',
-                          background: isActive ? 'rgba(255,126,95,.10)' : 'transparent',
-                          color: isActive ? P : 'var(--txt3)',
-                          textAlign: 'left', width: '100%', fontFamily: 'inherit',
-                        }}
-                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--nav-hover)'; e.currentTarget.style.color = 'var(--txt)'; } }}
-                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--txt3)'; } }}
+                        className={`cd-nav-item ${isActive ? 'active' : ''}`}
                       >
                         <NavIcon name={icon} active={isActive} size={16} color={isActive ? P : 'var(--txt3)'} />
                         <span>{label}</span>
@@ -551,30 +515,17 @@ export default function App() {
                 })}
               </div>
 
-              {/* Bottom sidebar */}
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4, paddingBottom: 4 }}>
+              <div className="cd-sidebar-bottom">
                 <button
                   onClick={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 9, border: 'none',
-                    background: page === 'Settings' ? 'rgba(255,126,95,.10)' : 'transparent',
-                    padding: '9px 16px', borderRadius: 0, borderLeft: page === 'Settings' ? '3px solid var(--accent)' : '3px solid transparent', cursor: 'pointer',
-                    color: page === 'Settings' ? P : 'var(--txt3)',
-                    fontSize: 13, fontWeight: page === 'Settings' ? 600 : 500,
-                    textAlign: 'left', fontFamily: 'inherit',
-                  }}
+                  className={`cd-nav-item ${page === 'Settings' ? 'active' : ''}`}
                 >
                   <NavIcon name="settings" size={16} color={page === 'Settings' ? P : 'var(--txt3)'} />
                   Paramètres
                 </button>
                 <button
                   onClick={onLogout}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 9, border: 'none',
-                    background: 'transparent', padding: '9px 16px', borderRadius: 0, borderLeft: '3px solid transparent',
-                    cursor: 'pointer', color: 'var(--txt3)', fontSize: 13, fontWeight: 500,
-                    textAlign: 'left', fontFamily: 'inherit',
-                  }}
+                  className="cd-nav-item"
                 >
                   <NavIcon name="logout" size={16} color="var(--txt3)" />
                   Déconnexion
@@ -582,22 +533,11 @@ export default function App() {
               </div>
             </aside>
 
-            {/* ── Main area ────────────────────────────────────────────────── */}
-            <div style={{ flex: 1, minWidth: 0, marginLeft: DESKTOP_SIDEBAR_WIDTH, width: `calc(100vw - ${DESKTOP_SIDEBAR_WIDTH}px)` }}>
-
-              {/* Topbar */}
-              <header style={{
-                position: 'sticky', top: 0, zIndex: 45,
-                minHeight: 64, padding: '12px 20px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
-                background: 'var(--card-soft)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                borderBottom: '1px solid var(--border)',
-              }}>
+            <div className="cd-main">
+              <header className="cd-main-header">
                 <div style={{ minWidth: 0 }}>
-                  <h2 style={{ margin: 0, fontSize: 20, color: 'var(--txt)', fontWeight: 800, fontFamily: 'Manrope, Inter, sans-serif', lineHeight: 1.2, letterSpacing: '-.02em' }}>
-                    {pageMeta.title}
-                  </h2>
+                  <h2 className="cd-main-title">{pageMeta.title}</h2>
+                  {pageMeta.subtitle ? <p className="cd-main-subtitle">{pageMeta.subtitle}</p> : null}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ position: 'relative' }}>
@@ -691,10 +631,7 @@ export default function App() {
                 </div>
               </header>
 
-              {/* Page content */}
-              <main style={{ padding: '24px 26px 40px', overflowX: 'hidden', animation: 'fadeUp .25s ease-out' }}>
-                {dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>}
-              </main>
+              <main className="cd-main-content">{renderContent()}</main>
             </div>
           </div>
         )}

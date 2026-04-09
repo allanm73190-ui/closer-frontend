@@ -409,9 +409,9 @@ function HOSPage({ toast, allDebriefs }) {
     <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
-          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'#4A3428' }}>👥 Espace Équipe</h1>
+          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)' }}>Espace Équipe</h1>
           <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
-            Dashboard synchronisé par équipe · {teams.length} équipe{teams.length > 1 ? 's' : ''}
+            {teams.length} équipe{teams.length > 1 ? 's' : ''}
             {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
           </p>
         </div>
