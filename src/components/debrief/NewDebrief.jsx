@@ -91,6 +91,17 @@ function detailPlaceholderFromQuestion(label) {
   return 'Précise ici...';
 }
 
+function hasNoObjectionSelected(sectionData) {
+  const objections = Array.isArray(sectionData?.objections) ? sectionData.objections : [];
+  return objections.includes('aucune');
+}
+
+function shouldHideQuestion(sectionKey, questionId, sectionData) {
+  if (sectionKey !== 'closing') return false;
+  if (!hasNoObjectionSelected(sectionData)) return false;
+  return questionId === 'douleur_reancree' || questionId === 'objection_isolee';
+}
+
 const PROSPECT_TYPE_OPTIONS = [
   { value:'', label:'Non renseigné' },
   { value:'froid', label:'Prospect froid' },
@@ -306,13 +317,34 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
       : [{ value:'oui', label:'Oui' }, { value:'non', label:'Non' }];
 
     if (type === 'checkbox') {
+      const onCheckboxChange = (nextValues) => {
+        if (sectionKey === 'closing' && question.id === 'objections') {
+          const uniqueValues = Array.isArray(nextValues) ? Array.from(new Set(nextValues.filter(Boolean))) : [];
+          const sanitizedValues = uniqueValues.includes('aucune')
+            ? ['aucune']
+            : uniqueValues.filter(value => value !== 'aucune');
+          setSecs(prev => {
+            const prevSection = prev[sectionKey] || {};
+            const nextSection = { ...prevSection, [question.id]: sanitizedValues };
+            if (sanitizedValues.includes('aucune')) {
+              delete nextSection.douleur_reancree;
+              delete nextSection.objection_isolee;
+              delete nextSection.douleur_reancree_note;
+              delete nextSection.objection_isolee_note;
+            }
+            return { ...prev, [sectionKey]: nextSection };
+          });
+          return;
+        }
+        setAnswer(sectionKey, question.id, nextValues);
+      };
       return (
         <CheckboxGroup
           key={question.id}
           label={question.label}
           options={options}
           value={Array.isArray(value) ? value : []}
-          onChange={v=>setAnswer(sectionKey, question.id, v)}
+          onChange={onCheckboxChange}
         />
       );
     }
@@ -506,8 +538,10 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
             <h2 style={{ fontSize:14, fontWeight:600, color:'var(--txt,#4A3428)', margin:0 }}>Évaluation des critères</h2>
             {configSections.map((section, idx) => (
               <CatCard key={section.key || idx} number={String(idx + 1)} title={section.title || `Section ${idx + 1}`}>
-                {section.questions.length > 0
-                  ? section.questions.map(question => renderQuestion(section, question))
+                {section.questions.filter(question => !shouldHideQuestion(section.storeKey, question.id, secs[section.storeKey] || {})).length > 0
+                  ? section.questions
+                    .filter(question => !shouldHideQuestion(section.storeKey, question.id, secs[section.storeKey] || {}))
+                    .map(question => renderQuestion(section, question))
                   : <p style={{ fontSize:13, color:DS.textMuted, margin:'0 0 12px' }}>Aucune question configurée.</p>
                 }
                 <SectionNotes

@@ -78,7 +78,7 @@ export function Radar({ scores, compareScores = null, color = '#FF7E5F', compare
 
 // ─── SECTION BARS ────────────────────────────────────────────────────────────
 export function SectionBars({ scores, globalScores }) {
-  const LABELS = { decouverte: 'D\u00e9couverte', reformulation: 'Reformulation', projection: 'Projection', presentation_offre: 'Pr\u00e9sentation offre', closing: 'Closing' };
+  const LABELS = { decouverte: 'Découverte', reformulation: 'Reformulation', projection: 'Projection', presentation_offre: 'Présentation offre', closing: 'Closing' };
   const col = v => v >= 4 ? '#059669' : v >= 3 ? '#D97706' : v >= 2 ? P : '#EF4444';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -106,7 +106,7 @@ export function SectionBars({ scores, globalScores }) {
           </div>
         );
       })}
-      {globalScores && <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>\u2014 trait gris = moyenne globale</p>}
+      {globalScores && <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>Trait gris = moyenne globale</p>}
     </div>
   );
 }

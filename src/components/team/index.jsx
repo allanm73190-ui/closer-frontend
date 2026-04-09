@@ -512,9 +512,6 @@ function HOSPage({ toast, allDebriefs }) {
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
                   <div>
                     <h3 style={{ margin:'0 0 3px', fontSize:14, color:'#4A3428' }}>Codes d'invitation</h3>
-                    <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-                      Ajoutez des membres via code, avec synchronisation HOS ↔ closer.
-                    </p>
                   </div>
                   <Btn onClick={()=>generateInviteCode(activeTeam.id)} disabled={generatingCodeFor === activeTeam.id} style={{ fontSize:12, padding:'8px 12px' }}>
                     {generatingCodeFor === activeTeam.id ? 'Génération...' : '🔑 Générer un code'}

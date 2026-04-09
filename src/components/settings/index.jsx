@@ -236,9 +236,6 @@ function AppPreferencesSection({ appSettings, onSaveAppSettings, toast }) {
             <span style={{ display:'block', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>
               Lancer automatiquement l’analyse IA après enregistrement
             </span>
-            <span style={{ display:'block', fontSize:12, color:DS.textMuted, marginTop:2 }}>
-              Active l’analyse IA dès l’ouverture du détail debrief.
-            </span>
           </span>
           <span style={{ fontSize:13, fontWeight:700, color:draft.autoAiAfterDebrief ? '#059669' : DS.textMuted }}>
             {draft.autoAiAfterDebrief ? 'Activé' : 'Désactivé'}
@@ -342,9 +339,6 @@ function DebriefTemplatesSection({ debriefTemplates, setDebriefTemplates, toast 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
       <Card style={{ padding:14 }}>
-        <p style={{ margin:'0 0 8px', fontSize:12, color:DS.textMuted }}>
-          Définissez les templates d’offre disponibles dans le debrief et leur focus IA associé.
-        </p>
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
           <Btn variant="secondary" onClick={addTemplate}>+ Ajouter un template</Btn>
           <Btn variant="danger" onClick={reset} disabled={resetting}>{resetting ? 'Réinitialisation...' : 'Réinitialiser'}</Btn>
@@ -510,9 +504,6 @@ function PipelineSettingsSection({ toast }) {
     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
       <Card style={{ padding:14 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
-          <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-            Personnalisez statuts + champs importants de la fiche contact.
-          </p>
           <div style={{ display:'flex', gap:8 }}>
             <Btn variant="secondary" onClick={addStatus} style={{ fontSize:12, padding:'7px 11px' }}>+ Statut</Btn>
             <Btn variant="danger" onClick={reset} style={{ fontSize:12, padding:'7px 11px' }}>Réinitialiser</Btn>
@@ -631,9 +622,6 @@ function SettingsPage({
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
           <div>
             <h1 style={{ margin:0, fontSize:24, color:'var(--txt,#4A3428)' }}>Paramètres</h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:DS.textMuted }}>
-              Tous les réglages sont reliés à leurs fonctions et synchronisés avec l’application.
-            </p>
           </div>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || 'Dashboard', returnId || null)}>
             ← Retour
@@ -813,9 +801,6 @@ function IntegrationsSection({ user, toast }) {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Google Agenda</div>
-            <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 2 }}>
-              Crée automatiquement un lead pipeline pour chaque rendez-vous avec un contact externe.
-            </div>
           </div>
           <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
             {gcalStatus === null ? (
@@ -914,9 +899,6 @@ function IntegrationsSection({ user, toast }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: 'var(--surface-info)', border: '1px solid var(--accent-violet-border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--txt2)', lineHeight: 1.6 }}>
-              <strong>Comment ça marche :</strong> Connectez votre compte Google, puis chaque nouveau RDV avec un participant externe sera importé comme lead dans votre pipeline avec nom, email et date de suivi pré-remplis. Sync automatique toutes les 30 minutes.
-            </div>
             <Btn onClick={connectGoogle} style={{ alignSelf: 'flex-start' }}>
               Connecter Google Agenda
             </Btn>
@@ -932,9 +914,6 @@ function IntegrationsSection({ user, toast }) {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Calendly</div>
-            <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 2 }}>
-              Chaque réservation crée automatiquement un lead — le webhook backend est prêt.
-            </div>
           </div>
           <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(217,119,6,.08)', color: '#D97706', border: '1px solid rgba(217,119,6,.2)' }}>
             Config requise

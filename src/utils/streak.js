@@ -5,9 +5,10 @@ function toLocalDateStr(d) {
 /**
  * Calcule le streak (jours consécutifs avec ≥1 debrief) jusqu'à aujourd'hui.
  * @param {Array} debriefs - liste de debriefs avec champ call_date (YYYY-MM-DD)
+ * @param {Date|string} [referenceDate] - date de référence (utile pour tests)
  * @returns {number} nombre de jours consécutifs
  */
-export function computeStreak(debriefs) {
+export function computeStreak(debriefs, referenceDate = new Date()) {
   if (!debriefs || debriefs.length === 0) return 0;
 
   const dates = new Set(
@@ -15,7 +16,7 @@ export function computeStreak(debriefs) {
   );
 
   let streak = 0;
-  const cursor = new Date();
+  const cursor = new Date(referenceDate);
   cursor.setHours(0, 0, 0, 0);
 
   while (dates.has(toLocalDateStr(cursor))) {

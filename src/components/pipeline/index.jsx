@@ -667,11 +667,6 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
               {leadFieldLabel(field)}
             </span>
           ))}
-          {(pipelineConfig.importantFields || []).length === 0 && (
-            <span style={{ padding:'4px 9px', borderRadius:999, background:'var(--glass-bg)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
-              Aucun champ prioritaire configuré
-            </span>
-          )}
         </div>
       </Card>
 
@@ -694,9 +689,6 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
           <div>
             <p style={{ margin:'0 0 3px', fontSize:13, fontWeight:700, color:'var(--txt,#4A3428)' }}>Relance intelligente</p>
-            <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-              Priorisez automatiquement les deals à traiter en premier.
-            </p>
           </div>
           <button
             type="button"

@@ -30,19 +30,19 @@ const GamificationPage = lazy(() => import('./components/gamification').then(m =
 const DESKTOP_SIDEBAR_WIDTH = 220;
 
 const PAGE_META = {
-  Dashboard:    { title:'Tableau de bord',   subtitle:'Performance globale et priorités du jour' },
-  Pipeline:     { title:'Pipeline',          subtitle:'Suivi dynamique des opportunités en cours' },
-  Objections:   { title:'Objections',        subtitle:'Bibliothèque active et réponses validées' },
-  Benchmark:    { title:'Benchmark interne', subtitle:'Progression personnelle sans classement public' },
-  Knowledge:    { title:'Centre de connaissances', subtitle:'Snippets validés et scripts réutilisables' },
-  HOSPage:      { title:'Espace équipe',     subtitle:'Pilotage des équipes et objectifs HOS' },
-  NewDebrief:   { title:'Nouveau debrief',   subtitle:'Capture structurée de votre dernier appel' },
-  EditDebrief:  { title:'Modifier le debrief', subtitle:'Ajustez et enrichissez le débrief existant' },
+  Dashboard:    { title:'Tableau de bord',   subtitle:'' },
+  Pipeline:     { title:'Pipeline',          subtitle:'' },
+  Objections:   { title:'Objections',        subtitle:'' },
+  Benchmark:    { title:'Benchmark interne', subtitle:'' },
+  Knowledge:    { title:'Centre de connaissances', subtitle:'' },
+  HOSPage:      { title:'Espace équipe',     subtitle:'' },
+  NewDebrief:   { title:'Nouveau debrief',   subtitle:'' },
+  EditDebrief:  { title:'Modifier le debrief', subtitle:'' },
   History:      { title:'Débriefs',            subtitle:'' },
   Gamification: { title:'Classement',          subtitle:'' },
-  Detail:       { title:'Détail debrief',    subtitle:'Analyse complète, IA et export PDF' },
-  PdfViewer:    { title:'Visualisateur PDF', subtitle:'Rendu web fidèle et export prêt au téléchargement' },
-  Settings:     { title:'Paramètres',        subtitle:'Configuration synchronisée de votre espace' },
+  Detail:       { title:'Détail debrief',    subtitle:'' },
+  PdfViewer:    { title:'Visualisateur PDF', subtitle:'' },
+  Settings:     { title:'Paramètres',        subtitle:'' },
 };
 
 function NavIcon({ name, active = false, size = 18, color = 'currentColor' }) {

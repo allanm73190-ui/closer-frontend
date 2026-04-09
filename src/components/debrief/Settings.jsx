@@ -103,9 +103,6 @@ function CloserTeamSettings({ toast }) {
             {joining ? 'Connexion...' : 'Rejoindre'}
           </Btn>
         </div>
-        <p style={{ fontSize:12, color:DS.textMuted, margin:'6px 0 0' }}>
-          Utilisez le code donné par votre Head of Sales.
-        </p>
       </div>
     </div>
   );
@@ -179,7 +176,6 @@ function AccountSettings({ user, onClose, toast }) {
               </span>
             </div>
           </div>
-          <p style={{ fontSize:13, color:DS.textMuted, textAlign:'center' }}>Modification du profil bientôt disponible.</p>
         </div>
       )}
 
@@ -281,10 +277,6 @@ function DebriefConfigEditor({ debriefConfig, setDebriefConfig, onClose, toast, 
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-      <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
-        Modification synchronisée sur tous les debriefs. Les IDs et la logique de score restent conservés.
-      </p>
-
       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
         {config.map((s, i) => (
           <button
