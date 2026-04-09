@@ -712,12 +712,24 @@ function IntegrationsSection({ user, toast }) {
   const [gcalStatus, setGcalStatus] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [events, setEvents] = useState(null);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [importingId, setImportingId] = useState(null);
 
   const loadStatus = async () => {
     try {
       const data = await apiFetch('/integrations/google/status');
       setGcalStatus(data);
     } catch { setGcalStatus({ connected: false }); }
+  };
+
+  const loadEvents = async () => {
+    setLoadingEvents(true);
+    try {
+      const data = await apiFetch('/integrations/google/preview');
+      setEvents(data.events || []);
+    } catch { setEvents([]); }
+    finally { setLoadingEvents(false); }
   };
 
   useEffect(() => {
@@ -735,6 +747,10 @@ function IntegrationsSection({ user, toast }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (gcalStatus?.connected) loadEvents();
+  }, [gcalStatus?.connected]);
+
   const connectGoogle = () => {
     window.location.href = (import.meta.env.VITE_API_BASE || 'https://closer-backend-production.up.railway.app/api') + '/integrations/google/auth';
   };
@@ -746,6 +762,7 @@ function IntegrationsSection({ user, toast }) {
       await apiFetch('/integrations/google', { method: 'DELETE' });
       toast('Google Agenda déconnecté');
       setGcalStatus({ connected: false });
+      setEvents(null);
     } catch (e) { toast(e.message, 'error'); }
     finally { setDisconnecting(false); }
   };
@@ -756,8 +773,22 @@ function IntegrationsSection({ user, toast }) {
       const r = await apiFetch('/integrations/google/sync', { method: 'POST' });
       toast(`Sync terminée — ${r.leadsCreated} lead(s) créé(s)`);
       loadStatus();
+      loadEvents();
     } catch (e) { toast(e.message, 'error'); }
     finally { setSyncing(false); }
+  };
+
+  const importEvent = async (ev) => {
+    setImportingId(ev.id);
+    try {
+      await apiFetch('/integrations/google/import', {
+        method: 'POST',
+        body: { eventId: ev.id, title: ev.title, start: ev.start, attendees: ev.attendees },
+      });
+      toast(`Lead créé : ${ev.title}`, 'success');
+      setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, alreadySynced: true } : e));
+    } catch (e) { toast(e.message || 'Erreur import', 'error'); }
+    finally { setImportingId(null); }
   };
 
   return (
@@ -794,7 +825,7 @@ function IntegrationsSection({ user, toast }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Info */}
             <div style={{ background: 'var(--positive-bg)', border: '1px solid rgba(5,150,105,.15)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--positive-txt)' }}>
-              Les RDV avec des contacts externes seront automatiquement importés comme leads dans votre pipeline.
+              Google Agenda connecté — les RDV avec des participants sont importés automatiquement.
               {gcalStatus.lastSynced && (
                 <span style={{ display: 'block', marginTop: 4, color: 'var(--txt3)', fontWeight: 400 }}>
                   Dernière sync : {new Date(gcalStatus.lastSynced).toLocaleString('fr-FR')}
@@ -809,6 +840,42 @@ function IntegrationsSection({ user, toast }) {
               <Btn variant="danger" onClick={disconnectGoogle} disabled={disconnecting}>
                 {disconnecting ? '…' : 'Déconnecter'}
               </Btn>
+            </div>
+            {/* Events preview */}
+            <div>
+              <p style={{ margin: '4px 0 8px', fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--txt3)', fontWeight: 700 }}>
+                Prochains événements (30 jours)
+              </p>
+              {loadingEvents ? (
+                <Spinner size={20} />
+              ) : events && events.length === 0 ? (
+                <p style={{ fontSize: 13, color: 'var(--txt3)', margin: 0 }}>Aucun événement à venir dans les 30 prochains jours.</p>
+              ) : events ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {events.map(ev => {
+                    const dateStr = ev.start ? new Date(ev.start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: ev.start.includes('T') ? '2-digit' : undefined, minute: ev.start.includes('T') ? '2-digit' : undefined }) : '';
+                    const importing = importingId === ev.id;
+                    return (
+                      <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
+                            {dateStr}
+                            {ev.attendees?.length > 0 && <span style={{ marginLeft: 8 }}>{ev.attendees.map(a => a.name || a.email).join(', ')}</span>}
+                          </div>
+                        </div>
+                        {ev.alreadySynced ? (
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive-txt)', background: 'var(--positive-bg)', padding: '3px 8px', borderRadius: 6, flexShrink: 0 }}>Importé</span>
+                        ) : (
+                          <Btn onClick={() => importEvent(ev)} disabled={importing} style={{ padding: '4px 10px', fontSize: 12, flexShrink: 0 }}>
+                            {importing ? '…' : 'Importer'}
+                          </Btn>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
