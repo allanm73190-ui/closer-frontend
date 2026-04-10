@@ -148,7 +148,8 @@ export function Empty({ icon, title, subtitle, action }) {
 
 // ─── CARD ────────────────────────────────────────────────────────────────────
 export function Card({ children, style = {}, className = '' }) {
-  return <div className={className} style={{ ...card(), ...style }}>{children}</div>;
+  const classes = ['card', className].filter(Boolean).join(' ');
+  return <div className={classes} style={{ ...card(), ...style }}>{children}</div>;
 }
 
 // ─── MODAL ───────────────────────────────────────────────────────────────────

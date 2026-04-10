@@ -8,7 +8,6 @@ import { normalizeDebriefTemplateCatalog, getDefaultTemplateCatalog } from './co
 
 // ─── UI Components ───────────────────────────────────────────────────────────
 import { Toasts, Burst, Spinner } from './components/ui';
-import { UserMenu } from './components/ui/UserMenu';
 import { Icon } from './components/ui/Icon';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -27,22 +26,6 @@ const SettingsPage     = lazy(() => import('./components/settings').then(m => ({
 const BenchmarkPage    = lazy(() => import('./components/features/Benchmark').then(m => ({ default: m.BenchmarkPage })));
 const KnowledgePage    = lazy(() => import('./components/features/Knowledge').then(m => ({ default: m.KnowledgePage })));
 const GamificationPage = lazy(() => import('./components/gamification').then(m => ({ default: m.GamificationPage })));
-
-const PAGE_META = {
-  Dashboard:    { title:'Tableau de bord',   subtitle:'' },
-  Pipeline:     { title:'Pipeline',          subtitle:'' },
-  Objections:   { title:'Objections',        subtitle:'' },
-  Benchmark:    { title:'Benchmark interne', subtitle:'' },
-  Knowledge:    { title:'Centre de connaissances', subtitle:'' },
-  HOSPage:      { title:'Espace équipe',     subtitle:'' },
-  NewDebrief:   { title:'Nouveau debrief',   subtitle:'' },
-  EditDebrief:  { title:'Modifier le debrief', subtitle:'' },
-  History:      { title:'Débriefs',            subtitle:'' },
-  Gamification: { title:'Classement',          subtitle:'' },
-  Detail:       { title:'Détail debrief',    subtitle:'' },
-  PdfViewer:    { title:'Visualisateur PDF', subtitle:'' },
-  Settings:     { title:'Paramètres',        subtitle:'' },
-};
 
 function NavIcon({ name, active = false, size = 18, color = 'currentColor' }) {
   return (
@@ -308,10 +291,10 @@ export default function App() {
     { key: 'History',       label: 'Débriefs',   icon: 'file-text' },
     { key: 'Gamification',  label: 'Classement', icon: 'trophy' },
   ];
-  const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
   const isPdfViewerPage = page === 'PdfViewer';
   const appSettingsValue = useMemo(() => ({ theme, autoAiAfterDebrief }), [theme, autoAiAfterDebrief]);
   const globalThemeStyle = <style>{GLOBAL_CSS}</style>;
+  const unreadNotifications = notifications.filter(n => !n.read).length;
 
   // ─── Auth gates ────────────────────────────────────────────────────────────
   if (authLoading) return (
@@ -380,6 +363,60 @@ export default function App() {
   );
 
   const renderContent = () => (dataLoading ? <Spinner full /> : <Suspense fallback={<Spinner full />}>{Content()}</Suspense>);
+  const notificationsPanel = (
+    <div
+      style={{
+        width: 340,
+        maxHeight: 420,
+        overflowY: 'auto',
+        background: 'var(--card, #fff)',
+        border: '1px solid var(--border)',
+        borderRadius: 14,
+        boxShadow: 'var(--sh-card)',
+        padding: '10px 0',
+      }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 14px 10px', borderBottom: '1px solid var(--border)' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>Notifications</span>
+        {unreadNotifications > 0 && (
+          <button onClick={markAllNotifRead} style={{ fontSize: 11, color: 'var(--txt3)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+            Tout marquer lu
+          </button>
+        )}
+      </div>
+      {notifications.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--txt3)', textAlign: 'center', margin: '16px 0' }}>Aucune notification</p>
+      ) : (
+        notifications.map(n => (
+          <div
+            key={n.id}
+            onClick={() => { markNotifRead(n.id); setNotifOpen(false); if (n.data?.dealId) navigate('Pipeline'); }}
+            style={{
+              padding: '10px 14px',
+              borderBottom: '1px solid var(--border)',
+              cursor: 'pointer',
+              background: n.read ? 'transparent' : 'rgba(66,133,244,.05)',
+              transition: 'background .15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(66,133,244,.05)'; }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {!n.read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4285F4', flexShrink: 0 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
+                {n.body && <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
+                <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 3 }}>
+                  {new Date(n.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
 
   // ─── Main layout ───────────────────────────────────────────────────────────
   return (
@@ -421,214 +458,147 @@ export default function App() {
                 <span className="cd-avatar">C</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--txt)', fontFamily: 'Manrope, Inter, sans-serif' }}>CloserDebrief</span>
               </button>
-              <UserMenu
-                user={user}
-                gam={gam}
-                onLogout={onLogout}
-                onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                toast={toast}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-              />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={() => setNotifOpen(v => !v)}
+                  style={{ width: 32, height: 32, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--glass-bg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--txt3)', position: 'relative' }}
+                  title="Notifications"
+                >
+                  <NavIcon name="bell" size={15} color="var(--txt3)" />
+                  {unreadNotifications > 0 && (
+                    <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+                  )}
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  style={{ width: 32, height: 32, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--glass-bg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--txt3)' }}
+                  title="Thème"
+                >
+                  <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={15} color="var(--txt3)" />
+                </button>
+              </div>
             </header>
 
-            <main className="cd-mobile-main">{renderContent()}</main>
+            {notifOpen && (
+              <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,18,28,.28)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 64 }} onClick={() => setNotifOpen(false)}>
+                {notificationsPanel}
+              </div>
+            )}
 
-            <nav className="cd-mobile-bottom">
-              {mobileNavItems.map(({ key, label, icon }) => (
-                <button
-                  key={key}
-                  onClick={() => navigate(key)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    fontFamily: 'inherit',
-                    flex: 1,
-                  }}
-                >
-                  <div style={{
-                    minWidth: 32, height: 28, borderRadius: 9,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: page === key ? 'var(--gradient-primary)' : 'transparent',
-                    color: page === key ? 'white' : 'var(--txt2)',
-                    boxShadow: page === key ? SH_BTN : 'none',
-                    transition: 'all .2s',
-                  }}>
-                    <NavIcon name={icon} active={page === key} size={16} color={page === key ? 'white' : 'var(--txt2)'} />
-                  </div>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: page === key ? P : 'var(--txt3)' }}>{label}</span>
-                </button>
-              ))}
+            <main className="main" style={{ marginLeft: 0 }}>
+              <div className="page active" style={{ display: 'block', padding: '18px 14px 86px' }}>
+                {renderContent()}
+              </div>
+            </main>
+
+            <nav className="bottom-nav">
+              <div className="bottom-nav-inner">
+                {mobileNavItems.map(({ key, label, icon }) => {
+                  const isActive = page === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => navigate(key)}
+                      className={`bottom-nav-item ${isActive ? 'active' : ''}`}
+                      style={{ border: 'none', background: 'none', fontFamily: 'inherit' }}
+                    >
+                      <NavIcon name={icon} active={isActive} size={15} color={isActive ? 'var(--accent)' : 'var(--txt3)'} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </nav>
           </>
         ) : (
-          <div className="cd-shell">
-            <aside className="cd-sidebar">
-              <div className="cd-sidebar-logo">
+          <div className="app">
+            <nav className="sidebar">
+              <div className="sidebar-logo">
                 <button
                   onClick={() => navigate('Dashboard')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
+                  style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
-                  <span className="cd-avatar">C</span>
-                  <span className="cd-sidebar-brand">
-                    CloserDebrief
-                    <span className="cd-beta-badge">Beta</span>
-                  </span>
+                  <span className="logo-text">CloserDebrief</span>
+                  <span className="logo-badge">Beta</span>
                 </button>
               </div>
-
-              <div className="cd-sidebar-user">
-                <div className="cd-avatar">
+              <div className="sidebar-user">
+                <div className="avatar">
                   {(user.name || 'U').substring(0, 1).toUpperCase()}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
-                  <div style={{ fontSize: 10, color: P, fontWeight: 600 }}>{gam?.level?.icon || ''} {gam?.level?.name || 'Découvreur'}</div>
+                <div className="user-info">
+                  <div className="user-name">{user.name}</div>
+                  <div className="user-level">{gam?.level?.name || 'Closer'}</div>
                 </div>
               </div>
-
-              <div className="cd-sidebar-nav">
+              <div style={{ flex: 1, overflowY: 'auto' }}>
                 {navItems.map(({ key, label, icon, section }) => {
                   const isActive = page === key;
                   return (
                     <React.Fragment key={key}>
-                      {section && <div className="cd-nav-section-label">{section}</div>}
+                      {section && <div className="nav-section-label">{section}</div>}
                       <button
                         onClick={() => navigate(key)}
-                        className={`cd-nav-item ${isActive ? 'active' : ''}`}
+                        className={`nav-item ${isActive ? 'active' : ''}`}
+                        style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}
                       >
-                        <NavIcon name={icon} active={isActive} size={16} color={isActive ? P : 'var(--txt3)'} />
+                        <NavIcon name={icon} active={isActive} size={16} color={isActive ? 'var(--accent)' : 'var(--txt3)'} />
                         <span>{label}</span>
                       </button>
                     </React.Fragment>
                   );
                 })}
               </div>
-
-              <div className="cd-sidebar-bottom">
+              <div className="sidebar-bottom">
+                <button
+                  onClick={() => setNotifOpen(v => !v)}
+                  className="nav-item"
+                  style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}
+                >
+                  <NavIcon name="bell" size={16} color="var(--txt3)" />
+                  Notifications
+                  {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications}</span>}
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="nav-item"
+                  style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}
+                >
+                  <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={16} color="var(--txt3)" />
+                  Thème
+                </button>
                 <button
                   onClick={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                  className={`cd-nav-item ${page === 'Settings' ? 'active' : ''}`}
+                  className={`nav-item ${page === 'Settings' ? 'active' : ''}`}
+                  style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}
                 >
-                  <NavIcon name="settings" size={16} color={page === 'Settings' ? P : 'var(--txt3)'} />
+                  <NavIcon name="settings" size={16} color={page === 'Settings' ? 'var(--accent)' : 'var(--txt3)'} />
                   Paramètres
                 </button>
                 <button
                   onClick={onLogout}
-                  className="cd-nav-item"
+                  className="nav-item"
+                  style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}
                 >
                   <NavIcon name="log-out" size={16} color="var(--txt3)" />
                   Déconnexion
                 </button>
               </div>
-            </aside>
+            </nav>
 
-            <div className="cd-main">
-              <header className="cd-main-header">
-                <div style={{ minWidth: 0 }}>
-                  <h2 className="cd-main-title">{pageMeta.title}</h2>
-                  {pageMeta.subtitle ? <p className="cd-main-subtitle">{pageMeta.subtitle}</p> : null}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      onClick={() => setNotifOpen(v => !v)}
-                      style={{
-                        width: 32, height: 32, borderRadius: 10,
-                        border: '1px solid var(--border)', background: 'var(--glass-bg)',
-                        cursor: 'pointer', color: 'var(--txt2)',
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                        position: 'relative',
-                      }}
-                      title="Notifications"
-                    >
-                      <NavIcon name="bell" size={15} color="var(--txt3)" />
-                      {notifications.some(n => !n.read) && (
-                        <span style={{
-                          position: 'absolute', top: 4, right: 4,
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: '#ef4444', border: '1.5px solid var(--card-soft)',
-                        }} />
-                      )}
-                    </button>
-                    {notifOpen && (
-                      <div
-                        style={{
-                          position: 'absolute', top: 40, right: 0, zIndex: 9999,
-                          width: 320, maxHeight: 420, overflowY: 'auto',
-                          background: 'var(--card, #fff)', border: '1px solid var(--border)',
-                          borderRadius: 14, boxShadow: 'var(--sh-card)',
-                          padding: '10px 0',
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 14px 10px', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>Notifications</span>
-                          {notifications.some(n => !n.read) && (
-                            <button onClick={markAllNotifRead} style={{ fontSize: 11, color: 'var(--txt3)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                              Tout marquer lu
-                            </button>
-                          )}
-                        </div>
-                        {notifications.length === 0 ? (
-                          <p style={{ fontSize: 13, color: 'var(--txt3)', textAlign: 'center', margin: '16px 0' }}>Aucune notification</p>
-                        ) : (
-                          notifications.map(n => (
-                            <div
-                              key={n.id}
-                              onClick={() => { markNotifRead(n.id); setNotifOpen(false); if (n.data?.dealId) navigate('Pipeline'); }}
-                              style={{
-                                padding: '10px 14px',
-                                borderBottom: '1px solid var(--border)',
-                                cursor: 'pointer',
-                                background: n.read ? 'transparent' : 'rgba(66,133,244,.05)',
-                                transition: 'background .15s',
-                              }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(66,133,244,.05)'; }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {!n.read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4285F4', flexShrink: 0 }} />}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
-                                  {n.body && <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
-                                  <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 3 }}>{new Date(n.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={toggleTheme}
-                    style={{
-                      width: 32, height: 32, borderRadius: 10,
-                      border: '1px solid var(--border)', background: 'var(--glass-bg)',
-                      cursor: 'pointer', color: 'var(--txt2)',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                    }}
-                    title="Basculer le thème"
-                  >
-                    <NavIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={15} color="var(--txt3)" />
-                  </button>
-                  <UserMenu user={user} gam={gam} onLogout={onLogout}
-                    onSettings={() => openSettings('account', ['Detail', 'EditDebrief'].includes(page) ? 'Dashboard' : page)}
-                    toast={toast} theme={theme} onToggleTheme={toggleTheme} />
-                </div>
-              </header>
+            <main className="main">
+              <div className="page active" style={{ display: 'block' }}>
+                {renderContent()}
+              </div>
+            </main>
 
-              <main className="cd-main-content">{renderContent()}</main>
-            </div>
+            {notifOpen && (
+              <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,18,28,.18)' }} onClick={() => setNotifOpen(false)}>
+                <div style={{ position: 'fixed', top: 14, right: 16, zIndex: 10000 }}>
+                  {notificationsPanel}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
