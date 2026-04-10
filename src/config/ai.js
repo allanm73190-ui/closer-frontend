@@ -12,11 +12,11 @@ export const SECTION_LABELS_AI = {
 
 // ─── SECTIONS CONFIG (used by form + AI) ─────────────────────────────────────
 export const SECTIONS = [
-  { key: 'decouverte',        label: '🔍 Découverte' },
-  { key: 'reformulation',     label: '🔄 Reformulation' },
-  { key: 'projection',        label: '🎯 Projection' },
-  { key: 'presentation_offre',label: '📦 Présentation offre' },
-  { key: 'closing',           label: '🤝 Closing & Objections' },
+  { key: 'decouverte',        label: 'Découverte' },
+  { key: 'reformulation',     label: 'Reformulation' },
+  { key: 'projection',        label: 'Projection' },
+  { key: 'presentation_offre',label: "Présentation de l'offre" },
+  { key: 'closing',           label: 'Closing & Objections' },
 ];
 
 // ─── OPTIMIZED AI SYSTEM PROMPT ──────────────────────────────────────────────
@@ -124,7 +124,7 @@ export function buildAIPrompt(debrief, scores, prevDebriefs) {
   prompt += `Prospect : ${debrief.prospect_name || '[Non renseigné]'}\n`;
   prompt += `Date : ${debrief.call_date || '[Non renseignée]'}\n`;
   prompt += `Closer : ${debrief.closer_name || debrief.user_name || '[Non renseigné]'}\n`;
-  prompt += `Résultat : ${debrief.is_closed ? 'Closé ✅' : 'Non closé ❌'}\n`;
+  prompt += `Résultat : ${debrief.is_closed ? 'Closé' : 'Non closé'}\n`;
   prompt += `Score global : ${Math.round(debrief.percentage || 0)}%\n\n`;
 
   prompt += `Scores par section :\n`;

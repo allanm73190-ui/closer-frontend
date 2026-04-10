@@ -6,33 +6,33 @@ import { Btn, Input, Modal, AlertBox, Card } from '../ui';
 const DEFAULT_DEBRIEF_CONFIG = [
   { key:'decouverte', title:'Phase de découverte', questions:[
     { id:'douleur_surface',   label:'Douleur de surface identifiée ?',          type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
-    { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'douleur_profonde',  label:'Douleur profonde / identitaire atteinte ?', type:'radio',    options:[{value:'oui',label:'Oui'},{value:'partiel',label:'Partiellement'},{value:'non',label:'Non'}] },
     { id:'couches_douleur',   label:'Couches de douleur creusées',               type:'checkbox', options:[{value:'couche1',label:'Couche 1 : physique'},{value:'couche2',label:'Couche 2 : quotidien'},{value:'couche3',label:'Couche 3 : identité'}] },
-    { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-    { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'artificielle',label:'⚠️ Artificielle'},{value:'aucune',label:'❌ Aucune'}] },
+    { id:'temporalite',       label:'Temporalité demandée ?',                    type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'urgence',           label:'Urgence naturelle identifiée ?',            type:'radio',    options:[{value:'oui',label:'Oui'},{value:'artificielle',label:'Artificielle'},{value:'aucune',label:'Aucune'}] },
   ]},
   { key:'reformulation', title:'Reformulation', questions:[
-    { id:'reformulation',         label:'Reformulation faite ?',       type:'radio',    options:[{value:'oui',label:'✅ Complète'},{value:'partiel',label:'⚠️ Partielle'},{value:'non',label:'❌ Non'}] },
-    { id:'prospect_reconnu',      label:"Le prospect s'est reconnu ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
+    { id:'reformulation',         label:'Reformulation faite ?',       type:'radio',    options:[{value:'oui',label:'Complète'},{value:'partiel',label:'Partielle'},{value:'non',label:'Non'}] },
+    { id:'prospect_reconnu',      label:"Le prospect s'est reconnu ?", type:'radio',    options:[{value:'oui',label:'Oui'},{value:'moyen',label:'Moyen'},{value:'non',label:'Non'}] },
     { id:'couches_reformulation', label:'Les 3 couches présentes ?',   type:'checkbox', options:[{value:'physique',label:'Physique'},{value:'quotidien',label:'Quotidien'},{value:'identitaire',label:'Identitaire'}] },
   ]},
   { key:'projection', title:'Projection', questions:[
-    { id:'projection_posee', label:'Question de projection posée ?',   type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-    { id:'qualite_reponse',  label:'Qualité de la réponse',            type:'radio', options:[{value:'forte',label:'✅ Forte'},{value:'moyenne',label:'⚠️ Moyenne'},{value:'faible',label:'❌ Faible'}] },
-    { id:'deadline_levier',  label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'non_exploitee',label:'⚠️ Non exploitée'},{value:'pas_de_deadline',label:'❌ Pas de deadline'}] },
+    { id:'projection_posee', label:'Question de projection posée ?',   type:'radio', options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'qualite_reponse',  label:'Qualité de la réponse',            type:'radio', options:[{value:'forte',label:'Forte'},{value:'moyenne',label:'Moyenne'},{value:'faible',label:'Faible'}] },
+    { id:'deadline_levier',  label:'Deadline utilisée comme levier ?', type:'radio', options:[{value:'oui',label:'Oui'},{value:'non_exploitee',label:'Non exploitée'},{value:'pas_de_deadline',label:'Pas de deadline'}] },
   ]},
   { key:'presentation_offre', title:"Présentation de l'offre", questions:[
-    { id:'colle_douleurs',          label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
-    { id:'exemples_transformation', label:'Exemples bien choisis ?',            type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'moyen',label:'⚠️ Moyen'},{value:'non',label:'❌ Non'}] },
-    { id:'duree_justifiee',         label:'Durée / Offre justifiée ?',          type:'radio', options:[{value:'oui',label:'✅ Oui'},{value:'partiel',label:'⚠️ Partiellement'},{value:'non',label:'❌ Non'}] },
+    { id:'colle_douleurs',          label:'Présentation collée aux douleurs ?', type:'radio', options:[{value:'oui',label:'Oui'},{value:'partiel',label:'Partiellement'},{value:'non',label:'Non'}] },
+    { id:'exemples_transformation', label:'Exemples bien choisis ?',            type:'radio', options:[{value:'oui',label:'Oui'},{value:'moyen',label:'Moyen'},{value:'non',label:'Non'}] },
+    { id:'duree_justifiee',         label:'Durée / Offre justifiée ?',          type:'radio', options:[{value:'oui',label:'Oui'},{value:'partiel',label:'Partiellement'},{value:'non',label:'Non'}] },
   ]},
   { key:'closing', title:'Closing & Objections', questions:[
-    { id:'annonce_prix',     label:'Annonce du prix',                      type:'radio',    options:[{value:'directe',label:'✅ Directe'},{value:'hesitante',label:'⚠️ Hésitante'},{value:'trop_rapide',label:'❌ Trop rapide'}] },
-    { id:'silence_prix',     label:'Silence après le prix ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
+    { id:'annonce_prix',     label:'Annonce du prix',                      type:'radio',    options:[{value:'directe',label:'Directe'},{value:'hesitante',label:'Hésitante'},{value:'trop_rapide',label:'Trop rapide'}] },
+    { id:'silence_prix',     label:'Silence après le prix ?',              type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
     { id:'objections',       label:'Objection rencontrée',                 type:'checkbox', options:[{value:'budget',label:'Budget'},{value:'reflechir',label:'Besoin de réfléchir'},{value:'conjoint',label:'Conjoint'},{value:'methode',label:'Méthode'},{value:'aucune',label:'Aucune'}] },
-    { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-    { id:'objection_isolee', label:'Objection bien isolée ?',              type:'radio',    options:[{value:'oui',label:'✅ Oui'},{value:'non',label:'❌ Non'}] },
-    { id:'resultat_closing', label:'Résultat du closing',                  type:'radio',    options:[{value:'close',label:'✅ Closé'},{value:'retrograde',label:'⚠️ Rétrogradé'},{value:'relance',label:'📅 Relance'},{value:'porte_ouverte',label:'🔓 Porte ouverte'},{value:'perdu',label:'❌ Perdu'}] },
+    { id:'douleur_reancree', label:"Douleur réancrée avant l'objection ?", type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'objection_isolee', label:'Objection bien isolée ?',              type:'radio',    options:[{value:'oui',label:'Oui'},{value:'non',label:'Non'}] },
+    { id:'resultat_closing', label:'Résultat du closing',                  type:'radio',    options:[{value:'close',label:'Closé'},{value:'retrograde',label:'Rétrogradé'},{value:'relance',label:'Relance'},{value:'porte_ouverte',label:'Porte ouverte'},{value:'perdu',label:'Perdu'}] },
   ]},
 ];
 
@@ -83,7 +83,7 @@ function CloserTeamSettings({ toast }) {
         <Card style={{ padding:14 }}>
           <p style={{ margin:'0 0 6px', fontSize:12, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.04em', fontWeight:700 }}>Équipe actuelle</p>
           <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#4A3428' }}>
-            {team ? `👥 ${team.name}` : 'Aucune équipe'}
+            {team ? team.name : 'Aucune équipe'}
           </p>
         </Card>
       )}
@@ -136,9 +136,9 @@ function AccountSettings({ user, onClose, toast }) {
   };
 
   const tabs = [
-    { key:'profil', label:'👤 Profil' },
-    ...(isCloser ? [{ key:'equipe', label:'👥 Équipe' }] : []),
-    { key:'securite', label:'🔒 Sécurité' },
+    { key:'profil', label:'Profil' },
+    ...(isCloser ? [{ key:'equipe', label:'Équipe' }] : []),
+    { key:'securite', label:'Sécurité' },
   ];
 
   return (
@@ -172,7 +172,7 @@ function AccountSettings({ user, onClose, toast }) {
               <p style={{ fontWeight:700, fontSize:16, color:DS.textPrimary, margin:0 }}>{user.name}</p>
               <p style={{ fontSize:13, color:DS.textSecondary, margin:'2px 0 0' }}>{user.email}</p>
               <span style={{ display:'inline-block', marginTop:4, background:isHOS?'#fef3c7':'rgba(255,126,95,.18)', color:isHOS?'#92400e':DS.primary2, fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:4 }}>
-                {isHOS ? '👑 Head of Sales' : '🎯 Closer'}
+                {isHOS ? 'Head of Sales' : 'Closer'}
               </span>
             </div>
           </div>

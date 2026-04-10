@@ -4,6 +4,7 @@ import { DS, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { avgSectionScores } from '../../utils/scoring';
 import { Btn, Card, Empty, Spinner } from '../ui';
+import { Icon } from '../ui/Icon';
 import { Radar, SectionBars } from '../ui/Charts';
 import { Chart } from '../dashboard/StatsChart';
 
@@ -195,7 +196,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       delta:formatDelta(currentMetrics.total, previousMetrics.total),
       current:currentMetrics.total,
       previous:previousMetrics.total,
-      icon:'summarize',
+      icon:'file-text',
       tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,246,238,.62))',
       border:'rgba(232,125,106,.18)',
     },
@@ -205,7 +206,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       delta:formatDelta(currentMetrics.avgScore, previousMetrics.avgScore, '%'),
       current:currentMetrics.avgScore,
       previous:previousMetrics.avgScore,
-      icon:'insights',
+      icon:'bar-chart-2',
       tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(106,172,206,.14))',
       border:'rgba(106,172,206,.28)',
     },
@@ -215,7 +216,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       delta:formatDelta(currentMetrics.closeRate, previousMetrics.closeRate, '%'),
       current:currentMetrics.closeRate,
       previous:previousMetrics.closeRate,
-      icon:'military_tech',
+      icon:'award',
       tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(5,150,105,.12))',
       border:'rgba(5,150,105,.28)',
     },
@@ -225,7 +226,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       delta:formatDelta(currentMetrics.objectionRate, previousMetrics.objectionRate, '%'),
       current:currentMetrics.objectionRate,
       previous:previousMetrics.objectionRate,
-      icon:'forum',
+      icon:'message-square-warning',
       tint:'linear-gradient(145deg, rgba(255,255,255,.72), rgba(124,58,237,.13))',
       border:'rgba(124,58,237,.28)',
     },
@@ -314,7 +315,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
         </Card>
       ) : !canRender ? (
         <Empty
-          icon="📉"
+          icon={<Icon name="bar-chart-2" size={36} color="var(--txt3)" />}
           title="Pas assez de données"
           subtitle="Créez quelques debriefs pour activer le benchmark interne."
           action={<Btn onClick={()=>navigate('NewDebrief')}>Créer un debrief</Btn>}
@@ -326,7 +327,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
               <div key={item.label} style={{ ...glassPanel({ padding:'12px 12px', display:'flex', flexDirection:'column', gap:4, background:item.tint, border:`1px solid ${item.border}`, minHeight:86 }) }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                   <p style={{ margin:0, fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>{item.label}</p>
-                  <span className="material-symbols-outlined" style={{ fontSize:16, color:'var(--txt3,#c8b8a8)' }}>{item.icon}</span>
+                  <Icon name={item.icon} size={16} color="var(--txt3,#c8b8a8)" />
                 </div>
                 <p style={{ margin:0, fontSize:22, fontWeight:800, color:'var(--txt,#4A3428)' }}>{item.value}</p>
                 <p style={{ margin:0, fontSize:11, fontWeight:700, color:deltaColor(item.current, item.previous) }}>
@@ -340,7 +341,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             <Card style={{ ...glassPanel({ padding:16 }) }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
                 <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>timeline</span>
+                  <Icon name="activity" size={17} color="var(--txt3,#c8b8a8)" />
                   Évolution personnelle
                 </h2>
                 <span style={{ fontSize:11, color:DS.textMuted }}>
@@ -352,7 +353,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
 
             <Card style={{ ...glassPanel({ padding:16 }) }}>
               <h2 style={{ margin:'0 0 8px', fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--txt3,#c8b8a8)' }}>radar</span>
+                <Icon name="radar" size={17} color="var(--txt3,#c8b8a8)" />
                 Répartition des compétences
               </h2>
               {!currentSections ? (
@@ -379,7 +380,7 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
           <Card style={{ ...glassPanel({ padding:16, background:'linear-gradient(150deg, rgba(255,255,255,.7), rgba(124,58,237,.08))' }) }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
               <h2 style={{ margin:0, fontSize:15, color:'var(--txt,#4A3428)', fontWeight:700, display:'inline-flex', alignItems:'center', gap:6 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:17, color:'var(--accent-violet,#7C3AED)' }}>psychology</span>
+                <Icon name="brain" size={17} color="var(--accent-violet,#7C3AED)" />
                 Patterns prioritaires
               </h2>
               <Btn variant="secondary" onClick={()=>navigate('Knowledge')} style={{ fontSize:12, padding:'6px 10px' }}>

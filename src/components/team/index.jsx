@@ -3,7 +3,7 @@ import { apiFetch } from '../../config/api';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { avgSectionScores, copy } from '../../utils/scoring';
-import { Btn, Card, Modal, Spinner, Empty, Input } from '../ui';
+import { Btn, Card, Modal, Spinner, Empty, Input, Icon } from '../ui';
 
 const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
 import { Radar, SectionBars } from '../ui/Charts';
@@ -90,7 +90,9 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
             {member.totalDebriefs} debrief{member.totalDebriefs > 1 ? 's' : ''} · {member.avgScore}% · {closeRate}% de closing
           </p>
         </div>
-        <span style={{ color:selected ? '#FF7E5F' : '#cbd5e1', fontSize:13 }}>{selected ? '▲' : '▼'}</span>
+        <span style={{ color:selected ? '#FF7E5F' : '#cbd5e1', fontSize:13, display:'inline-flex' }}>
+          <Icon name={selected ? 'chevron-up' : 'chevron-down'} size={13} color={selected ? '#FF7E5F' : '#cbd5e1'} />
+        </span>
       </div>
 
       {selected && (
@@ -121,8 +123,9 @@ function MemberCard({ member, teamId, teams, allDebriefs, selected, onToggle, on
           )}
 
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <Btn variant="secondary" onClick={()=>onObjectives(member)} style={{ fontSize:12, padding:'7px 12px' }}>
-              🎯 Objectifs
+            <Btn variant="secondary" onClick={()=>onObjectives(member)} style={{ fontSize:12, padding:'7px 12px', display:'inline-flex', alignItems:'center', gap:6 }}>
+              <Icon name="target" size={12} />
+              Objectifs
             </Btn>
             {otherTeams.length > 0 && (
               <>
@@ -186,13 +189,17 @@ function ManagerCopilotCard({ toast }) {
     <Card style={{ padding:16, border:'1px solid rgba(124,58,237,.22)', background:'linear-gradient(135deg, rgba(124,58,237,.14), rgba(255,126,95,.16))' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap', marginBottom:10 }}>
         <div>
-          <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#4A3428' }}>🧭 Copilot Manager</h3>
+          <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#4A3428', display:'inline-flex', alignItems:'center', gap:6 }}>
+            <Icon name="route" size={15} color="#4A3428" />
+            Copilot Manager
+          </h3>
           <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>
             Résumé hebdo équipe + recommandations actionnables {periodLabel ? `(${periodLabel})` : ''}
           </p>
         </div>
-        <Btn variant="secondary" onClick={()=>loadSummary(true)} disabled={refreshing || loading} style={{ fontSize:12, padding:'7px 11px' }}>
-          {refreshing ? 'Actualisation...' : '↻ Actualiser'}
+        <Btn variant="secondary" onClick={()=>loadSummary(true)} disabled={refreshing || loading} style={{ fontSize:12, padding:'7px 11px', display:'inline-flex', alignItems:'center', gap:6 }}>
+          <Icon name="route" size={12} />
+          {refreshing ? 'Actualisation...' : 'Actualiser'}
         </Btn>
       </div>
 
@@ -428,7 +435,7 @@ function HOSPage({ toast, allDebriefs }) {
 
       {teams.length === 0 ? (
         <Empty
-          icon="👥"
+          icon={<Icon name="users" size={36} color="var(--txt3)" />}
           title="Aucune équipe"
           subtitle="Créez votre première équipe pour inviter des closers."
           action={<Btn onClick={()=>setShowCreate(true)}>Créer une équipe</Btn>}
@@ -463,13 +470,21 @@ function HOSPage({ toast, allDebriefs }) {
                           onKeyDown={e=>{ if (e.key === 'Enter') renameTeam(); if (e.key === 'Escape') { setEditingTeamId(null); setEditingName(''); } }}
                           style={{ minWidth:220 }}
                         />
-                        <Btn onClick={renameTeam} style={{ fontSize:12, padding:'7px 10px' }}>✓</Btn>
-                        <Btn variant="secondary" onClick={()=>{ setEditingTeamId(null); setEditingName(''); }} style={{ fontSize:12, padding:'7px 10px' }}>✕</Btn>
+                        <Btn onClick={renameTeam} style={{ fontSize:12, padding:'7px 10px', display:'inline-flex', alignItems:'center', gap:6 }}>
+                          <Icon name="check" size={14} />
+                          Valider
+                        </Btn>
+                        <Btn variant="secondary" onClick={()=>{ setEditingTeamId(null); setEditingName(''); }} style={{ fontSize:12, padding:'7px 10px', display:'inline-flex', alignItems:'center', gap:6 }}>
+                          <Icon name="x" size={14} />
+                          Annuler
+                        </Btn>
                       </div>
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <h2 style={{ margin:0, fontSize:20, color:'#4A3428' }}>{activeTeam.name}</h2>
-                        <button onClick={()=>{ setEditingTeamId(activeTeam.id); setEditingName(activeTeam.name); }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16, color:DS.textMuted }}>✏️</button>
+                        <button onClick={()=>{ setEditingTeamId(activeTeam.id); setEditingName(activeTeam.name); }} style={{ border:'none', background:'none', cursor:'pointer', color:DS.textMuted, display:'inline-flex', alignItems:'center' }} title="Renommer">
+                          <Icon name="pencil" size={16} color={DS.textMuted} />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -513,8 +528,9 @@ function HOSPage({ toast, allDebriefs }) {
                   <div>
                     <h3 style={{ margin:'0 0 3px', fontSize:14, color:'#4A3428' }}>Codes d'invitation</h3>
                   </div>
-                  <Btn onClick={()=>generateInviteCode(activeTeam.id)} disabled={generatingCodeFor === activeTeam.id} style={{ fontSize:12, padding:'8px 12px' }}>
-                    {generatingCodeFor === activeTeam.id ? 'Génération...' : '🔑 Générer un code'}
+                  <Btn onClick={()=>generateInviteCode(activeTeam.id)} disabled={generatingCodeFor === activeTeam.id} style={{ fontSize:12, padding:'8px 12px', display:'inline-flex', alignItems:'center', gap:6 }}>
+                    <Icon name="user-plus" size={14} />
+                    {generatingCodeFor === activeTeam.id ? 'Génération...' : 'Générer un code'}
                   </Btn>
                 </div>
 
@@ -530,9 +546,11 @@ function HOSPage({ toast, allDebriefs }) {
                         style={{ border:'none', background:'none', cursor:'pointer', color:copiedCode === code.code ? '#059669' : '#64748b' }}
                         title="Copier"
                       >
-                        {copiedCode === code.code ? '✓' : '📋'}
+                        <Icon name={copiedCode === code.code ? 'check' : 'copy'} size={14} color={copiedCode === code.code ? '#059669' : '#64748b'} />
                       </button>
-                      <button onClick={()=>deleteInviteCode(activeTeam.id, code.id)} style={{ border:'none', background:'none', cursor:'pointer', color:'#dc2626' }} title="Supprimer">✕</button>
+                      <button onClick={()=>deleteInviteCode(activeTeam.id, code.id)} style={{ border:'none', background:'none', cursor:'pointer', color:'#dc2626', display:'inline-flex', alignItems:'center' }} title="Supprimer">
+                        <Icon name="x" size={14} color="#dc2626" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -543,7 +561,7 @@ function HOSPage({ toast, allDebriefs }) {
                   Closer de l'équipe ({activeTeam.members.length})
                 </h3>
                 {activeTeam.members.length === 0 ? (
-                  <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>Aucun membre. Partagez un code d'invitation.</p>
+                  <p style={{ margin:0, fontSize:13, color:DS.textMuted }}>Aucun membre.</p>
                 ) : (
                   <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                     {[...activeTeam.members].sort((a, b) => b.avgScore - a.avgScore).map(member => (

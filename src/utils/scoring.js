@@ -89,12 +89,12 @@ export function computeSectionScores(sections) {
 }
 
 export function computeLevel(p) {
-  if (p >= 500) return { name:'Légende',      icon:'👑', min:500, next:null };
-  if (p >= 200) return { name:'Expert',        icon:'💎', min:200, next:500  };
-  if (p >= 100) return { name:'Confirmé',      icon:'🥇', min:100, next:200  };
-  if (p >= 50)  return { name:'Intermédiaire', icon:'🥈', min:50,  next:100  };
-  if (p >= 20)  return { name:'Débutant+',     icon:'🥉', min:20,  next:50   };
-  return              { name:'Débutant',       icon:'🌱', min:0,   next:20   };
+  if (p >= 500) return { name:'Légende',      icon:'trophy', min:500, next:null };
+  if (p >= 200) return { name:'Expert',        icon:'award', min:200, next:500  };
+  if (p >= 100) return { name:'Confirmé',      icon:'medal', min:100, next:200  };
+  if (p >= 50)  return { name:'Intermédiaire', icon:'medal', min:50,  next:100  };
+  if (p >= 20)  return { name:'Débutant+',     icon:'award', min:20,  next:50   };
+  return              { name:'Débutant',       icon:'sparkles', min:0,   next:20   };
 }
 
 export function avgSectionScores(debriefs) {

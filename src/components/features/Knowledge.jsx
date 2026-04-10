@@ -4,12 +4,13 @@ import { DS, cardSm } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
 import { copy, fmtDate } from '../../utils/scoring';
 import { Btn, Card, Empty, Spinner } from '../ui';
+import { Icon } from '../ui/Icon';
 
 const OBJECTION_META = {
-  budget: { icon:'💰', color:'#c05040', label:'Budget' },
-  reflechir: { icon:'🤔', color:'#c07830', label:'Réfléchir' },
-  conjoint: { icon:'👥', color:'#6366f1', label:'Conjoint' },
-  methode: { icon:'🧪', color:'#3a7a9a', label:'Méthode' },
+  budget: { icon:'wallet', color:'#c05040', label:'Budget' },
+  reflechir: { icon:'brain', color:'#c07830', label:'Réfléchir' },
+  conjoint: { icon:'users', color:'#6366f1', label:'Conjoint' },
+  methode: { icon:'flask-conical', color:'#3a7a9a', label:'Méthode' },
 };
 
 function normalizeText(value) {
@@ -31,7 +32,7 @@ function extractBestResponseText(response) {
 function makeKnowledgeItems(objections) {
   const map = {};
   for (const objection of (objections || [])) {
-    const meta = OBJECTION_META[objection.type] || { icon:'💬', color:'#6b7280', label:objection.label || 'Objection' };
+    const meta = OBJECTION_META[objection.type] || { icon:'message-square', color:'#6b7280', label:objection.label || 'Objection' };
 
     for (const response of (objection.validatedResponses || [])) {
       const text = normalizeText(response.text);
@@ -131,7 +132,7 @@ export function KnowledgePage({ navigate, toast }) {
     return keys.map(key => ({
       key,
       label:OBJECTION_META[key]?.label || key,
-      icon:OBJECTION_META[key]?.icon || '💬',
+      icon:OBJECTION_META[key]?.icon || 'message-square',
       count:items.filter(item => item.type === key).length,
     }));
   }, [items]);
@@ -202,7 +203,7 @@ export function KnowledgePage({ navigate, toast }) {
 
       {items.length === 0 ? (
         <Empty
-          icon="📚"
+          icon={<Icon name="book-open" size={36} color="var(--txt3)" />}
           title="Aucune connaissance disponible"
           subtitle="Les snippets se construisent automatiquement avec les debriefs et objections."
           action={<Btn onClick={()=>navigate('NewDebrief')}>Créer un debrief</Btn>}
@@ -211,17 +212,17 @@ export function KnowledgePage({ navigate, toast }) {
         <>
           <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,minmax(0,1fr))', gap:10 }}>
             {[
-              { label:'Snippets totaux', value:items.length, color:'var(--txt,#4A3428)', icon:'library_books', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,126,95,.1))', border:'rgba(255,126,95,.2)' },
+              { label:'Snippets totaux', value:items.length, color:'var(--txt,#4A3428)', icon:'library', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,126,95,.1))', border:'rgba(255,126,95,.2)' },
               { label:'Validés', value:validatedCount, color:'var(--positive-txt)', icon:'verified', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(5,150,105,.1))', border:'rgba(5,150,105,.2)' },
               { label:'Haut impact', value:highImpactCount, color:'var(--warning-txt)', icon:'bolt', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(217,119,6,.1))', border:'rgba(217,119,6,.2)' },
-              { label:'Types', value:categories.length, color:'#3a7a9a', icon:'category', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(106,172,206,.14))', border:'rgba(106,172,206,.22)' },
+              { label:'Types', value:categories.length, color:'#3a7a9a', icon:'layers-3', bg:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(106,172,206,.14))', border:'rgba(106,172,206,.22)' },
             ].map(kpi => (
               <div key={kpi.label} style={{ ...glassPanel({ padding:'12px 12px', background:kpi.bg, border:`1px solid ${kpi.border}`, minHeight:84 }) }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                   <p style={{ margin:'0 0 4px', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', color:DS.textMuted, fontWeight:700 }}>
                     {kpi.label}
                   </p>
-                  <span className="material-symbols-outlined" style={{ fontSize:16, color:'var(--txt3,#c8b8a8)' }}>{kpi.icon}</span>
+                  <Icon name={kpi.icon} size={16} color="var(--txt3,#c8b8a8)" />
                 </div>
                 <p style={{ margin:0, fontSize:22, fontWeight:800, color:kpi.color }}>{kpi.value}</p>
               </div>
@@ -243,10 +244,10 @@ export function KnowledgePage({ navigate, toast }) {
               >
                 <option value="all">Toutes les objections</option>
                 {categories.map(category => (
-                  <option key={category.key} value={category.key}>
-                    {category.icon} {category.label} ({category.count})
-                  </option>
-                ))}
+                <option key={category.key} value={category.key}>
+                    {category.label} ({category.count})
+                </option>
+              ))}
               </select>
               <select
                 value={qualityFilter}
@@ -263,7 +264,7 @@ export function KnowledgePage({ navigate, toast }) {
 
           {filtered.length === 0 ? (
             <Empty
-              icon="🔎"
+              icon={<Icon name="search" size={36} color="var(--txt3)" />}
               title="Aucun snippet"
               subtitle="Ajustez les filtres pour voir plus de résultats."
               action={
@@ -286,7 +287,10 @@ export function KnowledgePage({ navigate, toast }) {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ minWidth:0 }}>
                       <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:item.objectionColor }}>
-                        {item.objectionIcon} {item.objectionLabel}
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                          <Icon name={item.objectionIcon || 'message-square'} size={13} color={item.objectionColor} />
+                          {item.objectionLabel}
+                        </span>
                       </p>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                         <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'2px 7px', background:item.validated ? 'var(--positive-bg)' : 'var(--warning-bg)', color:item.validated ? 'var(--positive-txt)' : 'var(--warning-txt)' }}>
@@ -324,7 +328,10 @@ export function KnowledgePage({ navigate, toast }) {
                       }}
                       style={{ fontSize:11, padding:'6px 10px' }}
                     >
-                      📋 Copier
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                        <Icon name="copy" size={12} color="currentColor" />
+                        Copier
+                      </span>
                     </Btn>
                     {item.debriefId && (
                       <Btn
@@ -332,7 +339,10 @@ export function KnowledgePage({ navigate, toast }) {
                         onClick={() => navigate('Detail', item.debriefId, 'Knowledge')}
                         style={{ fontSize:11, padding:'6px 10px' }}
                       >
-                        🔎 Ouvrir la source
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                          <Icon name="search" size={12} color="currentColor" />
+                          Ouvrir la source
+                        </span>
                       </Btn>
                     )}
                   </div>

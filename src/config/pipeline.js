@@ -1,10 +1,10 @@
 export const DEFAULT_PIPELINE_STATUSES = [
-  { key:'prospect', label:'Prospects', icon:'👤', color:'var(--txt3)', bg:'#f1f5f9', closed:false, won:false },
-  { key:'premier_appel', label:'1er appel', icon:'📞', color:'#FF7E5F', bg:'rgba(255,126,95,.06,.6)', closed:false, won:false },
-  { key:'relance', label:'Relance', icon:'🔄', color:'#d97706', bg:'#fef3c7', closed:false, won:false },
-  { key:'negociation', label:'Négociation', icon:'🤝', color:'#3b82f6', bg:'#dbeafe', closed:false, won:false },
-  { key:'signe', label:'Signés', icon:'✅', color:'#059669', bg:'#d1fae5', closed:true, won:true },
-  { key:'perdu', label:'Perdus', icon:'❌', color:'#dc2626', bg:'#fee2e2', closed:true, won:false },
+  { key:'prospect', label:'Prospects', icon:'user-round', color:'var(--txt3)', bg:'#f1f5f9', closed:false, won:false },
+  { key:'premier_appel', label:'1er appel', icon:'phone-call', color:'#FF7E5F', bg:'rgba(255,126,95,.06,.6)', closed:false, won:false },
+  { key:'relance', label:'Relance', icon:'refresh-cw', color:'#d97706', bg:'#fef3c7', closed:false, won:false },
+  { key:'negociation', label:'Négociation', icon:'handshake', color:'#3b82f6', bg:'#dbeafe', closed:false, won:false },
+  { key:'signe', label:'Signés', icon:'badge-check', color:'#059669', bg:'#d1fae5', closed:true, won:true },
+  { key:'perdu', label:'Perdus', icon:'circle-x', color:'#dc2626', bg:'#fee2e2', closed:true, won:false },
 ];
 
 export const LEAD_FIELD_OPTIONS = [
@@ -45,7 +45,7 @@ function normalizeStatuses(statuses) {
       return {
         key,
         label: String(status?.label || key).trim() || key,
-        icon: String(status?.icon || '•').trim() || '•',
+        icon: String(status?.icon || 'shape').trim() || 'shape',
         color: String(status?.color || 'var(--txt3)'),
         bg: String(status?.bg || '#f1f5f9'),
         closed: Boolean(status?.closed),

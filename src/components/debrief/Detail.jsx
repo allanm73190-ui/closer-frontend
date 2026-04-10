@@ -5,7 +5,7 @@ import { computeSectionScores, avgSectionScores, fmtDate, toScore20FromPercentag
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf, getSectionNote } from '../../utils/pdfExport';
 import { SECTIONS } from '../../config/ai';
 import { apiFetch } from '../../config/api';
-import { Btn, Card, ScoreGauge, ClosedBadge, Spinner } from '../ui';
+import { Btn, Card, ScoreGauge, ClosedBadge, Spinner, Icon } from '../ui';
 import { Radar, SectionBars } from '../ui/Charts';
 import { AIAnalysisCard, CommentsSection } from '../ai';
 import { QualityBadge, QualityFlagsList, QualityBreakdown } from './QualityBadge';
@@ -101,8 +101,8 @@ function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toas
               <p className="cd-hero-kicker">Debrief</p>
               <h1 className="cd-hero-title" style={{ fontSize:mob?20:24 }}>{debrief.prospect_name}</h1>
             <div style={{ display:'flex', gap:12, fontSize:12, color:DS.textMuted, marginTop:4, flexWrap:'wrap' }}>
-              <span>📅 {fmtDate(debrief.call_date)}</span>
-              <span>👤 {debrief.closer_name}</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="calendar-days" size={12} color="currentColor" />{fmtDate(debrief.call_date)}</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="user-round" size={12} color="currentColor" />{debrief.closer_name}</span>
               {debrief.user_name && <span>par {debrief.user_name}</span>}
             </div>
           </div>
@@ -142,9 +142,9 @@ function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toas
                 style={{ width: '100%', fontSize: 12, padding: 6, border: '1px solid var(--border)', borderRadius: 6 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
-                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('validated')} style={{ fontSize: 11, padding: '6px 10px' }}>✅ Valider</Btn>
-                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('corrected')} style={{ fontSize: 11, padding: '6px 10px' }}>✏️ Corriger</Btn>
-                <Btn variant="danger" disabled={reviewBusy} onClick={() => submitReview('rejected')} style={{ fontSize: 11, padding: '6px 10px' }}>✖ Rejeter</Btn>
+                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('validated')} style={{ fontSize: 11, padding: '6px 10px' }}>Valider</Btn>
+                <Btn variant="secondary" disabled={reviewBusy} onClick={() => submitReview('corrected')} style={{ fontSize: 11, padding: '6px 10px' }}>Corriger</Btn>
+                <Btn variant="danger" disabled={reviewBusy} onClick={() => submitReview('rejected')} style={{ fontSize: 11, padding: '6px 10px' }}>Rejeter</Btn>
               </div>
             </div>
           )}
@@ -201,9 +201,9 @@ function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toas
                       {key.replace('_', ' ')}
                     </p>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:8 }}>
-                      {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--positive-bg)',border:'1px solid rgba(74,222,128,.42)',color:'var(--positive-txt)'}}>👍 {sn.strength}</div>}
-                      {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--danger-bg)',border:'1px solid rgba(252,165,165,.42)',color:'var(--danger-txt)'}}>👎 {sn.weakness}</div>}
-                      {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--warning-bg)',border:'1px solid rgba(252,211,77,.42)',color:'var(--warning-txt)'}}>📈 {sn.improvement}</div>}
+                      {sn.strength    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--positive-bg)',border:'1px solid rgba(74,222,128,.42)',color:'var(--positive-txt)'}}>Point fort: {sn.strength}</div>}
+                      {sn.weakness    && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--danger-bg)',border:'1px solid rgba(252,165,165,.42)',color:'var(--danger-txt)'}}>Point faible: {sn.weakness}</div>}
+                      {sn.improvement && <div style={{fontSize:11,padding:'6px 8px',borderRadius:8,background:'var(--warning-bg)',border:'1px solid rgba(252,211,77,.42)',color:'var(--warning-txt)'}}>Amélioration: {sn.improvement}</div>}
                     </div>
                   </div>
                 );
@@ -265,7 +265,7 @@ function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toas
                   Fermer
                 </Btn>
                 <Btn onClick={handleDownloadFromPreview} disabled={downloadingPreview || !previewPayload} style={{ fontSize:12, padding:'7px 12px' }}>
-                  {downloadingPreview ? 'Téléchargement...' : '⬇️ Télécharger le PDF'}
+                  {downloadingPreview ? 'Téléchargement...' : 'Télécharger le PDF'}
                 </Btn>
               </div>
             </div>

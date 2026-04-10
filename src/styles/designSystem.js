@@ -81,7 +81,7 @@ export const inp = (extra = {}) => ({
 
 // ─── Global CSS ──────────────────────────────────────────────────────────────
 export const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@400,0,0,24&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
   @keyframes spin  { to { transform: rotate(360deg) } }
   @keyframes floatY { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }

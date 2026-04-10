@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DS, P, P2, A, WHITE, TXT3, R_SM, R_MD, R_LG, SH_SM, SH_HOVERED } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
+import { Icon } from './Icon';
 
 function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, theme = 'light', onToggleTheme }) {
   const [open, setOpen] = useState(false);
@@ -48,7 +49,9 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
               <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>{roleLabel}</p>
             </div>
             {gam && <span style={{ fontSize: 13 }} title={`${gam.level.name} · ${gam.points} pts`}>{gam.level.icon}</span>}
-            <span style={{ fontSize: 10, color: 'var(--txt3)' }}>{open ? '▲' : '▼'}</span>
+            <span style={{ display:'inline-flex', alignItems:'center' }}>
+              <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="var(--txt3)" />
+            </span>
           </>
         )}
       </button>
@@ -94,8 +97,8 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
           </div>
 
           {[
-            { icon: '⚙️', label: 'Paramètres du compte', action: () => { onSettings(); setOpen(false); } },
-            { icon: '🔔', label: 'Notifications', action: () => { toast('Bientôt disponible !', 'info'); setOpen(false); } },
+            { icon: 'settings', label: 'Paramètres du compte', action: () => { onSettings(); setOpen(false); } },
+            { icon: 'bell', label: 'Notifications', action: () => { toast('Bientôt disponible !', 'info'); setOpen(false); } },
           ].map(({ icon, label, action }) => (
             <button
               key={label} onClick={action}
@@ -108,7 +111,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
               onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
             >
-              <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{icon}</span>{label}
+              <span style={{ width: 20, display:'inline-flex', justifyContent:'center' }}><Icon name={icon} size={16} color="currentColor" /></span>{label}
             </button>
           ))}
 
@@ -125,7 +128,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'🌙'}</span>
+              <span style={{ width: 20, display:'inline-flex', justifyContent:'center' }}><Icon name={isDark ? 'moon' : 'sun'} size={16} color="currentColor" /></span>
               Mode nuit
             </span>
             <div style={{
@@ -149,7 +152,7 @@ function UserMenu({ user, gam, onLogout, onSettings, toast, sidebar = false, the
             onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
-            <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{'↩'}</span>Déconnexion
+            <span style={{ width: 20, display:'inline-flex', justifyContent:'center' }}><Icon name="log-out" size={16} color="#DC2626" /></span>Déconnexion
           </button>
         </div>
       )}

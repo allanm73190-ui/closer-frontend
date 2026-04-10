@@ -3,7 +3,7 @@ import { DS, P, P2, TXT, TXT3, R_SM, R_MD, R_FULL, SH_SM, card, inp } from '../.
 import { fmtDate, copy } from '../../utils/scoring';
 import { apiFetch } from '../../config/api';
 import { fetchAIAnalysis } from '../../config/ai';
-import { Card, Btn, Spinner, Textarea } from '../ui';
+import { Card, Btn, Spinner, Textarea, Icon } from '../ui';
 
 const G = (extra = {}) => ({
   background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
@@ -64,7 +64,9 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
       {/* Header with violet accent */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--accent-violet-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white' }}>A</div>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="sparkles" size={14} color="white" />
+          </div>
           <div>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt)', margin: 0 }}>Analyse IA</h3>
             <p style={{ fontSize: 11, color: 'var(--txt3)', margin: 0 }}>CloserDebrief AI</p>
@@ -97,7 +99,9 @@ function AIAnalysisCard({ debrief, allDebriefs, autoTrigger, toast }) {
 
       {!analysis && !loading && (
         <div style={{ padding: '32px 20px', textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent-violet-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 20, color: 'var(--accent-violet)' }}>A</div>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent-violet-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+            <Icon name="sparkles" size={20} color="var(--accent-violet)" />
+          </div>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt)', margin: '0 0 6px' }}>Analyse IA disponible</p>
           <p style={{ fontSize: 13, color: 'var(--txt3)', margin: '0 0 16px' }}>Coaching personnalisé basé sur ce debrief</p>
           <Btn onClick={generate} style={{ fontSize: 13 }}>Lancer l'analyse</Btn>
@@ -149,7 +153,9 @@ function CommentsSection({ debriefId, user, toast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(c.created_at)}</span>
                   {(c.author_id === user.id || user.role === 'head_of_sales' || user.role === 'admin') && (
-                    <button onClick={() => del(c.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 12, padding: 0 }}>{'✕'}</button>
+                    <button onClick={() => del(c.id)} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 12, padding: 0, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                      <Icon name="x" size={12} color="currentColor" />
+                    </button>
                   )}
                 </div>
               </div>

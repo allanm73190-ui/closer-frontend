@@ -35,7 +35,7 @@ function ObjectiveBanner({ userId, refreshTick = 0 }) {
 
   return (
     <div style={{ background:'#ffffff', border:'1px solid rgba(255,126,95,.12)', borderRadius:12, padding:'16px 20px', borderLeft:'4px solid #FF7E5F' }}>
-      <p style={{ fontSize:13, fontWeight:700, color:'#4A3428', margin:'0 0 14px' }}>🎯 Mes objectifs</p>
+      <p style={{ fontSize:13, fontWeight:700, color:'#4A3428', margin:'0 0 14px' }}>Mes objectifs</p>
       <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
         {render(monthly, 'Ce mois-ci')}
         {monthly && weekly && <div style={{ width:1, background:'#e2e8f0', alignSelf:'stretch' }}/>}
@@ -102,9 +102,9 @@ function ObjectiveModal({ closer, onClose, toast }) {
   };
 
   return (
-    <Modal title={`🎯 Objectifs — ${closer.name}`} onClose={onClose}>
+    <Modal title={`Objectifs — ${closer.name}`} onClose={onClose}>
       <div style={{ display:'flex', gap:4, background:'rgba(255,126,95,.06)', padding:4, borderRadius:DS.radiusSm, marginBottom:20 }}>
-        {[{key:'monthly',label:'📅 Ce mois'},{key:'weekly',label:'📆 Cette semaine'}].map(({key,label}) => (
+        {[{key:'monthly',label:'Ce mois'},{key:'weekly',label:'Cette semaine'}].map(({key,label}) => (
           <button key={key} onClick={()=>setTab(key)} style={{ flex:1, padding:'7px 12px', borderRadius:6, border:'none', fontSize:13, fontWeight:500, cursor:'pointer', background:tab===key?'white':'transparent', color:tab===key?'#1e293b':'#64748b', fontFamily:'inherit', boxShadow:tab===key?'0 1px 3px rgba(0,0,0,.08)':'none' }}>{label}</button>
         ))}
       </div>
@@ -115,10 +115,10 @@ function ObjectiveModal({ closer, onClose, toast }) {
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
           {[
-            { key:'target_reecoutes', label:'🎧 Réécoutes', ph:'Ex: 20' },
-            { key:'target_score',    label:'📈 Performance (%)', ph:'Ex: 70' },
-            { key:'target_closings', label:'✅ Closings', ph:'Ex: 5' },
-            { key:'target_revenue',  label:'💶 CA (€)', ph:'Ex: 15000' },
+            { key:'target_reecoutes', label:'Réécoutes', ph:'Ex: 20' },
+            { key:'target_score',    label:'Performance (%)', ph:'Ex: 70' },
+            { key:'target_closings', label:'Closings', ph:'Ex: 5' },
+            { key:'target_revenue',  label:'CA (€)', ph:'Ex: 15000' },
           ].map(({ key, label, ph }) => (
             <div key={key}>
               <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#4A3428', marginBottom:5 }}>{label}</label>
@@ -166,7 +166,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
     try {
       const updated = await apiFetch(`/action-plans/${id}`, { method:'PATCH', body:{ status:'resolved' }});
       setPlans(prev => prev.map(p => p.id===id ? updated : p));
-      toast('Axe marqué comme résolu ✓');
+      toast('Axe marqué comme résolu');
     } catch(e) { toast(e.message, 'error'); }
   };
 
@@ -185,7 +185,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
     <Card style={{ overflow:'hidden' }}>
       <div style={{ padding:'14px 16px', borderBottom:'1px solid rgba(255,126,95,.08)', background:'rgba(255,245,242,.5)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <h3 style={{ fontSize:14, fontWeight:700, color:'#4A3428', margin:0 }}>📌 Plan d'action</h3>
+          <h3 style={{ fontSize:14, fontWeight:700, color:'#4A3428', margin:0 }}>Plan d'action</h3>
           <p style={{ fontSize:11, color:DS.textMuted, margin:0 }}>{active.length}/3 axe{active.length!==1?'s':''} actif{active.length!==1?'s':''}</p>
         </div>
         {isHOS && active.length < 3 && (
@@ -214,8 +214,8 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
                 </p>
               </div>
               <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                <button onClick={()=>resolve(plan.id)} title="Marquer comme résolu" style={{ background:'#d1fae5', border:'1px solid #6ee7b7', color:'#065f46', borderRadius:7, padding:'4px 8px', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>✓ Résolu</button>
-                {isHOS && <button onClick={()=>remove(plan.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:14, padding:'2px 4px' }}>✕</button>}
+                <button onClick={()=>resolve(plan.id)} title="Marquer comme résolu" style={{ background:'#d1fae5', border:'1px solid #6ee7b7', color:'#065f46', borderRadius:7, padding:'4px 8px', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Résolu</button>
+                {isHOS && <button onClick={()=>remove(plan.id)} style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:14, padding:'2px 4px' }}>Suppr.</button>}
               </div>
             </div>
           ))}
@@ -236,7 +236,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
               <p style={{ fontSize:11, color:DS.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginBottom:8 }}>Récemment résolus</p>
               {resolved.map(plan => (
                 <div key={plan.id} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, alignItems:'center', opacity:.65 }}>
-                  <span style={{ color:'#059669', fontSize:12 }}>✓</span>
+                  <span style={{ color:'#059669', fontSize:12 }}>•</span>
                   <span style={{ fontSize:12, color:'var(--txt3)', textDecoration:'line-through', flex:1 }}>{plan.axis}</span>
                   <span style={{ fontSize:11, color:DS.textMuted }}>{fmtDate(plan.resolved_at)}</span>
                 </div>

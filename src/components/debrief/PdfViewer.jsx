@@ -5,7 +5,7 @@ import { fetchAIExportSummary } from '../../config/ai';
 import { buildDebriefPdfPreviewHtml, downloadDebriefPdf } from '../../utils/pdfExport';
 import { fmtDate, toScore20FromPercentage } from '../../utils/scoring';
 import { useIsMobile } from '../../hooks';
-import { Btn, Spinner } from '../ui';
+import { Btn, Spinner, Icon } from '../ui';
 
 const RESULT_LABELS = {
   close: 'Closé',
@@ -137,10 +137,13 @@ function PdfViewer({ debrief, allDebriefs, user, toast, navigate }) {
               ← Debrief
             </Btn>
             <Btn variant="secondary" onClick={handleCopyLink} style={{ fontSize:12, padding:'7px 12px' }}>
-              🔗 Lien
+              <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                <Icon name="link" size={12} color="currentColor" />
+                Lien
+              </span>
             </Btn>
             <Btn onClick={handleDownload} disabled={downloading || !payload} style={{ fontSize:12, padding:'7px 12px' }}>
-              {downloading ? 'Téléchargement...' : '⬇️ PDF'}
+              {downloading ? 'Téléchargement...' : 'PDF'}
             </Btn>
           </div>
         </div>

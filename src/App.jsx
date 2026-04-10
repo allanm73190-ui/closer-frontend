@@ -9,6 +9,7 @@ import { normalizeDebriefTemplateCatalog, getDefaultTemplateCatalog } from './co
 // ─── UI Components ───────────────────────────────────────────────────────────
 import { Toasts, Burst, Spinner } from './components/ui';
 import { UserMenu } from './components/ui/UserMenu';
+import { Icon } from './components/ui/Icon';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 import { LoginPage, RegisterPage, ForgotPage, ResetPage } from './components/auth';
@@ -45,17 +46,12 @@ const PAGE_META = {
 
 function NavIcon({ name, active = false, size = 18, color = 'currentColor' }) {
   return (
-    <span
-      className="material-symbols-outlined"
-      style={{
-        fontSize: size,
-        lineHeight: 1,
-        color,
-        fontVariationSettings: `'FILL' ${active ? 1 : 0}, 'wght' ${active ? 650 : 500}, 'GRAD' 0, 'opsz' 24`,
-      }}
-    >
-      {name}
-    </span>
+    <Icon
+      name={name}
+      size={size}
+      color={color}
+      strokeWidth={active ? 2.2 : 1.9}
+    />
   );
 }
 
@@ -291,26 +287,26 @@ export default function App() {
   const isHOS = role === 'head_of_sales';
   const isManager = isAdmin || isHOS;
   const navItems = [
-    { key: 'Dashboard',  label: 'Dashboard',  icon: 'dashboard',      section: 'Principal' },
-    { key: 'Pipeline',   label: 'Pipeline',   icon: 'analytics' },
-    { key: 'Objections', label: 'Objections', icon: 'forum' },
-    { key: 'History',    label: 'Débriefs',   icon: 'description' },
+    { key: 'Dashboard',  label: 'Dashboard',  icon: 'layout-dashboard',      section: 'Principal' },
+    { key: 'Pipeline',   label: 'Pipeline',   icon: 'kanban' },
+    { key: 'Objections', label: 'Objections', icon: 'message-square-warning' },
+    { key: 'History',    label: 'Débriefs',   icon: 'file-text' },
     ...(isManager
       ? [
-          { key: 'HOSPage',      label: 'Mon équipe',  icon: 'groups',       section: 'Équipe' },
-          { key: 'Gamification', label: 'Classement',  icon: 'emoji_events' },
+          { key: 'HOSPage',      label: 'Mon équipe',  icon: 'users',       section: 'Équipe' },
+          { key: 'Gamification', label: 'Classement',  icon: 'trophy' },
         ]
-      : [{ key: 'Gamification', label: 'Classement',  icon: 'emoji_events', section: 'Équipe' }]
+      : [{ key: 'Gamification', label: 'Classement',  icon: 'trophy', section: 'Équipe' }]
     ),
-    { key: 'Benchmark',  label: 'Benchmark',  icon: 'query_stats',    section: 'Outils' },
-    { key: 'Knowledge',  label: 'Connaissances', icon: 'library_books' },
+    { key: 'Benchmark',  label: 'Benchmark',  icon: 'bar-chart-2',    section: 'Outils' },
+    { key: 'Knowledge',  label: 'Connaissances', icon: 'book-open' },
   ];
   const mobileNavItems = [
-    { key: 'Dashboard',     label: 'Dashboard',  icon: 'dashboard' },
-    { key: 'Pipeline',      label: 'Pipeline',   icon: 'analytics' },
-    { key: 'Objections',    label: 'Objections', icon: 'forum' },
-    { key: 'History',       label: 'Débriefs',   icon: 'description' },
-    { key: 'Gamification',  label: 'Classement', icon: 'emoji_events' },
+    { key: 'Dashboard',     label: 'Dashboard',  icon: 'layout-dashboard' },
+    { key: 'Pipeline',      label: 'Pipeline',   icon: 'kanban' },
+    { key: 'Objections',    label: 'Objections', icon: 'message-square-warning' },
+    { key: 'History',       label: 'Débriefs',   icon: 'file-text' },
+    { key: 'Gamification',  label: 'Classement', icon: 'trophy' },
   ];
   const pageMeta = PAGE_META[page] || PAGE_META.Dashboard;
   const isPdfViewerPage = page === 'PdfViewer';
@@ -527,7 +523,7 @@ export default function App() {
                   onClick={onLogout}
                   className="cd-nav-item"
                 >
-                  <NavIcon name="logout" size={16} color="var(--txt3)" />
+                  <NavIcon name="log-out" size={16} color="var(--txt3)" />
                   Déconnexion
                 </button>
               </div>
@@ -553,7 +549,7 @@ export default function App() {
                       }}
                       title="Notifications"
                     >
-                      <NavIcon name="notifications" size={15} color="var(--txt3)" />
+                      <NavIcon name="bell" size={15} color="var(--txt3)" />
                       {notifications.some(n => !n.read) && (
                         <span style={{
                           position: 'absolute', top: 4, right: 4,

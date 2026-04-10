@@ -4,7 +4,7 @@ import { DS } from '../../styles/designSystem';
 import { DEFAULT_PIPELINE_CONFIG, LEAD_FIELD_OPTIONS, makeStatusKey, normalizePipelineConfig } from '../../config/pipeline';
 import { getDefaultTemplateCatalog, normalizeDebriefTemplateCatalog } from '../../config/debriefTemplates';
 import { DebriefConfigEditor } from '../debrief/Settings';
-import { AlertBox, Btn, Card, Input, Spinner, Textarea } from '../ui';
+import { AlertBox, Btn, Card, Input, Spinner, Textarea, Icon } from '../ui';
 
 const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
 
@@ -459,7 +459,7 @@ function PipelineSettingsSection({ toast }) {
       const key = makeStatusKey(label, `status_${prev.statuses.length + 1}`);
       return {
         ...prev,
-        statuses: [...prev.statuses, { key, label, icon:'🧩', color:'#64748b', bg:'#e2e8f0', closed:false, won:false }],
+        statuses: [...prev.statuses, { key, label, icon:'shape', color:'#64748b', bg:'#e2e8f0', closed:false, won:false }],
       };
     });
   };
@@ -534,7 +534,7 @@ function PipelineSettingsSection({ toast }) {
                   fontFamily:'inherit',
                 }}
               >
-                {active ? '✓ ' : ''}{field.label}
+                {active && <Icon name="check" size={12} color="currentColor" />} {field.label}
               </button>
             );
           })}
@@ -797,8 +797,8 @@ function IntegrationsSection({ user, toast }) {
       <div style={{ ...G({ padding: 20 }) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           {/* Google logo */}
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-            📅
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="calendar" size={20} color="#4A3428" />
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Google Agenda</div>
@@ -808,7 +808,7 @@ function IntegrationsSection({ user, toast }) {
               <span style={{ fontSize: 12, color: 'var(--txt3)' }}>Chargement…</span>
             ) : gcalStatus.connected ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'var(--positive-bg)', color: 'var(--positive-txt)', border: '1px solid rgba(5,150,105,.2)' }}>
-                ✓ Connecté
+                <Icon name="check-circle" size={12} color="currentColor" /> Connecté
               </span>
             ) : (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'var(--neutral-bg)', color: 'var(--neutral-txt)' }}>
@@ -833,7 +833,7 @@ function IntegrationsSection({ user, toast }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt)' }}>
-                  {gcalStatus.watchActive ? '⚡ Sync temps réel active' : '🔄 Mode polling uniquement'}
+                  {gcalStatus.watchActive ? 'Temps réel activé' : 'Polling uniquement'}
                 </div>
                 {gcalStatus.watchActive && gcalStatus.channelExpiresAt && (
                   <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
@@ -850,7 +850,7 @@ function IntegrationsSection({ user, toast }) {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 10 }}>
               <Btn onClick={syncNow} disabled={syncing} style={{ flex: 1 }}>
-                {syncing ? 'Sync en cours…' : '↻ Synchroniser maintenant'}
+                {syncing ? 'Sync en cours…' : 'Synchroniser maintenant'}
               </Btn>
               <Btn variant="danger" onClick={disconnectGoogle} disabled={disconnecting}>
                 {disconnecting ? '…' : 'Déconnecter'}
@@ -905,8 +905,8 @@ function IntegrationsSection({ user, toast }) {
       {/* ── Calendly card ────────────────────────────────────────────────── */}
       <div style={{ ...G({ padding: 20 }) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-            🗓️
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid rgba(200,160,140,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="calendar" size={20} color="#4A3428" />
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt)' }}>Calendly</div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DS, P, P2, R_SM, R_MD, R_LG, R_FULL, WHITE, SH_CARD, SH_SM, SH_BTN, SH_IN, card, inp } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
+export { Icon } from './Icon';
 
 // ─── TOASTS ──────────────────────────────────────────────────────────────────
 export function Toasts({ list }) {

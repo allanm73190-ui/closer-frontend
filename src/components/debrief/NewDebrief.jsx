@@ -508,13 +508,13 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>🔗 Lien enregistrement</label>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:6 }}>Lien enregistrement</label>
                 <Input type="url" placeholder="https://..." value={form.call_link} onChange={e=>setForm({ ...form, call_link:e.target.value })} />
               </div>
               <div>
                 <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--txt,#4A3428)', marginBottom:8 }}>Résultat *</label>
                 <div style={{ display:'flex', gap:10 }}>
-                  {[{val:true,label:'✅ Closer',border:'#059669',bg:'var(--positive-bg)',c:'var(--positive-txt)'},{val:false,label:'❌ Non Closer',border:'#dc2626',bg:'var(--danger-bg)',c:'var(--danger-txt)'}].map(({val,label,border,bg,c})=>(
+                  {[{val:true,label:'Closé',border:'#059669',bg:'var(--positive-bg)',c:'var(--positive-txt)'},{val:false,label:'Non closé',border:'#dc2626',bg:'var(--danger-bg)',c:'var(--danger-txt)'}].map(({val,label,border,bg,c})=>(
                     <button
                       key={String(val)}
                       type="button"
@@ -566,7 +566,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
               if (!hints.length) return null;
               return (
                 <Card style={{ padding:12, background:'#fef3c7', borderColor:'#fde68a' }}>
-                  <p style={{ fontSize:12, fontWeight:600, margin:'0 0 6px', color:'#92400e' }}>💡 Améliorer la qualité du debrief</p>
+                  <p style={{ fontSize:12, fontWeight:600, margin:'0 0 6px', color:'#92400e' }}>Améliorer la qualité du debrief</p>
                   <ul style={{ margin:0, paddingLeft:18, fontSize:12, color:'#78350f' }}>
                     {hints.map(h => <li key={h}>{h}</li>)}
                   </ul>
@@ -580,7 +580,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                   <Radar scores={sectionScores} size={238} />
                 </Card>
                 <Btn type="submit" disabled={loading} style={{ width:'100%', padding:'14px 20px', fontSize:15 }}>
-                  {loading ? 'Enregistrement...' : (isEditing ? '💾 Enregistrer les modifications' : '💾 Enregistrer le debrief')}
+                  {loading ? 'Enregistrement...' : (isEditing ? 'Enregistrer les modifications' : 'Enregistrer le debrief')}
                 </Btn>
               </>
             )}
@@ -602,7 +602,7 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                   </div>
                 </div>
                 <Btn type="submit" disabled={loading} style={{ width:'100%' }}>
-                  {loading ? 'Enregistrement...' : (isEditing ? '💾 Enregistrer les modifications' : '💾 Enregistrer le debrief')}
+                  {loading ? 'Enregistrement...' : (isEditing ? 'Enregistrer les modifications' : 'Enregistrer le debrief')}
                 </Btn>
               </Card>
             </div>

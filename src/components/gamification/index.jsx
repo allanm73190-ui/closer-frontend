@@ -4,7 +4,7 @@ import { DS, P } from '../../styles/designSystem';
 import { computeLevel } from '../../utils/scoring';
 import { computeStreak } from '../../utils/streak';
 import { useIsMobile } from '../../hooks';
-import { Spinner } from '../ui';
+import { Spinner, Icon } from '../ui';
 
 const G = (extra = {}) => ({
   background: 'var(--glass-bg)',
@@ -26,7 +26,10 @@ function GamCard({ gam }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div>
           <p style={{ fontSize: 11, opacity: .75, margin: 0, textTransform: 'uppercase', letterSpacing: '.06em' }}>Niveau</p>
-          <h2 style={{ fontSize: 20, fontWeight: 700, margin: '4px 0 0' }}>{level.icon} {level.name}</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, margin: '4px 0 0', display:'inline-flex', alignItems:'center', gap:8 }}>
+            <Icon name="award" size={18} color="white" />
+            {level.name}
+          </h2>
         </div>
         <div style={{ textAlign: 'right' }}>
           <p style={{ fontSize: 11, opacity: .75, margin: 0 }}>Points</p>
@@ -48,7 +51,12 @@ function GamCard({ gam }) {
         <div>
           <p style={{ fontSize: 11, opacity: .75, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.06em' }}>Badges</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {badges.map(b => <span key={b.id} style={{ background: 'rgba(255,255,255,.18)', padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 500 }}>{b.icon} {b.label}</span>)}
+            {badges.map(b => (
+              <span key={b.id} style={{ background: 'rgba(255,255,255,.18)', padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 500, display:'inline-flex', alignItems:'center', gap:6 }}>
+                <Icon name={b.icon || 'medal'} size={12} color="white" />
+                {b.label}
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -99,7 +107,7 @@ function GamificationPage({ gam, user, debriefs = [] }) {
             </div>
             <div>
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--txt)' }}>{user?.name || '—'}</div>
-              <div style={{ fontSize: 13, color: 'var(--txt3)', marginTop: 2 }}>{level.icon} {level.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--txt3)', marginTop: 2 }}>{level.name}</div>
               <span style={{ display: 'inline-block', marginTop: 6, padding: '2px 10px', borderRadius: 999, background: 'rgba(124,58,237,.12)', color: 'var(--accent-violet)', fontSize: 11, fontWeight: 700, border: '1px solid rgba(124,58,237,.2)' }}>
                 Niveau {level.name}
               </span>
@@ -152,8 +160,8 @@ function GamificationPage({ gam, user, debriefs = [] }) {
                   textAlign: 'center',
                   opacity: b.locked ? 0.4 : 1,
                 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: b.locked ? 'rgba(200,160,140,.1)' : 'rgba(255,126,95,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontSize: 18 }}>
-                    {b.locked ? '🔒' : (b.icon || '🏅')}
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: b.locked ? 'rgba(200,160,140,.1)' : 'rgba(255,126,95,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                    <Icon name={b.locked ? 'lock' : (b.icon || 'medal')} size={16} color="var(--txt2)" />
                   </div>
                   <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--txt2)', lineHeight: 1.3 }}>{b.label}</div>
                 </div>

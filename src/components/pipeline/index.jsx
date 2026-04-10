@@ -10,7 +10,7 @@ import {
 } from '../../config/pipeline';
 import { DS } from '../../styles/designSystem';
 import { useIsMobile } from '../../hooks';
-import { Btn, Card, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Textarea } from '../ui';
+import { Btn, Card, Spinner, Empty, ScoreBadge, ClosedBadge, Input, Textarea, Icon } from '../ui';
 
 const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
 
@@ -28,6 +28,19 @@ function getOpenStatusKey(stages) {
 
 function leadFieldLabel(key) {
   return LEAD_FIELD_OPTIONS.find(field => field.key === key)?.label || key;
+}
+
+function resolveStageIconName(rawIcon) {
+  const icon = String(rawIcon || '').trim().toLowerCase();
+  if (!icon) return 'shape';
+  if (['👤', 'user', 'user-round'].includes(rawIcon) || ['user', 'user-round'].includes(icon)) return 'user-round';
+  if (['📞', 'phone', 'phone-call'].includes(rawIcon) || ['phone-call'].includes(icon)) return 'phone-call';
+  if (['🔄', 'refresh', 'refresh-cw'].includes(rawIcon) || ['refresh-cw'].includes(icon)) return 'refresh-cw';
+  if (['🤝', 'handshake'].includes(rawIcon) || ['handshake'].includes(icon)) return 'handshake';
+  if (['✅', 'check', 'check-circle', 'badge-check'].includes(rawIcon) || ['badge-check', 'check-circle'].includes(icon)) return 'badge-check';
+  if (['❌', 'x', 'circle-x'].includes(rawIcon) || ['circle-x'].includes(icon)) return 'circle-x';
+  if (icon === '•') return 'shape';
+  return icon;
 }
 
 function parseISODate(value) {
@@ -61,7 +74,7 @@ function StatusBadge({ stage, compact=false }) {
         fontWeight:700,
       }}
     >
-      <span>{stage.icon}</span>
+      <Icon name={resolveStageIconName(stage.icon)} size={compact ? 12 : 14} color="currentColor" />
       <span>{stage.label}</span>
     </span>
   );
@@ -203,7 +216,9 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
             <StatusBadge stage={activeStage} />
             <div style={{ display:'flex', gap:8 }}>
               {!isNew && <Btn variant="danger" onClick={remove} disabled={deleting} style={{ fontSize:12, padding:'7px 10px' }}>Supprimer</Btn>}
-              <button onClick={onClose} style={{ border:'none', background:'none', cursor:'pointer', fontSize:20, color:'var(--txt3,#C8B8A8)' }}>✕</button>
+              <button onClick={onClose} style={{ border:'none', background:'none', cursor:'pointer', fontSize:20, color:'var(--txt3,#C8B8A8)', display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                <Icon name="x" size={18} color="currentColor" />
+              </button>
             </div>
           </div>
 
@@ -297,14 +312,14 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
                       onClick={()=>setValue('deal_closed', true)}
                       style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${form.deal_closed ? '#059669' : 'var(--border)'}`, background:form.deal_closed ? 'rgba(209,250,229,.8)' : 'var(--card,#fff)', color:form.deal_closed ? '#065f46' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
                     >
-                      ✅ Closé
+                      Closé
                     </button>
                     <button
                       type="button"
                       onClick={()=>setValue('deal_closed', false)}
                       style={{ flex:1, padding:'11px 12px', borderRadius:10, border:`1.5px solid ${!form.deal_closed ? '#dc2626' : 'var(--border)'}`, background:!form.deal_closed ? 'rgba(254,226,226,.8)' : 'var(--card,#fff)', color:!form.deal_closed ? '#991b1b' : DS.textMuted, fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}
                     >
-                      ❌ Non closé
+                      Non closé
                     </button>
                   </div>
                 </div>
@@ -320,7 +335,10 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
               {deal?.source === 'google_calendar' && (
                 <div style={{ gridColumn:'1 / -1', background:'rgba(66,133,244,.07)', border:'1px solid rgba(66,133,244,.2)', borderRadius:10, padding:'10px 14px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
-                    <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.15)', color:'#4285F4', border:'1px solid rgba(66,133,244,.3)' }}>📅 Google Agenda</span>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.15)', color:'#4285F4', border:'1px solid rgba(66,133,244,.3)', display:'inline-flex', alignItems:'center', gap:4 }}>
+                      <Icon name="calendar-days" size={10} color="currentColor" />
+                      Google Agenda
+                    </span>
                     <span style={{ fontSize:11, color:'var(--txt3)' }}>Lead importé automatiquement</span>
                   </div>
                   {deal.scheduled_at && (
@@ -381,7 +399,7 @@ function LeadSheet({ deal, statuses, debriefs, importantFields, onClose, onSave,
               )}
 
               <Btn onClick={createDebrief} disabled={creatingDebrief}>
-                {creatingDebrief ? 'Préparation...' : '➕ Nouveau Debrief lié à ce contact'}
+                {creatingDebrief ? 'Préparation...' : 'Nouveau debrief lié à ce contact'}
               </Btn>
             </div>
           )}
@@ -404,7 +422,7 @@ function barColor(value) {
 
 function DealCard({ deal, stages, onOpen }) {
   const [dragging, setDragging] = useState(false);
-  const stage = getStageByKey(stages, deal.status) || stages[0] || { color:'#64748b', bg:'#f1f5f9', icon:'•', label:'Statut' };
+  const stage = getStageByKey(stages, deal.status) || stages[0] || { color:'#64748b', bg:'#f1f5f9', icon:'shape', label:'Statut' };
   const debriefScore = deal.debrief_score != null ? Math.round(deal.debrief_score) : null;
   const contactName = `${deal.first_name || ''} ${deal.last_name || ''}`.trim() || deal.prospect_name;
   return (
@@ -436,11 +454,17 @@ function DealCard({ deal, stages, onOpen }) {
         )}
       </div>
       <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
-        {deal.closer_name && <span style={{ fontSize:11, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>👤 {deal.closer_name}</span>}
+        {deal.closer_name && (
+          <span style={{ fontSize:11, color:DS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:4 }}>
+            <Icon name="user-round" size={11} color="currentColor" />
+            {deal.closer_name}
+          </span>
+        )}
         <div style={{ display:'flex', alignItems:'center', gap:4 }}>
           {deal.source === 'google_calendar' && (
-            <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.12)', color:'#4285F4', border:'1px solid rgba(66,133,244,.25)', flexShrink:0 }}>
-              📅 GCal
+            <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:999, background:'rgba(66,133,244,.12)', color:'#4285F4', border:'1px solid rgba(66,133,244,.25)', flexShrink:0, display:'inline-flex', alignItems:'center', gap:3 }}>
+              <Icon name="calendar-days" size={10} color="currentColor" />
+              GCal
             </span>
           )}
           <StatusBadge stage={stage} compact />
@@ -462,7 +486,7 @@ function DropColumn({ stage, deals, onOpen, onMove, stages }) {
     >
       <div style={{ padding:'8px 11px', background:over ? `${stage.color}22` : stage.bg, borderRadius:10, border:over ? `2px solid ${stage.color}` : '2px solid transparent', display:'flex', justifyContent:'space-between', gap:6, alignItems:'center', transition:'all .15s' }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span>{stage.icon}</span>
+          <Icon name={resolveStageIconName(stage.icon)} size={13} color={stage.color} />
           <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
           <span style={{ fontSize:10, fontWeight:700, color:stage.color, background:'rgba(255,255,255,.75)', borderRadius:999, padding:'1px 6px' }}>
             {deals.length}
@@ -490,11 +514,13 @@ function AccordionColumn({ stage, deals, stages, onOpen, onMove }) {
     <div style={{ borderRadius:10, background:'var(--glass-bg)', border:'1px solid var(--border)', overflow:'hidden', boxShadow:'var(--sh-sm)' }}>
       <button type="button" onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:stage.bg, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-          <span>{stage.icon}</span>
+          <Icon name={resolveStageIconName(stage.icon)} size={13} color={stage.color} />
           <span style={{ fontSize:12, fontWeight:700, color:stage.color }}>{stage.label}</span>
           <span style={{ fontSize:10, fontWeight:700, color:stage.color, background:'rgba(255,255,255,.8)', borderRadius:999, padding:'1px 6px' }}>{deals.length}</span>
         </div>
-        <span style={{ color:stage.color, fontSize:12 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ color:stage.color, fontSize:12, display:'inline-flex', alignItems:'center' }}>
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={14} color={stage.color} />
+        </span>
       </button>
       {open && (
         <div style={{ padding:'8px 10px', display:'flex', flexDirection:'column', gap:7 }}>
@@ -542,7 +568,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
     const list = pipelineConfig?.statuses?.length ? pipelineConfig.statuses : DEFAULT_PIPELINE_STATUSES;
     const known = new Set(list.map(status => status.key));
     const unknown = [...new Set((deals || []).map(deal => deal.status).filter(status => status && !known.has(status)))]
-      .map(status => ({ key: status, label: status, icon:'🧩', color:'#64748b', bg:'#e2e8f0', closed:false, won:false }));
+      .map(status => ({ key: status, label: status, icon:'shape', color:'#64748b', bg:'#e2e8f0', closed:false, won:false }));
     return [...list, ...unknown];
   }, [pipelineConfig, deals]);
   const defaultOpenStatus = statuses.find(status => !status.closed)?.key || 'prospect';
@@ -653,8 +679,10 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
               <Btn
                 variant="secondary"
                 onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
+                style={{ display:'inline-flex', alignItems:'center', gap:6 }}
               >
-                ⚙️ Paramètres
+                <Icon name="settings" size={14} />
+                Paramètres
               </Btn>
             )}
             <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
@@ -671,15 +699,17 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
       <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
         {[
-          { label:'CA signé', value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'💶', color:'#059669' },
-          { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'🧭', color:'#FF7E5F' },
-          { label:'Taux win', value:`${winRate}%`, icon:'🏆', color:'#d97706' },
-          { label:'Sans date', value:noDateCount, icon:'🗓️', color:noDateCount > 0 ? '#d97706' : '#64748b' },
+          { label:'CA signé', value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'euro', color:'#059669' },
+          { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'kanban', color:'#FF7E5F' },
+          { label:'Taux win', value:`${winRate}%`, icon:'trophy', color:'#d97706' },
+          { label:'Sans date', value:noDateCount, icon:'calendar', color:noDateCount > 0 ? '#d97706' : '#64748b' },
         ].map(kpi => (
           <Card key={kpi.label} style={{ padding:'12px 13px', background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
             <p style={{ margin:'0 0 6px', fontSize:11, textTransform:'uppercase', letterSpacing:'.05em', color:DS.textMuted }}>{kpi.label}</p>
             <p style={{ margin:0, fontSize:22, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
-            <p style={{ margin:'4px 0 0', fontSize:12 }}>{kpi.icon}</p>
+            <p style={{ margin:'4px 0 0', fontSize:12 }}>
+              <Icon name={kpi.icon} size={16} color={kpi.color} />
+            </p>
           </Card>
         ))}
       </div>
@@ -745,7 +775,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
               onClick={()=>setFilter(closer.id)}
               style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(255,126,95,.16)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
             >
-              👤 {closer.name}
+              {closer.name}
             </button>
           ))}
         </div>
@@ -764,7 +794,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
       {displayDeals.length === 0 ? (
         <Empty
-          icon="🎯"
+          icon={<Icon name="target" size={36} color="var(--txt3)" />}
           title={normalizedDeals.length === 0 ? 'Pipeline vide' : 'Aucun deal sur ce filtre'}
           subtitle={normalizedDeals.length === 0 ? 'Créez votre premier lead' : 'Ajustez le closer ou le focus d’alerte pour voir plus de résultats.'}
           action={<Btn onClick={()=>setOpenLead({})}>+ Créer un lead</Btn>}
