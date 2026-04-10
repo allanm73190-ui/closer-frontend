@@ -63,7 +63,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
 
   const latestDebriefs = [...debriefs]
     .sort((a, b) => new Date(b.call_date || b.created_at || 0) - new Date(a.call_date || a.created_at || 0))
-    .slice(0, 4);
+    .slice(0, 5);
 
   const total = debriefs.length;
   const avg = total > 0 ? Math.round(debriefs.reduce((s, d) => s + (d.percentage || 0), 0) / total) : 0;
@@ -201,9 +201,9 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
     },
   ];
 
-  const quickDebriefs = latestDebriefs.slice(0, 5);
+  const quickDebriefs = latestDebriefs;
 
-  const renderDebriefItem = (debrief) => {
+  const renderDebriefItem = (debrief, compact = false) => {
     const pct = Math.round(debrief.percentage || 0);
     const scoreColor = pct >= 75 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626';
     return (
@@ -216,7 +216,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
           border: '1px solid var(--border)',
           background: 'var(--card-soft)',
           borderRadius: 10,
-          padding: '9px 10px',
+          padding: compact ? '8px 9px' : '9px 10px',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
@@ -228,15 +228,15 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         <div style={{ width: 34, height: 34, borderRadius: 8, background: `${scoreColor}16`, color: scoreColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
           {pct}%
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {debrief.prospect_name || 'Prospect'}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {debrief.prospect_name || 'Prospect'}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(debrief.call_date || debrief.created_at)}</div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(debrief.call_date || debrief.created_at)}</div>
-        </div>
-        <ClosedBadge v={debrief.is_closed} />
-      </button>
-    );
+          <ClosedBadge v={debrief.is_closed} compact />
+        </button>
+      );
   };
 
   const renderObjections = () => (
@@ -258,6 +258,23 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
             </div>
           );
         })}
+      </div>
+    )
+  );
+
+  const renderPatterns = () => (
+    patternsLoading ? (
+      <Spinner size={18} />
+    ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
+      <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun pattern critique détecté.</div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {patternsData.patterns.slice(0, 4).map(pattern => (
+          <div key={pattern.id} style={{ border: '1px solid var(--border)', borderRadius: 9, padding: '9px 10px', background: 'var(--card-soft)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>{pattern.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 3 }}>{pattern.recommendation}</div>
+          </div>
+        ))}
       </div>
     )
   );
@@ -322,9 +339,16 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(renderDebriefItem)}
+            {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(item => renderDebriefItem(item, true))}
           </div>
         </div>
+
+        {isManager && (
+          <div className="cd-card">
+            <div className="cd-card-title">Détection de patterns</div>
+            {renderPatterns()}
+          </div>
+        )}
 
         <div className="cd-card">
           <div className="cd-card-title">Objections fréquentes</div>
@@ -368,45 +392,33 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         ))}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12, alignItems: 'start' }}>
+        <div className="cd-card">
+          <div className="cd-card-title">Évolution du score</div>
+          <Chart debriefs={debriefs} compact simple />
+        </div>
+
+        <div className="cd-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div className="cd-card-title" style={{ marginBottom: 0 }}>Derniers appels debriefés</div>
+            <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Voir tout
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(item => renderDebriefItem(item, true))}
+          </div>
+        </div>
+      </div>
+
       <div className="cd-grid-aside">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
-
-          <div className="cd-card">
-            <div className="cd-card-title">Évolution du score</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ minWidth: 0 }}>
-                <Chart debriefs={debriefs} compact simple />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 700 }}>Derniers appels debriefés</span>
-                  <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Voir tout</button>
-                </div>
-                {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(renderDebriefItem)}
-              </div>
-            </div>
-          </div>
-
           {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
-
           {isManager && (
             <div className="cd-card">
               <div className="cd-card-title">Détection de patterns</div>
-              {patternsLoading ? (
-                <Spinner size={20} />
-              ) : (!patternsData?.patterns || patternsData.patterns.length === 0) ? (
-                <div style={{ fontSize: 12, color: 'var(--txt3)' }}>Aucun pattern critique détecté.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {patternsData.patterns.slice(0, 4).map(pattern => (
-                    <div key={pattern.id} style={{ border: '1px solid var(--border)', borderRadius: 9, padding: '9px 10px', background: 'var(--card-soft)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt)' }}>{pattern.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 3 }}>{pattern.recommendation}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {renderPatterns()}
             </div>
           )}
         </div>
