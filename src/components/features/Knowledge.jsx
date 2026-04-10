@@ -168,27 +168,23 @@ export function KnowledgePage({ navigate, toast }) {
       <div style={{ position:'absolute', top:-50, left:-30, width:190, height:190, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.14) 0%, rgba(124,58,237,0) 70%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:40, right:-40, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 70%)', pointerEvents:'none' }} />
 
-      <Card className="cd-hero-card" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
-        <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
-          <div>
-            <p className="cd-hero-kicker">Centre de connaissances</p>
-            <h1 className="cd-hero-title" style={{ fontSize:mob ? 22 : 25 }}>
-              Scripts réutilisables
-            </h1>
-            <p className="cd-hero-subtitle">
-              Extraits issus des meilleurs debriefs, triés par impact réel.
-            </p>
-          </div>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{ fontSize:12, padding:'7px 11px' }}>
-              ← Dashboard
-            </Btn>
-            <Btn onClick={()=>navigate('NewDebrief')} style={{ fontSize:12, padding:'7px 11px' }}>
-              Utiliser dans un debrief
-            </Btn>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Scripts réutilisables</h1>
+          <p className="page-subtitle">Centre de connaissances</p>
         </div>
-        <div style={{ marginTop:10, display:'flex', gap:7, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{ fontSize:12, padding:'7px 11px' }}>
+            ← Dashboard
+          </Btn>
+          <Btn onClick={()=>navigate('NewDebrief')} style={{ fontSize:12, padding:'7px 11px' }}>
+            Utiliser dans un debrief
+          </Btn>
+        </div>
+      </div>
+
+      <Card className="cd-surface-muted" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
+        <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <span style={{ fontSize:10, fontWeight:700, borderRadius:999, padding:'3px 8px', background:'var(--chip-bg)', color:'var(--txt,#4A3428)', border:'1px solid var(--border)' }}>
             Total: {items.length}
           </span>

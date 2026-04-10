@@ -667,50 +667,48 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
 
   return (
     <div className="cd-page-flow" style={{ gap: 18 }}>
-      <Card className="cd-hero-card" style={{ padding:18 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
-          <div>
-            <p className="cd-hero-kicker">Pipeline</p>
-            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Pilotage des opportunités</h1>
-            <p className="cd-hero-subtitle">{normalizedDeals.length} contact{normalizedDeals.length !== 1 ? 's' : ''}</p>
-          </div>
-          <div style={{ display:'flex', gap:8 }}>
-            {isManager && (
-              <Btn
-                variant="secondary"
-                onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
-                style={{ display:'inline-flex', alignItems:'center', gap:6 }}
-              >
-                <Icon name="settings" size={14} />
-                Paramètres
-              </Btn>
-            )}
-            <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Pipeline</h1>
+          <p className="page-subtitle">{normalizedDeals.length} contact{normalizedDeals.length !== 1 ? 's' : ''}</p>
         </div>
-        <div style={{ marginTop:10, display:'flex', flexWrap:'wrap', gap:8 }}>
-          {(pipelineConfig.importantFields || []).map(field => (
-            <span key={field} style={{ padding:'4px 9px', borderRadius:999, background:'var(--glass-bg)', border:'1px solid var(--border)', fontSize:11, color:DS.textMuted }}>
-              {leadFieldLabel(field)}
-            </span>
-          ))}
+        <div style={{ display:'flex', gap:8 }}>
+          {isManager && (
+            <Btn
+              variant="secondary"
+              onClick={()=>navigate?.('Settings', null, 'Pipeline', { settingsTab:'pipeline' })}
+              style={{ display:'inline-flex', alignItems:'center', gap:6 }}
+            >
+              <Icon name="settings" size={14} />
+              Paramètres
+            </Btn>
+          )}
+          <Btn onClick={()=>setOpenLead({})}>+ Nouveau lead</Btn>
         </div>
-      </Card>
+      </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:10 }}>
+      <div style={{ marginTop:-8, display:'flex', flexWrap:'wrap', gap:8 }}>
+        {(pipelineConfig.importantFields || []).map(field => (
+          <span key={field} className="cd-chip">
+            {leadFieldLabel(field)}
+          </span>
+        ))}
+      </div>
+
+      <div className="kpi-grid" style={{ gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', marginBottom: 0 }}>
         {[
           { label:'CA signé', value:`${totalValue.toLocaleString('fr-FR')} €`, icon:'euro', color:'#059669' },
           { label:'Pipeline actif', value:`${totalPipe.toLocaleString('fr-FR')} €`, icon:'kanban', color:'#FF7E5F' },
           { label:'Taux win', value:`${winRate}%`, icon:'trophy', color:'#d97706' },
           { label:'Sans date', value:noDateCount, icon:'calendar', color:noDateCount > 0 ? '#d97706' : '#64748b' },
         ].map(kpi => (
-          <Card key={kpi.label} style={{ padding:'12px 13px', background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
-            <p style={{ margin:'0 0 6px', fontSize:11, textTransform:'uppercase', letterSpacing:'.05em', color:DS.textMuted }}>{kpi.label}</p>
+          <div key={kpi.label} className="kpi-card" style={{ padding:'12px 13px', background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.75))' }}>
+            <p className="kpi-label" style={{ margin:'0 0 6px' }}>{kpi.label}</p>
             <p style={{ margin:0, fontSize:22, fontWeight:700, color:kpi.color }}>{kpi.value}</p>
             <p style={{ margin:'4px 0 0', fontSize:12 }}>
               <Icon name={kpi.icon} size={16} color={kpi.color} />
             </p>
-          </Card>
+          </div>
         ))}
       </div>
 

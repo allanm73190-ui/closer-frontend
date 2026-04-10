@@ -291,26 +291,22 @@ export function ObjectionLibrary({ toast }) {
 
   return (
     <div className="cd-page-flow" style={{ gap: 16 }}>
-      {/* Header */}
-      <Card className="cd-hero-card" style={{ padding:16 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <p className="cd-hero-kicker">Objections</p>
-            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Bibliothèque d'objections</h1>
-            <p className="cd-hero-subtitle">{data.totalWithObjections} debriefs avec objections</p>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Objections</h1>
+          <p className="page-subtitle">{data.totalWithObjections} debriefs avec objections</p>
         </div>
-      </Card>
+      </div>
 
       {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12 }}>
+      <div className="kpi-grid" style={{ gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12, marginBottom:0 }}>
         {[
           { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: 'message-square', bg: 'rgba(255,126,95,.14)', c: P },
           { label: 'Types', value: data.objections.length, icon: 'bar-chart-2', bg: 'rgba(124,58,237,.12)', c: '#7C3AED' },
           { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: 'target', bg: 'rgba(218,240,216,.6)', c: '#059669' },
           { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: 'trending-up', bg: 'rgba(254,243,224,.6)', c: '#D97706' },
         ].map(({ label, value, icon, bg, c }) => (
-          <Card key={label} style={{ padding: mob ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', gap: mob ? 10 : 14, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.74))' }}>
+          <div key={label} className="kpi-card" style={{ padding: mob ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', gap: mob ? 10 : 14, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.74))' }}>
             <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Icon name={icon} size={mob ? 16 : 20} color={c} />
             </div>
@@ -318,7 +314,7 @@ export function ObjectionLibrary({ toast }) {
               <p style={{ fontSize: 10, color: TXT3, margin: 0, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</p>
               <p style={{ fontSize: typeof value === 'string' && value.length > 6 ? 14 : (mob ? 18 : 22), fontWeight: 700, color: c, margin: 0 }}>{value}</p>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 

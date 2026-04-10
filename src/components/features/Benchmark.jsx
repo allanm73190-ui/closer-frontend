@@ -237,16 +237,11 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
       <div style={{ position:'absolute', top:-30, right:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 68%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:10, left:-40, width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.14) 0%, rgba(106,172,206,0) 68%)', pointerEvents:'none' }} />
 
-      <Card className="cd-hero-card" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
+      <div className="page-header">
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
           <div>
-            <p className="cd-hero-kicker">Benchmark interne</p>
-            <h1 className="cd-hero-title" style={{ fontSize:mob ? 22 : 26 }}>
-              {selectedCloserName}
-            </h1>
-            <p className="cd-hero-subtitle" style={{ maxWidth:620 }}>
-              Comparaison contre l’historique personnel uniquement, sans classement public.
-            </p>
+            <h1 className="page-title">{selectedCloserName}</h1>
+            <p className="page-subtitle">Benchmark interne</p>
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
             <Btn variant="secondary" onClick={()=>navigate('Dashboard')} style={{ fontSize:12, padding:'7px 11px' }}>
@@ -257,6 +252,9 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
             </Btn>
           </div>
         </div>
+      </div>
+
+      <Card className="cd-surface-muted" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
         <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap', alignItems:'center' }}>
           {PERIOD_OPTIONS.map(option => (
             <button

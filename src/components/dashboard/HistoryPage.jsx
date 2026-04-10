@@ -88,10 +88,11 @@ function History({ debriefs, navigate, user }) {
 
   return (
     <div className="cd-page-flow" style={{ gap: 14 }}>
-      <div className="cd-hero-card" style={{ padding: 14 }}>
-        <p className="cd-hero-kicker">Débriefs</p>
-        <h1 className="cd-hero-title" style={{ fontSize: 23 }}>Historique des debriefs</h1>
-        <p className="cd-hero-subtitle">{allFiltered.length} / {debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Historique des debriefs</h1>
+          <p className="page-subtitle">{allFiltered.length} / {debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
+        </div>
       </div>
 
       <div style={{ position: 'relative' }}>

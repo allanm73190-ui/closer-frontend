@@ -414,22 +414,19 @@ function HOSPage({ toast, allDebriefs }) {
 
   return (
     <div className="cd-page-flow" style={{ gap: 18 }}>
-      <Card className="cd-hero-card" style={{ padding: 18 }}>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-          <div>
-            <p className="cd-hero-kicker">Équipes</p>
-            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Espace équipe</h1>
-            <p className="cd-hero-subtitle">
-              {teams.length} équipe{teams.length > 1 ? 's' : ''}
-              {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
-            </p>
-          </div>
-          <div style={{ display:'flex', gap:8 }}>
-            <Btn variant="secondary" onClick={()=>loadTeams(true)} disabled={refreshing}>{refreshing ? 'Synchro...' : 'Actualiser'}</Btn>
-            <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Espace équipe</h1>
+          <p className="page-subtitle">
+            {teams.length} équipe{teams.length > 1 ? 's' : ''}
+            {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
+          </p>
         </div>
-      </Card>
+        <div style={{ display:'flex', gap:8 }}>
+          <Btn variant="secondary" onClick={()=>loadTeams(true)} disabled={refreshing}>{refreshing ? 'Synchro...' : 'Actualiser'}</Btn>
+          <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
+        </div>
+      </div>
 
       <ManagerCopilotCard toast={toast} />
 

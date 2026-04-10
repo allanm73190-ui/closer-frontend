@@ -618,17 +618,14 @@ function SettingsPage({
 
   return (
     <div className="cd-page-flow" style={{ gap: 16 }}>
-      <Card className="cd-hero-card" style={{ padding:18 }}>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-          <div>
-            <p className="cd-hero-kicker">Configuration</p>
-            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Paramètres</h1>
-          </div>
-          <Btn variant="secondary" onClick={()=>navigate(fromPage || 'Dashboard', returnId || null)}>
-            ← Retour
-          </Btn>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Paramètres</h1>
         </div>
-      </Card>
+        <Btn variant="secondary" onClick={()=>navigate(fromPage || 'Dashboard', returnId || null)}>
+          ← Retour
+        </Btn>
+      </div>
 
       <Card className="cd-surface-muted" style={{ padding:10 }}>
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>

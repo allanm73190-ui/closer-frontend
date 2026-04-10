@@ -91,10 +91,11 @@ function GamificationPage({ gam, user, debriefs = [] }) {
 
   return (
     <div className="cd-page-flow" style={{ gap: 16 }}>
-      <div className="cd-hero-card">
-        <p className="cd-hero-kicker">Classement</p>
-        <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Progression gamification</h1>
-        <p className="cd-hero-subtitle">{points} XP · Niveau {level.name}</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Profil & Classement</h1>
+          <p className="page-subtitle">{points} XP · Niveau {level.name}</p>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>

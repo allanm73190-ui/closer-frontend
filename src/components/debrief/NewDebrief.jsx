@@ -402,28 +402,25 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
 
   return (
     <div className="cd-page-flow" style={{ gap: 18 }}>
-      <Card className="cd-hero-card" style={{ padding:16 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+      <div className="page-header">
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || (isEditing ? 'History' : 'Dashboard'))} style={{ width:36, height:36, padding:0, borderRadius:8, fontSize:16, flexShrink:0 }}>←</Btn>
-            <div>
-              <p className="cd-hero-kicker">{isEditing ? 'Edition' : 'Debrief'}</p>
-              <h1 className="cd-hero-title" style={{ fontSize:22 }}>
+          <div>
+            <h1 className="page-title">
               {isEditing ? 'Modifier le debrief' : 'Nouveau debrief'}
-              </h1>
-            </div>
+            </h1>
           </div>
-          {isManager && (
-            <Btn
-              variant="secondary"
-              onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
-              style={{ fontSize:13, padding:'9px 14px' }}
-            >
-              Paramètres questions
-            </Btn>
-          )}
         </div>
-      </Card>
+        {isManager && (
+          <Btn
+            variant="secondary"
+            onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
+            style={{ fontSize:13, padding:'9px 14px' }}
+          >
+            Paramètres questions
+          </Btn>
+        )}
+      </div>
 
       {mob && (
         <Card style={{ background:'var(--gradient-primary)', border:'1px solid rgba(255,255,255,.3)', borderRadius:14, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
