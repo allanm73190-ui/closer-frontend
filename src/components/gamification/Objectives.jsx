@@ -204,7 +204,7 @@ function ActionPlanCard({ closerId, isHOS, toast }) {
           )}
 
           {active.map(plan => (
-            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(255,126,95,.06,.15)', borderRadius:DS.radiusSm, border:'1px solid rgba(255,126,95,.1)', alignItems:'flex-start' }}>
+            <div key={plan.id} style={{ display:'flex', gap:12, padding:'12px 14px', background:'rgba(255,126,95,.12)', borderRadius:DS.radiusSm, border:'1px solid rgba(255,126,95,.1)', alignItems:'flex-start' }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#FF7E5F', marginTop:5, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontWeight:600, fontSize:13, color:'#4A3428', margin:'0 0 2px' }}>{plan.axis}</p>

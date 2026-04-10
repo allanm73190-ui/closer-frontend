@@ -92,31 +92,34 @@ function Detail({ debrief: debriefProp, navigate, onDelete, fromPage, user, toas
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+    <div className="cd-page-flow" style={{ gap:18 }}>
+      <Card className="cd-hero-card" style={{ padding:14 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage||'Dashboard')} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:16,flexShrink:0}}>←</Btn>
-          <div>
-            <h1 style={{ fontSize:mob?18:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>{debrief.prospect_name}</h1>
+            <div>
+              <p className="cd-hero-kicker">Debrief</p>
+              <h1 className="cd-hero-title" style={{ fontSize:mob?20:24 }}>{debrief.prospect_name}</h1>
             <div style={{ display:'flex', gap:12, fontSize:12, color:DS.textMuted, marginTop:4, flexWrap:'wrap' }}>
               <span>📅 {fmtDate(debrief.call_date)}</span>
               <span>👤 {debrief.closer_name}</span>
               {debrief.user_name && <span>par {debrief.user_name}</span>}
             </div>
           </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            <ClosedBadge isClosed={debrief.is_closed}/>
+            <Btn variant="secondary" onClick={()=>navigate('EditDebrief', debrief.id, fromPage || 'History')} style={{ padding:'8px 14px', fontSize:12 }}>
+              Modifier
+            </Btn>
+            <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
+              {exportingPdf ? 'Préparation...' : 'Prévisualiser PDF'}
+            </Btn>
+            {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,background:'var(--glass-bg)',fontSize:12,textDecoration:'none',color:'var(--txt,#4A3428)'}}>Écouter</a>}
+            <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>×</Btn>
+          </div>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <ClosedBadge isClosed={debrief.is_closed}/>
-          <Btn variant="secondary" onClick={()=>navigate('EditDebrief', debrief.id, fromPage || 'History')} style={{ padding:'8px 14px', fontSize:12 }}>
-            ✏️ Modifier
-          </Btn>
-          <Btn onClick={handleExportPdf} disabled={exportingPdf} style={{ padding:'8px 14px', fontSize:12 }}>
-            {exportingPdf ? 'Préparation prévisualisation...' : '📄 Prévisualiser le PDF'}
-          </Btn>
-          {debrief.call_link && <a href={debrief.call_link} target="_blank" rel="noopener noreferrer" style={{padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,background:'var(--glass-bg)',fontSize:12,textDecoration:'none',color:'var(--txt,#4A3428)'}}>🔗 Écouter</a>}
-          <Btn variant="danger" onClick={()=>onDelete(debrief.id)} style={{width:36,height:36,padding:0,borderRadius:8,fontSize:14}}>🗑</Btn>
-        </div>
-      </div>
+      </Card>
 
       {typeof debrief.overall_quality_score === 'number' && (
         <Card style={{ padding: 14, marginBottom: 14 }}>

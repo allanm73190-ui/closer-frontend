@@ -232,20 +232,18 @@ export function BenchmarkPage({ user, debriefs, navigate, toast }) {
   ];
 
   return (
-    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:18, isolation:'isolate' }}>
+    <div className="cd-page-flow" style={{ position:'relative', gap:16, isolation:'isolate' }}>
       <div style={{ position:'absolute', top:-30, right:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 68%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:10, left:-40, width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle, rgba(106,172,206,.14) 0%, rgba(106,172,206,0) 68%)', pointerEvents:'none' }} />
 
-      <Card style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(255,247,240,.68))' }) }}>
+      <Card className="cd-hero-card" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
-              Benchmark interne
-            </p>
-            <h1 style={{ margin:0, fontSize:mob ? 22 : 26, color:'var(--txt,#4A3428)', fontWeight:800 }}>
+            <p className="cd-hero-kicker">Benchmark interne</p>
+            <h1 className="cd-hero-title" style={{ fontSize:mob ? 22 : 26 }}>
               {selectedCloserName}
             </h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#B09080)', maxWidth:620 }}>
+            <p className="cd-hero-subtitle" style={{ maxWidth:620 }}>
               Comparaison contre l’historique personnel uniquement, sans classement public.
             </p>
           </div>

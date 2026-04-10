@@ -163,6 +163,12 @@ export const GLOBAL_CSS = `
     --float-blob-1: rgba(255,126,95,.08);
     --float-blob-2: rgba(124,58,237,.06);
     --float-blob-3: rgba(96,165,250,.05);
+    --panel-1: linear-gradient(145deg, rgba(255,255,255,.92), rgba(255,246,238,.86));
+    --panel-2: linear-gradient(145deg, rgba(255,255,255,.88), rgba(237,228,245,.32));
+    --panel-3: linear-gradient(145deg, rgba(255,255,255,.88), rgba(228,238,248,.42));
+    --panel-border-strong: rgba(232,125,106,.22);
+    --panel-border-soft: rgba(200,160,140,.2);
+    --hero-kicker: rgba(122,80,64,.85);
   }
 
   /* ─── DARK THEME (Sunset / Deep Warm) ────────────────────────────────────── */
@@ -212,6 +218,12 @@ export const GLOBAL_CSS = `
     --float-blob-1: rgba(255,126,95,.06);
     --float-blob-2: rgba(167,139,250,.05);
     --float-blob-3: rgba(96,165,250,.04);
+    --panel-1: linear-gradient(145deg, rgba(44,30,38,.9), rgba(31,22,30,.88));
+    --panel-2: linear-gradient(145deg, rgba(48,33,42,.9), rgba(28,23,36,.82));
+    --panel-3: linear-gradient(145deg, rgba(36,28,40,.92), rgba(25,27,39,.86));
+    --panel-border-strong: rgba(255,126,95,.26);
+    --panel-border-soft: rgba(255,126,95,.16);
+    --hero-kicker: rgba(200,168,152,.85);
   }
 
   /* ─── Sunrise Structural Shell ─────────────────────────────────────────── */
@@ -408,8 +420,8 @@ export const GLOBAL_CSS = `
   }
 
   .cd-kpi-card {
-    background: var(--card);
-    border: 1px solid var(--card-border);
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border-soft);
     border-radius: 12px;
     padding: 14px 15px;
     box-shadow: var(--sh-sm);
@@ -420,7 +432,7 @@ export const GLOBAL_CSS = `
 
   .cd-kpi-card:hover {
     transform: translateY(-1px);
-    border-color: rgba(255,126,95,.34);
+    border-color: var(--panel-border-strong);
   }
 
   .cd-kpi-label {
@@ -457,13 +469,88 @@ export const GLOBAL_CSS = `
   }
 
   .cd-card {
-    background: var(--card);
-    border: 1px solid var(--card-border);
+    background: var(--panel-1);
+    border: 1px solid var(--panel-border-soft);
     border-radius: 12px;
     box-shadow: var(--sh-card);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     padding: 14px;
+  }
+
+  .cd-page-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cd-hero-card {
+    background: var(--panel-1);
+    border: 1px solid var(--panel-border-strong);
+    border-radius: 14px;
+    box-shadow: var(--sh-card);
+    padding: 18px 18px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .cd-hero-kicker {
+    margin: 0 0 5px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--hero-kicker);
+  }
+
+  .cd-hero-title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.06;
+    font-weight: 800;
+    color: var(--txt);
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    letter-spacing: -.02em;
+  }
+
+  .cd-hero-subtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--txt2);
+  }
+
+  .cd-section-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  .cd-section-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  .cd-surface-muted {
+    background: var(--panel-3);
+    border: 1px solid var(--panel-border-soft);
+    border-radius: 12px;
+    box-shadow: var(--sh-sm);
+  }
+
+  .cd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border-soft);
+    background: var(--chip-bg);
+    color: var(--txt2);
+    font-size: 11px;
+    font-weight: 700;
   }
 
   .cd-card-title {
@@ -519,6 +606,19 @@ export const GLOBAL_CSS = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .cd-grid-aside {
+      grid-template-columns: 1fr;
+    }
+    .cd-section-grid-3 {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cd-hero-title {
+      font-size: 21px;
+    }
+    .cd-section-grid-2,
+    .cd-section-grid-3 {
       grid-template-columns: 1fr;
     }
   }

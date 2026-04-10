@@ -234,7 +234,7 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
             </div>
             <div style={{ fontSize: 11, color: 'var(--txt3)' }}>{fmtDate(debrief.call_date || debrief.created_at)}</div>
           </div>
-          <ClosedBadge v={debrief.is_closed} compact />
+          <ClosedBadge isClosed={debrief.is_closed} compact />
         </button>
       );
   };
@@ -302,36 +302,35 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
 
   if (mob) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div className="cd-card">
-          <div style={{ fontSize: 21, fontWeight: 800, fontFamily: "'Manrope', 'Inter', sans-serif", color: 'var(--txt)' }}>
-            {isManager ? 'Vue équipe' : `Bonjour, ${user.name} 👋`}
+      <div className="cd-page-flow">
+        <div className="cd-hero-card">
+          <p className="cd-hero-kicker">{isManager ? 'Pilotage équipe' : 'Tableau de bord'}</p>
+          <h1 className="cd-hero-title">{isManager ? 'Vue équipe' : `Bonjour, ${user.name}`}</h1>
+          <p className="cd-hero-subtitle">{nowLabel}</p>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+            <Btn variant="secondary" onClick={() => navigate('History')} style={{ flex: 1 }}>Débriefs</Btn>
+            <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')} style={{ flex: 1 }}>
+              {isManager ? 'Mon équipe' : 'Nouveau'}
+            </Btn>
           </div>
-          <div style={{ marginTop: 3, fontSize: 12, color: 'var(--txt3)' }}>{nowLabel}</div>
-          <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')} style={{ marginTop: 12, width: '100%' }}>
-            {isManager ? 'Espace équipe' : '+ Nouveau debrief'}
-          </Btn>
         </div>
 
         <div className="cd-kpi-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           {kpis.map(kpi => (
             <div key={kpi.key} className="cd-kpi-card">
               <div className="cd-kpi-label">{kpi.label}</div>
-              <div className="cd-kpi-value" style={{ fontSize: 24 }}>{kpi.value}</div>
+              <div className="cd-kpi-value" style={{ fontSize: 23 }}>{kpi.value}</div>
               <div className={`cd-kpi-delta ${kpi.tone}`}>{kpi.delta}</div>
             </div>
           ))}
         </div>
 
-        <GamCard gam={gam} />
-        {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
-
-        <div className="cd-card">
+        <Card className="cd-surface-muted" style={{ padding: 14 }}>
           <div className="cd-card-title">Évolution du score</div>
           <Chart debriefs={debriefs} compact simple />
-        </div>
+        </Card>
 
-        <div className="cd-card">
+        <Card style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div className="cd-card-title" style={{ marginBottom: 0 }}>Derniers appels debriefés</div>
             <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -341,44 +340,53 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(item => renderDebriefItem(item, true))}
           </div>
-        </div>
+        </Card>
 
+        <GamCard gam={gam} />
+        {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
+        {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
         {isManager && (
-          <div className="cd-card">
+          <Card style={{ padding: 14 }}>
             <div className="cd-card-title">Détection de patterns</div>
             {renderPatterns()}
-          </div>
+          </Card>
         )}
 
-        <div className="cd-card">
-          <div className="cd-card-title">Objections fréquentes</div>
-          {renderObjections()}
+        <div className="cd-section-grid-2">
+          <Card style={{ padding: 14 }}>
+            <div className="cd-card-title">Objections fréquentes</div>
+            {renderObjections()}
+          </Card>
+          <Card style={{ padding: 14 }}>
+            <div className="cd-card-title">Pipeline</div>
+            {renderPipelineMini()}
+          </Card>
         </div>
-
-        <div className="cd-card">
-          <div className="cd-card-title">Pipeline</div>
-          {renderPipelineMini()}
-        </div>
-
-        {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <div>
-          <div className="page-title" style={{ fontSize: 28 }}>
-            {isManager ? 'Vue équipe' : `Bonjour, ${user.name} 👋`}
+    <div className="cd-page-flow">
+      <div className="cd-hero-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <p className="cd-hero-kicker">{isManager ? 'Pilotage équipe' : 'Tableau de bord'}</p>
+            <h1 className="cd-hero-title">{isManager ? 'Vue équipe' : `Bonjour, ${user.name}`}</h1>
+            <p className="cd-hero-subtitle">{nowLabel}</p>
+            <div style={{ marginTop: 10, display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+              <span className="cd-chip">{total} debriefs</span>
+              <span className="cd-chip">Score moyen {avg}%</span>
+              <span className="cd-chip">{closeRate}% closing</span>
+              <span className="cd-chip">{pipelineActiveCount} opportunités actives</span>
+            </div>
           </div>
-          <div className="page-subtitle">{nowLabel}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Btn variant="secondary" onClick={() => navigate('History')}>Débriefs</Btn>
-          <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')}>
-            {isManager ? 'Mon équipe' : '+ Nouveau debrief'}
-          </Btn>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn variant="secondary" onClick={() => navigate('History')}>Débriefs</Btn>
+            <Btn onClick={() => navigate(isManager ? 'HOSPage' : 'NewDebrief')}>
+              {isManager ? 'Mon équipe' : '+ Nouveau debrief'}
+            </Btn>
+          </div>
         </div>
       </div>
 
@@ -392,13 +400,12 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12, alignItems: 'start' }}>
-        <div className="cd-card">
+      <div className="cd-section-grid-2">
+        <Card className="cd-surface-muted" style={{ padding: 16 }}>
           <div className="cd-card-title">Évolution du score</div>
           <Chart debriefs={debriefs} compact simple />
-        </div>
-
-        <div className="cd-card">
+        </Card>
+        <Card style={{ padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div className="cd-card-title" style={{ marginBottom: 0 }}>Derniers appels debriefés</div>
             <button onClick={() => navigate('History')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -408,62 +415,61 @@ function Dashboard({ debriefs, navigate, user, gam, toast, objectivesRefreshTick
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {quickDebriefs.length === 0 ? <Empty icon="📋" title="Aucun debrief" subtitle="Commencez avec un nouvel appel." /> : quickDebriefs.map(item => renderDebriefItem(item, true))}
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div className="cd-grid-aside">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {!isManager && <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />}
-          {!isManager && <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />}
-          {isManager && (
-            <div className="cd-card">
-              <div className="cd-card-title">Détection de patterns</div>
-              {renderPatterns()}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="cd-card" style={{ background: streak >= 3 ? 'linear-gradient(135deg, rgba(245,158,11,.12), rgba(239,68,68,.06))' : 'var(--card)' }}>
-            <div className="cd-card-title">Progression</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ fontSize: 34, lineHeight: 1 }}>{streak >= 7 ? '🔥' : streak >= 3 ? '⚡' : '🎯'}</div>
-              <div>
-                <div style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Manrope', 'Inter', sans-serif", color: streak > 0 ? '#D97706' : 'var(--txt3)', lineHeight: 1 }}>
-                  {streak}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Jour{streak > 1 ? 's' : ''} de streak
-                </div>
+      <div className="cd-section-grid-3">
+        <Card style={{ padding: 14, background: streak >= 3 ? 'linear-gradient(135deg, rgba(245,158,11,.16), rgba(239,68,68,.08))' : 'var(--panel-3)' }}>
+          <div className="cd-card-title">Progression</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 30, color: streak > 0 ? '#D97706' : 'var(--txt3)' }}>local_fire_department</span>
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Manrope', 'Inter', sans-serif", color: streak > 0 ? '#D97706' : 'var(--txt3)', lineHeight: 1 }}>
+                {streak}
               </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--txt3)', marginBottom: 4 }}>
-                <span>{gam?.points || 0} XP</span>
-                <span>{gam?.level?.next || gam?.points || 0} XP</span>
-              </div>
-              <div style={{ height: 7, borderRadius: 999, background: 'var(--surface-b)', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(gamPct, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-violet), var(--accent))' }} />
+              <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                Jour{streak > 1 ? 's' : ''} de streak
               </div>
             </div>
           </div>
-
-          <div className="cd-card">
-            <div className="cd-card-title">Objections fréquentes</div>
-            {renderObjections()}
-          </div>
-
-          <div className="cd-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div className="cd-card-title" style={{ marginBottom: 0 }}>Pipeline</div>
-              <button onClick={() => navigate('Pipeline')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Ouvrir
-              </button>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--txt3)', marginBottom: 4 }}>
+              <span>{gam?.points || 0} XP</span>
+              <span>{gam?.level?.next || gam?.points || 0} XP</span>
             </div>
-            {renderPipelineMini()}
+            <div style={{ height: 7, borderRadius: 999, background: 'var(--surface-b)', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(gamPct, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-violet), var(--accent))' }} />
+            </div>
           </div>
-        </div>
+        </Card>
+
+        <Card style={{ padding: 14 }}>
+          <div className="cd-card-title">Objections fréquentes</div>
+          {renderObjections()}
+        </Card>
+
+        <Card style={{ padding: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div className="cd-card-title" style={{ marginBottom: 0 }}>Pipeline</div>
+            <button onClick={() => navigate('Pipeline')} style={{ border: 'none', background: 'none', color: P, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Ouvrir
+            </button>
+          </div>
+          {renderPipelineMini()}
+        </Card>
       </div>
+
+      {isManager ? (
+        <Card style={{ padding: 14 }}>
+          <div className="cd-card-title">Détection de patterns</div>
+          {renderPatterns()}
+        </Card>
+      ) : (
+        <div className="cd-section-grid-2">
+          <ObjectiveBanner userId={user.id} refreshTick={objectivesRefreshTick} />
+          <ActionPlanCard closerId={user.id} isHOS={false} toast={toast} />
+        </div>
+      )}
     </div>
   );
 }
@@ -547,10 +553,11 @@ function History({ debriefs, navigate, user }) {
   const sel = { background: 'var(--glass-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 10px', fontSize: 12, color: 'var(--txt)', fontFamily: 'inherit', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt)', margin: 0 }}>Historique</h1>
-        <p style={{ color: 'var(--txt3)', fontSize: 13, marginTop: 4 }}>{allFiltered.length} / {debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
+    <div className="cd-page-flow" style={{ gap: 14 }}>
+      <div className="cd-hero-card" style={{ padding: 14 }}>
+        <p className="cd-hero-kicker">Débriefs</p>
+        <h1 className="cd-hero-title" style={{ fontSize: 23 }}>Historique des debriefs</h1>
+        <p className="cd-hero-subtitle">{allFiltered.length} / {debriefs.length} debrief{debriefs.length !== 1 ? 's' : ''}</p>
       </div>
       <div style={{ position: 'relative' }}>
         <input placeholder="Rechercher..." value={q} onChange={e => setQ(e.target.value)} style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: 'var(--glass-bg)', color: 'var(--txt)', backdropFilter: 'blur(4px)' }} />

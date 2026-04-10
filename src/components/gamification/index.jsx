@@ -3,6 +3,7 @@ import { apiFetch } from '../../config/api';
 import { DS, P } from '../../styles/designSystem';
 import { computeLevel } from '../../utils/scoring';
 import { computeStreak } from '../../utils/streak';
+import { useIsMobile } from '../../hooks';
 import { Spinner } from '../ui';
 
 const G = (extra = {}) => ({
@@ -56,6 +57,7 @@ function GamCard({ gam }) {
 }
 
 function GamificationPage({ gam, user, debriefs = [] }) {
+  const mob = useIsMobile();
   const [leaderboard, setLeaderboard] = useState([]);
   const [lbLoading, setLbLoading] = useState(true);
 
@@ -80,9 +82,16 @@ function GamificationPage({ gam, user, debriefs = [] }) {
   const lockedBadges = badges.filter(b => b.locked);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+    <div className="cd-page-flow" style={{ gap: 16 }}>
+      <div className="cd-hero-card">
+        <p className="cd-hero-kicker">Classement</p>
+        <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Progression gamification</h1>
+        <p className="cd-hero-subtitle">{points} XP · Niveau {level.name}</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
       {/* Left — Profil XP + Badges */}
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ ...G({ padding: 24, marginBottom: 16 }) }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900, color: 'white', flexShrink: 0 }}>
@@ -195,6 +204,7 @@ function GamificationPage({ gam, user, debriefs = [] }) {
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

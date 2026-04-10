@@ -401,29 +401,29 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+    <div className="cd-page-flow" style={{ gap: 18 }}>
+      <Card className="cd-hero-card" style={{ padding:16 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || (isEditing ? 'History' : 'Dashboard'))} style={{ width:36, height:36, padding:0, borderRadius:8, fontSize:16, flexShrink:0 }}>←</Btn>
-          <div>
-            <h1 style={{ fontSize:22, fontWeight:800, color:'var(--txt,#4A3428)', margin:0 }}>
+            <div>
+              <p className="cd-hero-kicker">{isEditing ? 'Edition' : 'Debrief'}</p>
+              <h1 className="cd-hero-title" style={{ fontSize:22 }}>
               {isEditing ? 'Modifier le debrief' : 'Nouveau debrief'}
-            </h1>
-            <p style={{ color:DS.textMuted, fontSize:13, marginTop:4 }}>
-              {isEditing ? "Mettez à jour ce debrief depuis l'historique" : 'Évaluez votre dernier appel'}
-            </p>
+              </h1>
+            </div>
           </div>
+          {isManager && (
+            <Btn
+              variant="secondary"
+              onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
+              style={{ fontSize:13, padding:'9px 14px' }}
+            >
+              Paramètres questions
+            </Btn>
+          )}
         </div>
-        {isManager && (
-          <Btn
-            variant="secondary"
-            onClick={()=>navigate('Settings', isEditing ? existingDebrief?.id : null, isEditing ? 'EditDebrief' : 'NewDebrief', { settingsTab:'debrief' })}
-            style={{ fontSize:13, padding:'9px 14px' }}
-          >
-            ⚙️ Paramètres questions
-          </Btn>
-        )}
-      </div>
+      </Card>
 
       {mob && (
         <Card style={{ background:'var(--gradient-primary)', border:'1px solid rgba(255,255,255,.3)', borderRadius:14, padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
@@ -440,7 +440,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
         <div style={{ display:'grid', gridTemplateColumns:mob?'1fr':'1fr 2fr', gap:10, alignItems:'center' }}>
           <div>
             <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:700, color:'var(--txt,#4A3428)', textTransform:'uppercase', letterSpacing:'.04em' }}>Template d'offre</p>
-            <p style={{ margin:0, fontSize:12, color:DS.textMuted }}>Le formulaire s’adapte selon votre type de produit.</p>
           </div>
           <div>
             <select
@@ -463,9 +462,6 @@ function NewDebrief({ navigate, onSave, onUpdate, toast, user, debriefConfig, de
                 </option>
               ))}
             </select>
-            <p style={{ margin:'6px 2px 0', fontSize:11, color:DS.textMuted }}>
-              {templateCatalog.templates.find(template => template.key === selectedTemplateKey)?.description || ''}
-            </p>
           </div>
         </div>
       </Card>

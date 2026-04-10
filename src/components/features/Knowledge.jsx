@@ -163,20 +163,18 @@ export function KnowledgePage({ navigate, toast }) {
   }
 
   return (
-    <div style={{ position:'relative', display:'flex', flexDirection:'column', gap:16, isolation:'isolate' }}>
+    <div className="cd-page-flow" style={{ position:'relative', gap:16, isolation:'isolate' }}>
       <div style={{ position:'absolute', top:-50, left:-30, width:190, height:190, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,.14) 0%, rgba(124,58,237,0) 70%)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:40, right:-40, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(232,125,106,.16) 0%, rgba(232,125,106,0) 70%)', pointerEvents:'none' }} />
 
-      <Card style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'linear-gradient(145deg, rgba(255,255,255,.75), rgba(124,58,237,.08))' }) }}>
+      <Card className="cd-hero-card" style={{ ...glassPanel({ padding:mob ? '18px 15px' : '22px 22px', background:'var(--panel-1)' }) }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
           <div>
-            <p style={{ margin:'0 0 4px', fontSize:10, color:DS.textMuted, textTransform:'uppercase', letterSpacing:'.1em', fontWeight:800 }}>
-              Centre de connaissances
-            </p>
-            <h1 style={{ margin:0, fontSize:mob ? 22 : 25, color:'var(--txt,#4A3428)', fontWeight:800 }}>
+            <p className="cd-hero-kicker">Centre de connaissances</p>
+            <h1 className="cd-hero-title" style={{ fontSize:mob ? 22 : 25 }}>
               Scripts réutilisables
             </h1>
-            <p style={{ margin:'6px 0 0', fontSize:13, color:'var(--txt2,#B09080)' }}>
+            <p className="cd-hero-subtitle">
               Extraits issus des meilleurs debriefs, triés par impact réel.
             </p>
           </div>

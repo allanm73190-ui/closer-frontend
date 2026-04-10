@@ -49,7 +49,7 @@ function TeamTile({ team, active, allDebriefs, onSelect }) {
       </p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
         {[{ label:'Score', value:`${stats.avg}%` }, { label:'Closings', value:stats.closed }, { label:'Taux', value:`${stats.closeRate}%` }].map(kpi => (
-          <div key={kpi.label} style={{ background:active ? 'rgba(255,255,255,.16)' : 'rgba(255,126,95,.06,.3)', borderRadius:8, padding:'6px 8px' }}>
+          <div key={kpi.label} style={{ background:active ? 'rgba(255,255,255,.16)' : 'rgba(255,126,95,.12)', borderRadius:8, padding:'6px 8px' }}>
             <p style={{ margin:'0 0 2px', fontSize:10, textTransform:'uppercase', letterSpacing:'.04em', opacity:active ? .82 : .64 }}>
               {kpi.label}
             </p>
@@ -183,7 +183,7 @@ function ManagerCopilotCard({ toast }) {
     : '';
 
   return (
-    <Card style={{ padding:16, border:'1px solid rgba(124,58,237,.22)', background:'linear-gradient(135deg, rgba(124,58,237,.04,.45), rgba(255,126,95,.06,.35))' }}>
+    <Card style={{ padding:16, border:'1px solid rgba(124,58,237,.22)', background:'linear-gradient(135deg, rgba(124,58,237,.14), rgba(255,126,95,.16))' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap', marginBottom:10 }}>
         <div>
           <h3 style={{ margin:'0 0 2px', fontSize:15, color:'#4A3428' }}>🧭 Copilot Manager</h3>
@@ -406,20 +406,23 @@ function HOSPage({ toast, allDebriefs }) {
   if (loading) return <Spinner full />;
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-        <div>
-          <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)' }}>Espace Équipe</h1>
-          <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
-            {teams.length} équipe{teams.length > 1 ? 's' : ''}
-            {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
-          </p>
+    <div className="cd-page-flow" style={{ gap: 18 }}>
+      <Card className="cd-hero-card" style={{ padding: 18 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+          <div>
+            <p className="cd-hero-kicker">Équipes</p>
+            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Espace équipe</h1>
+            <p className="cd-hero-subtitle">
+              {teams.length} équipe{teams.length > 1 ? 's' : ''}
+              {lastSyncAt && ` · Synchro ${lastSyncAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`}
+            </p>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <Btn variant="secondary" onClick={()=>loadTeams(true)} disabled={refreshing}>{refreshing ? 'Synchro...' : 'Actualiser'}</Btn>
+            <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
+          </div>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <Btn variant="secondary" onClick={()=>loadTeams(true)} disabled={refreshing}>{refreshing ? 'Synchro...' : '↻ Synchroniser'}</Btn>
-          <Btn onClick={()=>setShowCreate(true)}>+ Nouvelle équipe</Btn>
-        </div>
-      </div>
+      </Card>
 
       <ManagerCopilotCard toast={toast} />
 
@@ -469,9 +472,6 @@ function HOSPage({ toast, allDebriefs }) {
                         <button onClick={()=>{ setEditingTeamId(activeTeam.id); setEditingName(activeTeam.name); }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16, color:DS.textMuted }}>✏️</button>
                       </div>
                     )}
-                    <p style={{ margin:'4px 0 0', fontSize:13, color:DS.textMuted }}>
-                      Dashboard de l'équipe sélectionnée
-                    </p>
                   </div>
                   <Btn variant="danger" onClick={()=>deleteTeam(activeTeam)} style={{ fontSize:12, padding:'8px 12px' }}>
                     Supprimer l'équipe

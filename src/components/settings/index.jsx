@@ -617,11 +617,12 @@ function SettingsPage({
   }, [requestedTab, tabs]);
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-      <Card style={{ padding:18, background:'var(--glass-bg)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
+    <div className="cd-page-flow" style={{ gap: 16 }}>
+      <Card className="cd-hero-card" style={{ padding:18 }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
           <div>
-            <h1 style={{ margin:0, fontSize:24, color:'var(--txt,#4A3428)' }}>Paramètres</h1>
+            <p className="cd-hero-kicker">Configuration</p>
+            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Paramètres</h1>
           </div>
           <Btn variant="secondary" onClick={()=>navigate(fromPage || 'Dashboard', returnId || null)}>
             ← Retour
@@ -629,7 +630,7 @@ function SettingsPage({
         </div>
       </Card>
 
-      <Card style={{ padding:10 }}>
+      <Card className="cd-surface-muted" style={{ padding:10 }}>
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
           {tabs.map(tab => (
             <button
@@ -821,7 +822,7 @@ function IntegrationsSection({ user, toast }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Info */}
             <div style={{ background: 'var(--positive-bg)', border: '1px solid rgba(5,150,105,.15)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--positive-txt)' }}>
-              Google Agenda connecté — les RDV avec des participants sont importés automatiquement.
+              Google Agenda connecté.
               {gcalStatus.lastSynced && (
                 <span style={{ display: 'block', marginTop: 4, color: 'var(--txt3)', fontWeight: 400 }}>
                   Dernière sync : {new Date(gcalStatus.lastSynced).toLocaleString('fr-FR')}
@@ -837,11 +838,6 @@ function IntegrationsSection({ user, toast }) {
                 {gcalStatus.watchActive && gcalStatus.channelExpiresAt && (
                   <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
                     Channel expire le {new Date(gcalStatus.channelExpiresAt).toLocaleDateString('fr-FR')}
-                  </div>
-                )}
-                {!gcalStatus.watchActive && (
-                  <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 2 }}>
-                    Activez la sync temps réel pour recevoir les nouveaux RDV instantanément.
                   </div>
                 )}
               </div>

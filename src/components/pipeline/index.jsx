@@ -640,14 +640,13 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
   if (loading) return <Spinner full />;
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
-      <Card style={{ padding:18, border:'1px solid var(--border)', background:'linear-gradient(145deg, rgba(255,126,95,.06,.6), rgba(124,58,237,.04,.6))' }}>
+    <div className="cd-page-flow" style={{ gap: 18 }}>
+      <Card className="cd-hero-card" style={{ padding:18 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:700, color:'var(--txt,#4A3428)', margin:0 }}>🎯 Pipeline</h1>
-            <p style={{ color:DS.textMuted, fontSize:13, margin:'4px 0 0' }}>
-              {normalizedDeals.length} contact{normalizedDeals.length !== 1 ? 's' : ''} · fiche contact unifiée
-            </p>
+            <p className="cd-hero-kicker">Pipeline</p>
+            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Pilotage des opportunités</h1>
+            <p className="cd-hero-subtitle">{normalizedDeals.length} contact{normalizedDeals.length !== 1 ? 's' : ''}</p>
           </div>
           <div style={{ display:'flex', gap:8 }}>
             {isManager && (
@@ -736,7 +735,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
         <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           <button
             onClick={()=>setFilter('all')}
-            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#FF7E5F' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(255,126,95,.06,.6)' : 'var(--card,#fff)', color:filter === 'all' ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+            style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === 'all' ? '#FF7E5F' : 'var(--border)'}`, background:filter === 'all' ? 'rgba(255,126,95,.16)' : 'var(--card,#fff)', color:filter === 'all' ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
           >
             Tous les closers
           </button>
@@ -744,7 +743,7 @@ function PipelinePage({ user, toast, debriefs, navigate }) {
             <button
               key={closer.id}
               onClick={()=>setFilter(closer.id)}
-              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(255,126,95,.06,.6)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
+              style={{ padding:'6px 12px', borderRadius:999, border:`1.5px solid ${filter === closer.id ? '#FF7E5F' : 'var(--border)'}`, background:filter === closer.id ? 'rgba(255,126,95,.16)' : 'var(--card,#fff)', color:filter === closer.id ? '#FF7E5F' : DS.textMuted, fontSize:12, fontWeight:700, fontFamily:'inherit', cursor:'pointer' }}
             >
               👤 {closer.name}
             </button>

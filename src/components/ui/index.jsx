@@ -146,8 +146,8 @@ export function Empty({ icon, title, subtitle, action }) {
 }
 
 // ─── CARD ────────────────────────────────────────────────────────────────────
-export function Card({ children, style = {} }) {
-  return <div style={{ ...card(), ...style }}>{children}</div>;
+export function Card({ children, style = {}, className = '' }) {
+  return <div className={className} style={{ ...card(), ...style }}>{children}</div>;
 }
 
 // ─── MODAL ───────────────────────────────────────────────────────────────────
@@ -214,16 +214,21 @@ export function ScoreBadge({ pct }) {
   return <span style={{ background: s.bg, color: s.c, border: `1px solid ${s.b}`, padding: '3px 10px', borderRadius: 8, fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' }}>{pct}%</span>;
 }
 
-export function ClosedBadge({ isClosed }) {
+export function ClosedBadge({ isClosed, compact = false }) {
   if (isClosed === null || isClosed === undefined) return null;
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+      padding: compact ? '3px 8px' : '5px 10px',
+      borderRadius: 8,
+      fontSize: compact ? 11 : 12,
+      fontWeight: 700,
+      whiteSpace: 'nowrap',
       background: isClosed ? 'var(--positive-bg)' : 'var(--danger-bg)',
       color: isClosed ? 'var(--positive-txt)' : 'var(--danger-txt)',
+      border: `1px solid ${isClosed ? 'rgba(5,150,105,.24)' : 'rgba(220,38,38,.2)'}`,
     }}>
-      {isClosed ? '\u2713 Closer' : '\u2717 Non Closer'}
+      {isClosed ? (compact ? 'Closé' : '\u2713 Closé') : (compact ? 'Non closé' : '\u2717 Non closé')}
     </span>
   );
 }

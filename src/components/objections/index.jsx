@@ -8,16 +8,16 @@ import { Btn, Card, Spinner, Empty } from '../ui';
 const G = (extra = {}) => ({ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 12, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', ...extra });
 
 const OBJECTION_META = {
-  budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(255,126,95,.06,.8)',  border: 'rgba(192,80,64,.3)' },
+  budget:    { icon: '💰', color: '#DC2626', bg: 'rgba(255,126,95,.12)',  border: 'rgba(192,80,64,.3)' },
   reflechir: { icon: '🤔', color: '#D97706', bg: 'rgba(254,243,224,.8)',  border: 'rgba(192,120,48,.3)' },
   conjoint:  { icon: '👥', color: '#6366f1', bg: 'rgba(237,233,254,.85)', border: 'rgba(99,102,241,.3)' },
-  methode:   { icon: '❓', color: '#7C3AED', bg: 'rgba(124,58,237,.04,.8)',  border: 'rgba(58,122,154,.3)' },
+  methode:   { icon: '❓', color: '#7C3AED', bg: 'rgba(124,58,237,.12)',  border: 'rgba(58,122,154,.3)' },
 };
 
 function rateColor(rate) {
   if (rate >= 60) return { color: '#059669', bg: 'rgba(218,240,216,.8)', border: 'rgba(90,152,88,.3)' };
   if (rate >= 35) return { color: '#D97706', bg: 'rgba(254,243,224,.8)', border: 'rgba(192,120,48,.3)' };
-  return { color: '#DC2626', bg: 'rgba(255,126,95,.06,.8)', border: 'rgba(192,80,64,.3)' };
+  return { color: '#DC2626', bg: 'rgba(255,126,95,.12)', border: 'rgba(192,80,64,.3)' };
 }
 
 function ObjectionCard({ objection, toast }) {
@@ -160,7 +160,7 @@ function ObjectionCard({ objection, toast }) {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {objection.validatedResponses.slice(0, 4).map((item, idx) => (
-                  <div key={`${item.text.slice(0, 32)}_${idx}`} style={{ background:'rgba(124,58,237,.04,.22)', border:'1px solid rgba(58,122,154,.22)', borderRadius:R_MD, padding:'12px 12px' }}>
+                  <div key={`${item.text.slice(0, 32)}_${idx}`} style={{ background:'rgba(124,58,237,.12)', border:'1px solid rgba(58,122,154,.22)', borderRadius:R_MD, padding:'12px 12px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
                       <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                         <span style={{ padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:700, background:item.validated ? 'rgba(218,240,216,.8)' : 'rgba(254,243,224,.9)', color:item.validated ? '#059669' : '#D97706' }}>
@@ -198,7 +198,7 @@ function ObjectionCard({ objection, toast }) {
                   🤖 Variante IA
                 </p>
                 <div style={{
-                  background: 'linear-gradient(135deg,rgba(255,126,95,.06,.3),rgba(124,58,237,.04,.2))', border: '1px solid rgba(255,126,95,.15)', borderRadius: R_MD,
+                  background: 'linear-gradient(135deg,rgba(255,126,95,.14),rgba(124,58,237,.1))', border: '1px solid rgba(255,126,95,.15)', borderRadius: R_MD,
                   padding: '14px 16px', borderLeft: `3px solid ${P}`,
                 }}>
                   <p style={{ fontSize: 14, color: TXT, margin: 0, lineHeight: 1.65 }}>{aiResponse}</p>
@@ -279,15 +279,14 @@ export function ObjectionLibrary({ toast }) {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="cd-page-flow" style={{ gap: 16 }}>
       {/* Header */}
-      <Card style={{ padding:16, background:'linear-gradient(145deg, rgba(255,255,255,.95), rgba(249,239,233,.76))' }}>
+      <Card className="cd-hero-card" style={{ padding:16 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: TXT, margin: 0 }}>📚 Objection Library</h1>
-            <p style={{ color: TXT2, fontSize: 14, marginTop: 4 }}>
-              {data.totalWithObjections} debriefs avec objections sur {data.total} total
-            </p>
+            <p className="cd-hero-kicker">Objections</p>
+            <h1 className="cd-hero-title" style={{ fontSize: 24 }}>Bibliothèque d'objections</h1>
+            <p className="cd-hero-subtitle">{data.totalWithObjections} debriefs avec objections</p>
           </div>
         </div>
       </Card>
@@ -295,8 +294,8 @@ export function ObjectionLibrary({ toast }) {
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: mob ? 10 : 12 }}>
         {[
-          { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: '💬', bg: 'rgba(255,126,95,.06,.6)', c: P },
-          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(124,58,237,.04,.6)', c: '#7C3AED' },
+          { label: 'Objections', value: data.objections.reduce((s, o) => s + o.count, 0), icon: '💬', bg: 'rgba(255,126,95,.14)', c: P },
+          { label: 'Types', value: data.objections.length, icon: '📊', bg: 'rgba(124,58,237,.12)', c: '#7C3AED' },
           { label: 'Taux closing moy.', value: `${data.objections.length > 0 ? Math.round(data.objections.reduce((s, o) => s + o.closingRate, 0) / data.objections.length) : 0}%`, icon: '🎯', bg: 'rgba(218,240,216,.6)', c: '#059669' },
           { label: 'Plus fréquente', value: data.objections[0]?.label || '—', icon: '🔥', bg: 'rgba(254,243,224,.6)', c: '#D97706' },
         ].map(({ label, value, icon, bg, c }) => (
