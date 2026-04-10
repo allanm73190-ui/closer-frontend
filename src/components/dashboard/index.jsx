@@ -6,7 +6,7 @@ import { useIsMobile } from '../../hooks';
 import { fmtDate } from '../../utils/scoring';
 import { computeStreak } from '../../utils/streak';
 import { filterByPeriod, sortDebriefs, paginateDebriefs } from '../../utils/historyFilters';
-import { Btn, Input, Card, Spinner, Empty } from '../ui';
+import { Btn, Input, Card, Spinner, Empty, ClosedBadge } from '../ui';
 import { GamCard } from '../gamification';
 import { StatsRow, Chart } from './StatsChart';
 import { DebriefCard } from '../debrief/DebriefCard';
